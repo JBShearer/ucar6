@@ -232,7 +232,7 @@ begin
       from vocab_aliases a join vocab_terms t on t.id = a.term_id
       where t.kind = p_kind and t.status = 'active'
     ) m
-    where m.s >= 0.55
+    where m.s >= 0.70  -- raised from 0.55 to prevent games→gamers type errors
     order by m.s desc
     limit 1;
   if found then return; end if;
