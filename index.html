@@ -103,6 +103,10 @@ main{max-width:920px;margin:0 auto;padding:20px}
 .trackbtn{margin-top:10px;border:2px solid var(--ink);background:transparent;padding:8px 16px;cursor:pointer;
   font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
 .trackbtn.on{background:var(--ink);color:var(--paper)}
+.sharebtn{margin-left:8px;border:2px solid var(--olive);background:transparent;padding:8px 16px;cursor:pointer;
+  font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--olive)}
+.sharebtn:hover{background:var(--olive);color:var(--paper)}
+.copied{background:var(--good)!important;color:#fff!important;border-color:var(--good)!important}
 
 .empty{padding:40px 0;text-align:center;font-family:'IBM Plex Mono',monospace;color:var(--olive);font-size:14px}
 footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid var(--ink);
@@ -168,6 +172,21 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&
 const ago = (d) => { const s=(Date.now()-new Date(d))/1e3;
   if(s<3600) return `${Math.max(1,s/60|0)}m ago`; if(s<86400) return `${s/3600|0}h ago`; return `${s/86400|0}d ago`; };
 
+// URL routing for /c/{case_number}
+function checkRoute(){
+  const m = location.pathname.match(/\/c\/(\d+)$/);
+  if(m) return m[1];
+  // Handle GitHub Pages 404 redirect via query param
+  const sp = new URLSearchParams(location.search);
+  if(sp.has('c')) return sp.get('c');
+  return null;
+}
+
+async function openCaseByNumber(caseNum){
+  const { data } = await sb.from('cases').select('id').eq('case_number', caseNum).maybeSingle();
+  if(data?.id) openCase(data.id);
+}
+
 async function boot(){
   let { data:{ session } } = await sb.auth.getSession();
   if(!session){ ({ data:{ session } } = await sb.auth.signInAnonymously()); }
@@ -183,6 +202,10 @@ async function boot(){
     (t??[]).forEach(r => MY_TRACKS.add(r.case_id));
   }
   await Promise.all([loadShow(), loadNewsBar(), loadTrackBox(), loadFeed()]);
+
+  // Check for deep link to case
+  const routedCase = checkRoute();
+  if(routedCase) openCaseByNumber(routedCase);
 }
 
 async function loadShow(){
@@ -339,6 +362,7 @@ async function openCase(caseId){
   if(!c){ panel.innerHTML = `<div class="empty">Case not found.</div>`; return; }
 
   const tracked = MY_TRACKS.has(caseId);
+  const shareUrl = `${location.origin}${location.pathname.replace(/\/$/,'')}?c=${c.case_number}`;
   panel.innerHTML = `
     <button class="close" aria-label="Close">CLOSE ✕</button>
     <div class="mono" style="color:var(--stamp)">CASE No. ${c.case_number}</div>
@@ -346,6 +370,7 @@ async function openCase(caseId){
     <div class="mono">${c.filing_count} filing${c.filing_count===1?'':'s'} · opened ${c.first_filed_at ? ago(c.first_filed_at) : '—'}</div>
     ${chits(c)}
     <button class="trackbtn ${tracked?'on':''}" id="trk">${tracked ? '★ Tracking — untrack' : '☆ Track this case'}</button>
+    <button class="sharebtn" id="share">⛓ Share link</button>
     <div class="sect">Filings</div>
     ${(filings??[]).map(f => `<div class="dfiling">
         <b>${esc(f.headline)}</b><br>${esc(f.summary)}
@@ -369,6 +394,15 @@ async function openCase(caseId){
       MY_TRACKS.add(caseId);
     }
     openCase(caseId); loadTrackBox();
+  });
+  panel.querySelector('#share').addEventListener('click', async (e) => {
+    const btn = e.target;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '⛓ Share link'; btn.classList.remove('copied'); }, 2000);
+    } catch { alert(shareUrl); }
   });
 }
 
