@@ -1,0 +1,16 @@
+# UCAR 6.0 Supabase Config
+project_id = "znhsnishdqrmumxbgobq"
+
+[api]
+enabled = true
+
+[auth]
+enabled = true
+site_url = "https://usecasearmsrace.com"
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[auth.sms]
+enable_signup = false
