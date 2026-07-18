@@ -134,11 +134,13 @@ main{max-width:920px;margin:0 auto;padding:16px}
   box-shadow:2px 2px 0 var(--line);cursor:pointer}
 .article:hover{box-shadow:3px 3px 0 var(--stamp)}
 .article-inner{padding:16px 16px 12px;display:grid;grid-template-columns:80px 1fr;gap:14px}
-.article.has-thumb .article-inner{grid-template-columns:80px 100px 1fr}
 
-/* Article thumbnail */
-.article-thumb{width:100px;height:70px;overflow:hidden;border:1px solid var(--line);align-self:center}
+/* Article thumbnail - below the stamp */
+.article-thumb{width:80px;height:50px;overflow:hidden;border:1px solid var(--line);margin-top:8px}
 .article-thumb img{width:100%;height:100%;object-fit:cover}
+
+/* Stamp column contains stamp + optional thumbnail */
+.article-stamp-col{display:flex;flex-direction:column;align-items:center}
 
 /* Red filing stamp */
 .article-stamp{background:var(--stamp);color:#fff;padding:8px 6px;text-align:center;
@@ -798,14 +800,16 @@ function articleCard(a, c){
 
   const thumb = a.image_url ? `<div class="article-thumb"><img src="${esc(a.image_url)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : '';
 
-  return `<div class="article ${a.image_url ? 'has-thumb' : ''}" data-article="${a.id}" data-case="${c?.id || ''}">
+  return `<div class="article" data-article="${a.id}" data-case="${c?.id || ''}">
     <div class="article-inner">
-      <div class="article-stamp">
-        <div class="label">FILED</div>
-        <div class="date">${fmtDate(a.created_at)}</div>
-        <div class="src">${esc(domain)}</div>
+      <div class="article-stamp-col">
+        <div class="article-stamp">
+          <div class="label">FILED</div>
+          <div class="date">${fmtDate(a.created_at)}</div>
+          <div class="src">${esc(domain)}</div>
+        </div>
+        ${thumb}
       </div>
-      ${thumb}
       <div class="article-body">
         <a href="${esc(a.source_url)}" target="_blank" rel="noopener" class="source-link" onclick="event.stopPropagation()">
           ${esc(domain)} ↗
