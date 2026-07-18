@@ -171,6 +171,20 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .act-btn.fake:hover,.act-btn.fake.on{background:var(--olive);color:#fff}
 .act-btn.track.on{background:var(--ink);color:var(--paper)}
 
+/* Comments dropdown on article cards */
+.comments-dropdown{padding:12px 16px;border-top:1px solid var(--line);background:var(--paper)}
+.comment-form-mini{display:flex;gap:6px;margin-bottom:10px}
+.comment-input-mini{flex:1;padding:8px;border:1.5px solid var(--line);background:var(--card);
+  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink)}
+.comment-input-mini:focus{border-color:var(--ink);outline:none}
+.comment-post-mini{background:var(--ink);color:var(--paper);border:none;padding:8px 12px;cursor:pointer;
+  font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.05em}
+.comment-post-mini:hover{background:var(--stamp)}
+.comments-list-mini{max-height:200px;overflow-y:auto}
+.comment-mini{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.comment-mini:last-child{border-bottom:none}
+.comment-mini .meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--olive);margin-top:4px}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    CASE CARDS - The docket folders
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -827,6 +841,14 @@ function articleCard(a, c){
       <button class="act-btn evil ${vote==='evil'?'on':''}" data-vote="evil">👎 ${c?.evil_votes||0}</button>
       <button class="act-btn track ${tracked?'on':''}" data-action="track">${tracked?'★ Tracked':'☆ Track'}</button>
       <button class="act-btn" data-action="share">⛓ Share</button>
+      <button class="act-btn" data-action="comments">💬</button>
+    </div>
+    <div class="comments-dropdown" data-case="${c?.id || ''}" style="display:none">
+      <div class="comment-form-mini">
+        <input type="text" class="comment-input-mini" placeholder="Add a comment..." maxlength="500">
+        <button class="comment-post-mini">Post</button>
+      </div>
+      <div class="comments-list-mini"></div>
     </div>
   </div>`;
 }
@@ -1088,6 +1110,59 @@ function wireArticles(root){
         btn.textContent = '✓ Copied';
         setTimeout(() => btn.textContent = '⛓ Share', 2000);
       } catch { alert(url); }
+    });
+  });
+
+  // Comments toggle - load and show/hide dropdown
+  root.querySelectorAll('[data-action="comments"]').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const article = btn.closest('.article');
+      const dropdown = article.querySelector('.comments-dropdown');
+      const caseId = article.dataset.case;
+
+      if(dropdown.style.display === 'none') {
+        dropdown.style.display = 'block';
+        if(caseId) {
+          const list = dropdown.querySelector('.comments-list-mini');
+          list.innerHTML = '<span class="mono" style="color:var(--olive)">Loading...</span>';
+          const { data: comments } = await sb.from('comments')
+            .select('id, body, created_at')
+            .eq('case_id', caseId)
+            .eq('status', 'live')
+            .order('created_at', {ascending: false})
+            .limit(5);
+
+          if(comments?.length) {
+            list.innerHTML = comments.map(c => `
+              <div class="comment-mini">
+                ${esc(c.body)}
+                <div class="meta">${ago(c.created_at)} ago</div>
+              </div>
+            `).join('');
+          } else {
+            list.innerHTML = '<span class="mono" style="color:var(--olive);font-size:11px">No comments yet</span>';
+          }
+        }
+
+        // Wire post button
+        const input = dropdown.querySelector('.comment-input-mini');
+        const postBtn = dropdown.querySelector('.comment-post-mini');
+        postBtn.onclick = async (ev) => {
+          ev.stopPropagation();
+          const body = input.value.trim();
+          if(!body || !USER || !caseId) return;
+          postBtn.textContent = '...';
+          await sb.from('comments').insert({ user_id: USER.id, case_id: caseId, body });
+          input.value = '';
+          postBtn.textContent = 'Post';
+          // Refresh comments
+          dropdown.style.display = 'none';
+          btn.click();
+        };
+      } else {
+        dropdown.style.display = 'none';
+      }
     });
   });
 
