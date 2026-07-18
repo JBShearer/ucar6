@@ -825,8 +825,8 @@ function articleCard(a, c){
     <div class="article-actions">
       <button class="act-btn good ${vote==='good'?'on':''}" data-vote="good">👍 ${c?.good_votes||0}</button>
       <button class="act-btn evil ${vote==='evil'?'on':''}" data-vote="evil">👎 ${c?.evil_votes||0}</button>
-      <button class="act-btn track ${tracked?'on':''}" data-action="track">${tracked?'★':'☆'}</button>
-      <button class="act-btn" data-action="share">⛓</button>
+      <button class="act-btn track ${tracked?'on':''}" data-action="track">${tracked?'★ Tracked':'☆ Track'}</button>
+      <button class="act-btn" data-action="share">⛓ Share</button>
     </div>
   </div>`;
 }
