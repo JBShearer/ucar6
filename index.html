@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v2 cache bust -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -134,6 +135,13 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .article:hover{box-shadow:3px 3px 0 var(--stamp)}
 .article-inner{padding:16px 16px 12px;display:grid;grid-template-columns:80px 1fr;gap:14px}
 
+/* Article thumbnail - below the stamp */
+.article-thumb{width:80px;height:50px;overflow:hidden;border:1px solid var(--line);margin-top:8px}
+.article-thumb img{width:100%;height:100%;object-fit:cover}
+
+/* Stamp column contains stamp + optional thumbnail */
+.article-stamp-col{display:flex;flex-direction:column;align-items:center}
+
 /* Red filing stamp */
 .article-stamp{background:var(--stamp);color:#fff;padding:8px 6px;text-align:center;
   font-family:'Oswald',sans-serif;transform:rotate(-3deg);align-self:start;line-height:1.1}
@@ -151,7 +159,7 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .article-body .source-link:hover{text-decoration:underline}
 
 /* Action bar for articles */
-.article-actions{display:flex;gap:6px;padding:10px 16px;border-top:1px dashed var(--line);background:rgba(0,0,0,.02);align-items:center}
+.article-actions{display:flex;gap:6px;padding:10px 16px;border-top:1px dashed var(--line);background:rgba(0,0,0,.02)}
 .act-btn{background:none;border:1.5px solid var(--ink);color:var(--ink);padding:5px 10px;cursor:pointer;
   font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;gap:4px}
 .act-btn:hover{background:var(--ink);color:var(--paper)}
@@ -162,21 +170,6 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .act-btn.fake{border-color:var(--olive);color:var(--olive)}
 .act-btn.fake:hover,.act-btn.fake.on{background:var(--olive);color:#fff}
 .act-btn.track.on{background:var(--ink);color:var(--paper)}
-.act-btn.comment-toggle.has-comments{border-color:var(--stamp);color:var(--stamp)}
-
-/* Comments dropdown on article cards */
-.comments-dropdown{padding:12px 16px;border-top:1px solid var(--line);background:var(--paper)}
-.comment-form-mini{display:flex;gap:6px;margin-bottom:10px}
-.comment-input-mini{flex:1;padding:8px;border:1.5px solid var(--line);background:var(--card);
-  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink)}
-.comment-input-mini:focus{border-color:var(--ink);outline:none}
-.comment-post-mini{background:var(--ink);color:var(--paper);border:none;padding:8px 12px;cursor:pointer;
-  font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.05em}
-.comment-post-mini:hover{background:var(--stamp)}
-.comments-list-mini{max-height:200px;overflow-y:auto}
-.comment-mini{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
-.comment-mini:last-child{border-bottom:none}
-.comment-mini .meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--olive);margin-top:4px}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CASE CARDS - The docket folders
@@ -217,6 +210,8 @@ main{max-width:920px;margin:0 auto;padding:16px}
 
 /* Article detail in drawer */
 .article-detail{background:var(--article-bg);border:2px solid var(--ink);padding:20px;margin-bottom:20px}
+.article-detail-img{width:100%;max-height:250px;overflow:hidden;margin-bottom:16px;border:1px solid var(--line)}
+.article-detail-img img{width:100%;height:auto;object-fit:cover;display:block}
 .article-detail .stamp-row{display:flex;gap:12px;align-items:center;margin-bottom:12px}
 .article-detail .stamp-badge{background:var(--stamp);color:#fff;padding:6px 12px;font-family:'Oswald',sans-serif;
   font-size:11px;letter-spacing:.1em}
@@ -806,12 +801,17 @@ function articleCard(a, c){
   const domain = a.source_domain || 'source';
   const articleDate = a.published_at || a.created_at;
 
+  const thumb = a.image_url ? `<div class="article-thumb"><img src="${esc(a.image_url)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : '';
+
   return `<div class="article" data-article="${a.id}" data-case="${c?.id || ''}">
     <div class="article-inner">
-      <div class="article-stamp">
-        <div class="label">ARTICLE</div>
-        <div class="date">${fmtDate(articleDate)}</div>
-        <div class="src">${esc(domain)}</div>
+      <div class="article-stamp-col">
+        <div class="article-stamp">
+          <div class="label">ARTICLE</div>
+          <div class="date">${fmtDate(articleDate)}</div>
+          <div class="src">${esc(domain)}</div>
+        </div>
+        ${thumb}
       </div>
       <div class="article-body">
         <a href="${esc(a.source_url)}" target="_blank" rel="noopener" class="source-link" onclick="event.stopPropagation()">
@@ -827,14 +827,6 @@ function articleCard(a, c){
       <button class="act-btn evil ${vote==='evil'?'on':''}" data-vote="evil">👎 ${c?.evil_votes||0}</button>
       <button class="act-btn track ${tracked?'on':''}" data-action="track">${tracked?'★':'☆'}</button>
       <button class="act-btn" data-action="share">⛓</button>
-      <button class="act-btn comment-toggle" data-action="comments">💬</button>
-    </div>
-    <div class="comments-dropdown" data-case="${c?.id || ''}" style="display:none">
-      <div class="comment-form-mini">
-        <input type="text" class="comment-input-mini" placeholder="Add a comment..." maxlength="500">
-        <button class="comment-post-mini">Post</button>
-      </div>
-      <div class="comments-list-mini"><span class="mono" style="color:var(--olive)">Loading...</span></div>
     </div>
   </div>`;
 }
@@ -1093,61 +1085,17 @@ function wireArticles(root){
       const url = `${location.origin}?a=${articleId}`;
       try {
         await navigator.clipboard.writeText(url);
-        btn.textContent = '✓';
-        setTimeout(() => btn.textContent = '⛓', 2000);
+        btn.textContent = '✓ Copied';
+        setTimeout(() => btn.textContent = '⛓ Share', 2000);
       } catch { alert(url); }
     });
   });
 
-  // Comments toggle - load and show/hide dropdown
-  root.querySelectorAll('[data-action="comments"]').forEach(btn => {
-    btn.addEventListener('click', async e => {
+  root.querySelectorAll('[data-action="submit"]').forEach(btn => {
+    btn.addEventListener('click', e => {
       e.stopPropagation();
-      const article = btn.closest('.article');
-      const dropdown = article.querySelector('.comments-dropdown');
-      const caseId = article.dataset.case;
-
-      if(dropdown.style.display === 'none') {
-        dropdown.style.display = 'block';
-        // Load comments for this case
-        if(caseId) {
-          const list = dropdown.querySelector('.comments-list-mini');
-          const { data: comments } = await sb.from('comments')
-            .select('id, body, created_at')
-            .eq('case_id', caseId)
-            .eq('status', 'live')
-            .order('created_at', {ascending: false})
-            .limit(5);
-
-          if(comments?.length) {
-            list.innerHTML = comments.map(c => `
-              <div class="comment-mini">
-                ${esc(c.body)}
-                <div class="meta">${ago(c.created_at)} ago</div>
-              </div>
-            `).join('');
-          } else {
-            list.innerHTML = '<span class="mono" style="color:var(--olive);font-size:11px">No comments yet</span>';
-          }
-        }
-
-        // Wire post button
-        const input = dropdown.querySelector('.comment-input-mini');
-        const postBtn = dropdown.querySelector('.comment-post-mini');
-        postBtn.onclick = async (ev) => {
-          ev.stopPropagation();
-          const body = input.value.trim();
-          if(!body || !USER || !caseId) return;
-          postBtn.textContent = '...';
-          await sb.from('comments').insert({ user_id: USER.id, case_id: caseId, body });
-          input.value = '';
-          postBtn.textContent = 'Post';
-          // Reload comments
-          btn.click(); btn.click(); // toggle off then on to refresh
-        };
-      } else {
-        dropdown.style.display = 'none';
-      }
+      const el = btn.closest('.article');
+      openSubmitModal(el.dataset.article, el.dataset.case);
     });
   });
 }
@@ -1190,6 +1138,7 @@ async function openArticle(articleId){
     </div>
     <div class="drawer-body">
       <div class="article-detail">
+        ${a.image_url ? `<div class="article-detail-img"><img src="${esc(a.image_url)}" alt="" onerror="this.parentElement.style.display='none'"></div>` : ''}
         <div class="stamp-row">
           <div class="stamp-badge">FILED ${fmtDate(a.created_at)}</div>
           <span class="mono">${esc(a.source_domain)}</span>
@@ -1407,7 +1356,7 @@ async function openCase(caseId){
 
   const [{ data: c }, { data: articles }, sim] = await Promise.all([
     sb.from('cases').select('*').eq('id', caseId).single(),
-    sb.from('filings').select('id, headline, summary, source_url, source_domain, created_at')
+    sb.from('filings').select('id, headline, summary, source_url, source_domain, image_url, created_at')
       .eq('case_id', caseId).eq('status','live').order('created_at',{ascending:false}).limit(30),
     fetch(`${SUPABASE_URL}/functions/v1/api?action=similar`, {
       method:'POST',
@@ -1665,3 +1614,4 @@ boot().then(checkRoute);
 </script>
 </body>
 </html>
+<!-- cache bust 1784352839 -->
