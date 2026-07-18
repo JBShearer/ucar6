@@ -151,7 +151,7 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .article-body .source-link:hover{text-decoration:underline}
 
 /* Action bar for articles */
-.article-actions{display:flex;gap:6px;padding:10px 16px;border-top:1px dashed var(--line);background:rgba(0,0,0,.02)}
+.article-actions{display:flex;gap:6px;padding:10px 16px;border-top:1px dashed var(--line);background:rgba(0,0,0,.02);align-items:center}
 .act-btn{background:none;border:1.5px solid var(--ink);color:var(--ink);padding:5px 10px;cursor:pointer;
   font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;gap:4px}
 .act-btn:hover{background:var(--ink);color:var(--paper)}
@@ -162,6 +162,21 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .act-btn.fake{border-color:var(--olive);color:var(--olive)}
 .act-btn.fake:hover,.act-btn.fake.on{background:var(--olive);color:#fff}
 .act-btn.track.on{background:var(--ink);color:var(--paper)}
+.act-btn.comment-toggle.has-comments{border-color:var(--stamp);color:var(--stamp)}
+
+/* Comments dropdown on article cards */
+.comments-dropdown{padding:12px 16px;border-top:1px solid var(--line);background:var(--paper)}
+.comment-form-mini{display:flex;gap:6px;margin-bottom:10px}
+.comment-input-mini{flex:1;padding:8px;border:1.5px solid var(--line);background:var(--card);
+  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink)}
+.comment-input-mini:focus{border-color:var(--ink);outline:none}
+.comment-post-mini{background:var(--ink);color:var(--paper);border:none;padding:8px 12px;cursor:pointer;
+  font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.05em}
+.comment-post-mini:hover{background:var(--stamp)}
+.comments-list-mini{max-height:200px;overflow-y:auto}
+.comment-mini{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.comment-mini:last-child{border-bottom:none}
+.comment-mini .meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--olive);margin-top:4px}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CASE CARDS - The docket folders
@@ -789,12 +804,13 @@ function articleCard(a, c){
   const vote = c ? MY_VOTES.get(c.id) : null;
   const tracked = c ? MY_TRACKS.has(c.id) : false;
   const domain = a.source_domain || 'source';
+  const articleDate = a.published_at || a.created_at;
 
   return `<div class="article" data-article="${a.id}" data-case="${c?.id || ''}">
     <div class="article-inner">
       <div class="article-stamp">
-        <div class="label">FILED</div>
-        <div class="date">${fmtDate(a.created_at)}</div>
+        <div class="label">ARTICLE</div>
+        <div class="date">${fmtDate(articleDate)}</div>
         <div class="src">${esc(domain)}</div>
       </div>
       <div class="article-body">
@@ -807,12 +823,18 @@ function articleCard(a, c){
       </div>
     </div>
     <div class="article-actions">
-      <button class="act-btn good ${vote==='good'?'on':''}" data-vote="good">👍 Good ${c?.good_votes||0}</button>
-      <button class="act-btn evil ${vote==='evil'?'on':''}" data-vote="evil">👎 Evil ${c?.evil_votes||0}</button>
-      <button class="act-btn fake ${vote==='fake'?'on':''}" data-vote="fake">🚫 Fake ${c?.fake_votes||0}</button>
-      <button class="act-btn track ${tracked?'on':''}" data-action="track">☆ Track</button>
-      <button class="act-btn" data-action="share">⛓ Share</button>
-      <button class="act-btn" data-action="submit" style="margin-left:auto">✎ Submit</button>
+      <button class="act-btn good ${vote==='good'?'on':''}" data-vote="good">👍 ${c?.good_votes||0}</button>
+      <button class="act-btn evil ${vote==='evil'?'on':''}" data-vote="evil">👎 ${c?.evil_votes||0}</button>
+      <button class="act-btn track ${tracked?'on':''}" data-action="track">${tracked?'★':'☆'}</button>
+      <button class="act-btn" data-action="share">⛓</button>
+      <button class="act-btn comment-toggle" data-action="comments">💬</button>
+    </div>
+    <div class="comments-dropdown" data-case="${c?.id || ''}" style="display:none">
+      <div class="comment-form-mini">
+        <input type="text" class="comment-input-mini" placeholder="Add a comment..." maxlength="500">
+        <button class="comment-post-mini">Post</button>
+      </div>
+      <div class="comments-list-mini"><span class="mono" style="color:var(--olive)">Loading...</span></div>
     </div>
   </div>`;
 }
@@ -1071,17 +1093,61 @@ function wireArticles(root){
       const url = `${location.origin}?a=${articleId}`;
       try {
         await navigator.clipboard.writeText(url);
-        btn.textContent = '✓ Copied';
-        setTimeout(() => btn.textContent = '⛓ Share', 2000);
+        btn.textContent = '✓';
+        setTimeout(() => btn.textContent = '⛓', 2000);
       } catch { alert(url); }
     });
   });
 
-  root.querySelectorAll('[data-action="submit"]').forEach(btn => {
-    btn.addEventListener('click', e => {
+  // Comments toggle - load and show/hide dropdown
+  root.querySelectorAll('[data-action="comments"]').forEach(btn => {
+    btn.addEventListener('click', async e => {
       e.stopPropagation();
-      const el = btn.closest('.article');
-      openSubmitModal(el.dataset.article, el.dataset.case);
+      const article = btn.closest('.article');
+      const dropdown = article.querySelector('.comments-dropdown');
+      const caseId = article.dataset.case;
+
+      if(dropdown.style.display === 'none') {
+        dropdown.style.display = 'block';
+        // Load comments for this case
+        if(caseId) {
+          const list = dropdown.querySelector('.comments-list-mini');
+          const { data: comments } = await sb.from('comments')
+            .select('id, body, created_at')
+            .eq('case_id', caseId)
+            .eq('status', 'live')
+            .order('created_at', {ascending: false})
+            .limit(5);
+
+          if(comments?.length) {
+            list.innerHTML = comments.map(c => `
+              <div class="comment-mini">
+                ${esc(c.body)}
+                <div class="meta">${ago(c.created_at)} ago</div>
+              </div>
+            `).join('');
+          } else {
+            list.innerHTML = '<span class="mono" style="color:var(--olive);font-size:11px">No comments yet</span>';
+          }
+        }
+
+        // Wire post button
+        const input = dropdown.querySelector('.comment-input-mini');
+        const postBtn = dropdown.querySelector('.comment-post-mini');
+        postBtn.onclick = async (ev) => {
+          ev.stopPropagation();
+          const body = input.value.trim();
+          if(!body || !USER || !caseId) return;
+          postBtn.textContent = '...';
+          await sb.from('comments').insert({ user_id: USER.id, case_id: caseId, body });
+          input.value = '';
+          postBtn.textContent = 'Post';
+          // Reload comments
+          btn.click(); btn.click(); // toggle off then on to refresh
+        };
+      } else {
+        dropdown.style.display = 'none';
+      }
     });
   });
 }
