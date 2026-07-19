@@ -490,7 +490,13 @@ let ALL_CASES = [], TOP_SUBJECTS = [], ACTIVE_TAG = null, SORT_BY = 'newest';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ago = d => { const s=(Date.now()-new Date(d))/1e3;
   if(s<3600) return `${Math.max(1,s/60|0)}m`; if(s<86400) return `${s/3600|0}h`; return `${s/86400|0}d`; };
-const fmtDate = d => new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric'});
+const fmtDate = d => {
+  const date = new Date(d);
+  const now = new Date();
+  const opts = {month:'short', day:'numeric'};
+  if (date.getFullYear() !== now.getFullYear()) opts.year = '2-digit';
+  return date.toLocaleDateString('en-US', opts);
+};
 
 // Theme
 function setTheme(t){
@@ -904,7 +910,6 @@ function articleCard(a, c){
     <div class="article-inner">
       <div class="article-stamp-col">
         <div class="article-stamp">
-          <div class="label">ARTICLE</div>
           <div class="date">${fmtDate(articleDate)}</div>
           <div class="src">${esc(domain)}</div>
         </div>
