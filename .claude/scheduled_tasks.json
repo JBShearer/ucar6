@@ -1,0 +1,15 @@
+{
+  "tasks": [
+    {
+      "id": "dd0be9ca",
+      "cron": "*/15 * * * *",
+      "prompt": "Run the local extraction script to process any promoted prospects via Hyperspace:\n```\ncd \"/Users/I530341/Documents/Evil Brain Production/ucar6_1\" && node scripts/local_extract.mjs\n```\nReport how many were extracted.",
+      "createdAt": 1784383797179,
+      "lastFiredAt": 1784426796791,
+      "recurring": true,
+      "createdBySessionId": "c38a1f86-5409-491f-a58d-c364f4a0434e",
+      "createdByPid": 21737,
+      "createdByProcStart": "Wed Jul 15 01:32:44 2026"
+    }
+  ]
+}

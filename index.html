@@ -185,6 +185,10 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .comment-mini:last-child{border-bottom:none}
 .comment-mini .meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--olive);margin-top:4px}
 
+/* Comment badge */
+.act-btn .badge{display:inline-block;background:var(--stamp);color:var(--paper);font-size:10px;
+  padding:1px 5px;border-radius:8px;margin-left:4px;font-family:'IBM Plex Mono',monospace;vertical-align:middle}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    CASE CARDS - The docket folders
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -841,11 +845,11 @@ function articleCard(a, c){
       <button class="act-btn evil ${vote==='evil'?'on':''}" data-vote="evil">👎 ${c?.evil_votes||0}</button>
       <button class="act-btn track ${tracked?'on':''}" data-action="track">${tracked?'★ Tracked':'☆ Track'}</button>
       <button class="act-btn" data-action="share">⛓ Share</button>
-      <button class="act-btn" data-action="comments">💬</button>
+      <button class="act-btn" data-action="comments">💬${c?.comment_count ? `<span class="badge">${c.comment_count}</span>` : ''}</button>
     </div>
-    <div class="comments-dropdown" data-case="${c?.id || ''}" style="display:none">
+    <div class="comments-dropdown" data-case="${c?.id || ''}" style="display:none" onclick="event.stopPropagation()">
       <div class="comment-form-mini">
-        <input type="text" class="comment-input-mini" placeholder="Add a comment..." maxlength="500">
+        <input type="text" class="comment-input-mini" placeholder="Add a comment..." maxlength="500" onclick="event.stopPropagation()">
         <button class="comment-post-mini">Post</button>
       </div>
       <div class="comments-list-mini"></div>
@@ -1117,6 +1121,7 @@ function wireArticles(root){
   root.querySelectorAll('[data-action="comments"]').forEach(btn => {
     btn.addEventListener('click', async e => {
       e.stopPropagation();
+      e.preventDefault();
       const article = btn.closest('.article');
       const dropdown = article.querySelector('.comments-dropdown');
       const caseId = article.dataset.case;
@@ -1126,12 +1131,19 @@ function wireArticles(root){
         if(caseId) {
           const list = dropdown.querySelector('.comments-list-mini');
           list.innerHTML = '<span class="mono" style="color:var(--olive)">Loading...</span>';
-          const { data: comments } = await sb.from('comments')
-            .select('id, body, created_at')
+          const { data: comments, count } = await sb.from('comments')
+            .select('id, body, created_at', { count: 'exact' })
             .eq('case_id', caseId)
             .eq('status', 'live')
             .order('created_at', {ascending: false})
             .limit(5);
+
+          // Update badge with count
+          const badge = btn.querySelector('.badge');
+          if(count > 0) {
+            if(badge) badge.textContent = count;
+            else btn.innerHTML = `💬<span class="badge">${count}</span>`;
+          }
 
           if(comments?.length) {
             list.innerHTML = comments.map(c => `
@@ -1148,6 +1160,12 @@ function wireArticles(root){
         // Wire post button
         const input = dropdown.querySelector('.comment-input-mini');
         const postBtn = dropdown.querySelector('.comment-post-mini');
+
+        // Stop propagation on input focus/click
+        input.addEventListener('click', e => e.stopPropagation());
+        input.addEventListener('focus', e => e.stopPropagation());
+        input.addEventListener('mousedown', e => e.stopPropagation());
+
         postBtn.onclick = async (ev) => {
           ev.stopPropagation();
           const body = input.value.trim();

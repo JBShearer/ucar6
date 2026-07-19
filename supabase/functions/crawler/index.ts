@@ -82,6 +82,21 @@ async function fetchText(url: string, timeoutMs = 15000): Promise<string> {
   } finally { clearTimeout(t); }
 }
 
+// ---------------------------------------------------------------- og:image extraction
+function extractOgImage(html: string): string | null {
+  // Try og:image first
+  const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
+    || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+  if (ogMatch) return ogMatch[1];
+
+  // Fallback to twitter:image
+  const twMatch = html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)
+    || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*name=["']twitter:image["']/i);
+  if (twMatch) return twMatch[1];
+
+  return null;
+}
+
 // ---------------------------------------------------------------- stages
 async function discover(): Promise<number> {
   const cutoff = new Date(Date.now() - 50 * 60 * 1000).toISOString();
@@ -124,8 +139,10 @@ async function fetchAndScore(max: number): Promise<{ fetched: number; promoted: 
       if (text.length < 500) throw new Error("too little text");
       const s = score(`${p.title} ${text.slice(0, 4000)}`);
       const status = s >= PROMOTE_THRESHOLD ? "promoted" : "rejected";
+      const ogImage = extractOgImage(html);
       await sb.from("prospects").update({
         status, score: s, raw_text: status === "promoted" ? text : null,
+        og_image: ogImage,
         updated_at: new Date().toISOString(),
       }).eq("id", p.id);
       fetched++;

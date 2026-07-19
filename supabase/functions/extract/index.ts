@@ -203,7 +203,7 @@ function renderTitle(verb: string, objectClass: string | null, instrument: strin
   return `${head.toUpperCase()} · WITH ${instrument.toUpperCase()}`;
 }
 
-async function processOne(p: { id: string; url: string; raw_text: string }) {
+async function processOne(p: { id: string; url: string; raw_text: string; og_image?: string | null }) {
   const extracted = await callClaude(p.raw_text);
   if (!extracted) {
     await sb.from("prospects").update({ status: "error", error: "unparseable LLM output", updated_at: new Date().toISOString() }).eq("id", p.id);
@@ -256,6 +256,7 @@ async function processOne(p: { id: string; url: string; raw_text: string }) {
     source_url: p.url,
     source_domain: sourceDomain,
     domain: contextDomain,
+    image_url: p.og_image ?? null,
     status: "live",
     embedding: filingVec,
   }, { onConflict: "source_url", ignoreDuplicates: true });
@@ -299,7 +300,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const max = Math.min(Number(body.max) || 5, 10);
   const { data: batch } = await sb.from("prospects")
-    .select("id, url, raw_text")
+    .select("id, url, raw_text, og_image")
     .eq("status", "promoted")
     .order("discovered_at", { ascending: true })
     .limit(max);
