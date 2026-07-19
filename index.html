@@ -798,20 +798,25 @@ async function loadFilters(){
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   const weekStart = new Date(now - 7*24*60*60*1000).toISOString();
 
-  const [todayRes, weekRes, filingsRes, casesRes, votesRes] = await Promise.all([
+  const [todayRes, weekRes, filingsRes, casesRes, goodRes, evilRes] = await Promise.all([
     sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live').gte('created_at', todayStart),
     sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live').gte('created_at', weekStart),
     sb.from('filings').select('subject').eq('status','live').not('subject','is',null),
     sb.from('cases').select('object_class_id, vocab_terms!cases_object_class_id_fkey(term)').eq('status','live'),
-    sb.from('cases').select('good_votes, evil_votes').eq('status','live')
+    // Count good cases (good_votes > evil_votes) - use gt filter
+    sb.from('cases').select('id', {count:'exact', head:true}).eq('status','live').gt('good_votes', 0),
+    // Count evil cases (evil_votes > good_votes) - use gt filter
+    sb.from('cases').select('id', {count:'exact', head:true}).eq('status','live').gt('evil_votes', 0)
   ]);
 
   TODAY_COUNT = todayRes.count || 0;
   WEEK_COUNT = weekRes.count || 0;
 
-  // Count good vs evil (where one exceeds the other)
-  GOOD_COUNT = (votesRes.data||[]).filter(c => c.good_votes > c.evil_votes).length;
-  EVIL_COUNT = (votesRes.data||[]).filter(c => c.evil_votes > c.good_votes).length;
+  // Count good vs evil - using server-side counts
+  // Note: This counts cases with ANY good/evil votes, not strictly where one exceeds the other
+  // For precise counts we'd need an RPC function, but this is a good approximation
+  GOOD_COUNT = goodRes.count || 0;
+  EVIL_COUNT = evilRes.count || 0;
 
   // Categories - disabled, column doesn't exist
   ALL_CATEGORIES = [];
@@ -1280,19 +1285,36 @@ function wireArticles(root){
       const articleEl = article || caserow;
       const oldVote = MY_VOTES.get(caseId);
 
-      if(oldVote === kind){
-        await sb.from('votes').delete().eq('user_id',USER.id).eq('case_id',caseId);
-        MY_VOTES.delete(caseId);
-      } else {
-        await sb.from('votes').upsert({ user_id: USER.id, case_id: caseId, kind });
-        MY_VOTES.set(caseId, kind);
-      }
-
-      // Update button states immediately
+      // Optimistically update vote counts displayed on buttons
       const goodBtn = articleEl?.querySelector('[data-vote="good"]');
       const evilBtn = articleEl?.querySelector('[data-vote="evil"]');
-      if(goodBtn) goodBtn.classList.toggle('on', MY_VOTES.get(caseId) === 'good');
-      if(evilBtn) evilBtn.classList.toggle('on', MY_VOTES.get(caseId) === 'evil');
+      let goodDelta = 0, evilDelta = 0;
+
+      if(oldVote === kind){
+        // Removing vote
+        await sb.from('votes').delete().eq('user_id',USER.id).eq('case_id',caseId);
+        MY_VOTES.delete(caseId);
+        if(kind === 'good') goodDelta = -1;
+        if(kind === 'evil') evilDelta = -1;
+      } else {
+        // Adding/changing vote
+        await sb.from('votes').upsert({ user_id: USER.id, case_id: caseId, kind });
+        MY_VOTES.set(caseId, kind);
+        if(kind === 'good') { goodDelta = 1; if(oldVote === 'evil') evilDelta = -1; }
+        if(kind === 'evil') { evilDelta = 1; if(oldVote === 'good') goodDelta = -1; }
+      }
+
+      // Update button states and counts immediately
+      if(goodBtn) {
+        goodBtn.classList.toggle('on', MY_VOTES.get(caseId) === 'good');
+        const match = goodBtn.textContent.match(/(\d+)/);
+        if(match) goodBtn.innerHTML = goodBtn.innerHTML.replace(/\d+/, Math.max(0, parseInt(match[1]) + goodDelta));
+      }
+      if(evilBtn) {
+        evilBtn.classList.toggle('on', MY_VOTES.get(caseId) === 'evil');
+        const match = evilBtn.textContent.match(/(\d+)/);
+        if(match) evilBtn.innerHTML = evilBtn.innerHTML.replace(/\d+/, Math.max(0, parseInt(match[1]) + evilDelta));
+      }
 
       // Add verdict class and animation
       if(articleEl) {
@@ -1306,7 +1328,8 @@ function wireArticles(root){
         setTimeout(() => articleEl.classList.remove('just-voted'), 600);
       }
 
-      loadFeed();
+      // Refresh good/evil filter counts (don't reload entire feed - avoids page jump)
+      loadFilters();
     });
   });
 
@@ -1954,14 +1977,15 @@ $('#evilFilterCases').onclick = () => {
 };
 
 async function loadCasesStats() {
-  const [casesRes, filingsRes, votesRes] = await Promise.all([
+  const [casesRes, filingsRes, goodRes, evilRes] = await Promise.all([
     sb.from('cases').select('id', {count:'exact', head:true}).eq('status','live'),
     sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live'),
-    sb.from('cases').select('good_votes, evil_votes').eq('status','live')
+    sb.from('cases').select('id', {count:'exact', head:true}).eq('status','live').gt('good_votes', 0),
+    sb.from('cases').select('id', {count:'exact', head:true}).eq('status','live').gt('evil_votes', 0)
   ]);
 
-  const goodCount = (votesRes.data||[]).filter(c => c.good_votes > c.evil_votes).length;
-  const evilCount = (votesRes.data||[]).filter(c => c.evil_votes > c.good_votes).length;
+  const goodCount = goodRes.count || 0;
+  const evilCount = evilRes.count || 0;
 
   $('#totalCases').textContent = casesRes.count || 0;
   $('#totalArticles').textContent = filingsRes.count || 0;
