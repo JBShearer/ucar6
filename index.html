@@ -798,13 +798,12 @@ async function loadFilters(){
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   const weekStart = new Date(now - 7*24*60*60*1000).toISOString();
 
-  const [todayRes, weekRes, filingsRes, casesRes, votesRes, catsRes] = await Promise.all([
+  const [todayRes, weekRes, filingsRes, casesRes, votesRes] = await Promise.all([
     sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live').gte('created_at', todayStart),
     sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live').gte('created_at', weekStart),
     sb.from('filings').select('subject').eq('status','live').not('subject','is',null),
     sb.from('cases').select('object_class_id, vocab_terms!cases_object_class_id_fkey(term)').eq('status','live'),
-    sb.from('cases').select('good_votes, evil_votes').eq('status','live'),
-    sb.from('cases').select('category').eq('status','live').not('category','is',null)
+    sb.from('cases').select('good_votes, evil_votes').eq('status','live')
   ]);
 
   TODAY_COUNT = todayRes.count || 0;
@@ -814,10 +813,8 @@ async function loadFilters(){
   GOOD_COUNT = (votesRes.data||[]).filter(c => c.good_votes > c.evil_votes).length;
   EVIL_COUNT = (votesRes.data||[]).filter(c => c.evil_votes > c.good_votes).length;
 
-  // Categories
-  const catCounts = {};
-  (catsRes.data||[]).forEach(c => { if(c.category) catCounts[c.category] = (catCounts[c.category]||0)+1; });
-  ALL_CATEGORIES = Object.entries(catCounts).sort((a,b)=>b[1]-a[1]);
+  // Categories - disabled, column doesn't exist
+  ALL_CATEGORIES = [];
 
   // WHO - companies/subjects
   const subjectCounts = {};
@@ -1156,20 +1153,7 @@ async function loadFeed(append = false){
       }
     }
 
-    // Apply category filter
-    if(ACTIVE_CATEGORY) {
-      const { data: catCases } = await sb.from('cases')
-        .select('id')
-        .eq('status', 'live')
-        .eq('category', ACTIVE_CATEGORY);
-      if(catCases?.length) {
-        query = query.in('case_id', catCases.map(c => c.id));
-      } else {
-        FEED_LOADING = false;
-        feed.innerHTML = `<div class="empty">No articles in ${ACTIVE_CATEGORY}</div>`;
-        return;
-      }
-    }
+    // Category filter disabled - column doesn't exist on cases table
 
     // Apply time filter
     if(TIME_FILTER === 'today') query = query.gte('created_at', todayStart);
@@ -1218,13 +1202,8 @@ async function loadFeed(append = false){
     wireArticles(feed);
   } else {
     let query = sb.from('cases')
-      .select('id, case_number, title_render, filing_count, good_votes, evil_votes, fake_votes, last_filed_at, category')
+      .select('id, case_number, title_render, filing_count, good_votes, evil_votes, fake_votes, last_filed_at')
       .eq('status','live');
-
-    // Apply category filter
-    if(ACTIVE_CATEGORY) {
-      query = query.eq('category', ACTIVE_CATEGORY);
-    }
 
     // Apply sort for cases view
     if(SORT_BY === 'newest') query = query.order('case_number', {ascending: false});
