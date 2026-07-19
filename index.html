@@ -582,8 +582,9 @@ function setTheme(t){
 $('#themeToggle').onclick = () => setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark');
 setTheme(localStorage.getItem('ucar-theme') || 'light');
 
-// My Cases Panel
-$('#myCasesBtn').onclick = () => { $('#myCasesPanel').classList.add('open'); $('#panelOverlay').classList.add('open'); updateMyCasesList(); };
+// My Cases Panel (opened via Cases tab now, but keep panel handlers)
+const myCasesBtn = $('#myCasesBtn');
+if(myCasesBtn) myCasesBtn.onclick = () => { $('#myCasesPanel').classList.add('open'); $('#panelOverlay').classList.add('open'); updateMyCasesList(); };
 $('#closeMyCases').onclick = () => { $('#myCasesPanel').classList.remove('open'); $('#panelOverlay').classList.remove('open'); };
 $('#panelOverlay').onclick = () => { $('#myCasesPanel').classList.remove('open'); $('#panelOverlay').classList.remove('open'); };
 
