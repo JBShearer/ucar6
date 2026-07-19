@@ -144,6 +144,28 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .sort-btn:hover{border-color:var(--ink);color:var(--ink)}
 .sort-btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 
+/* Cases View Header */
+#casesHeader{margin-bottom:20px}
+.docket-stats{display:flex;gap:16px;flex-wrap:wrap;padding:16px;background:var(--card);border:2px solid var(--ink);margin-bottom:16px}
+.docket-stats .stat{font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.05em}
+.docket-stats .stat span{font-size:20px;font-weight:700;margin-right:4px}
+.docket-stats .good-stat{color:var(--good)}
+.docket-stats .evil-stat{color:var(--evil)}
+
+.my-cases-collapsible{margin-bottom:16px}
+.my-cases-toggle{width:100%;display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--case-bg);
+  border:2px solid var(--ink);cursor:pointer;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.08em}
+.my-cases-toggle:hover{background:var(--ink);color:var(--paper)}
+.my-cases-toggle .my-cases-count{background:var(--stamp);color:#fff;padding:2px 8px;border-radius:10px;font-size:11px}
+.my-cases-toggle .arrow{margin-left:auto;transition:transform .2s}
+.my-cases-collapsible.open .my-cases-toggle .arrow{transform:rotate(180deg)}
+.my-cases-list{display:none;border:2px solid var(--ink);border-top:none;padding:12px;background:var(--card);max-height:300px;overflow-y:auto}
+.my-cases-collapsible.open .my-cases-list{display:block}
+.my-cases-list .caserow{margin:8px 0}
+.my-cases-list .empty{color:var(--olive);font-size:13px;padding:20px;text-align:center}
+
+.cases-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+
 /* controls */
 #controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
 #q{flex:1;min-width:220px;border:2px solid var(--ink);background:var(--card);color:var(--ink);padding:10px 12px;
@@ -353,7 +375,6 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
   <div class="hdr-btns">
     <button class="hdr-btn tab on" id="tab-articles">Articles</button>
     <button class="hdr-btn tab" id="tab-cases">Cases</button>
-    <button class="hdr-btn" id="myCasesBtn">☆ My Cases</button>
     <button class="hdr-btn" id="aboutBtn">About</button>
     <button class="hdr-btn" id="themeToggle">☀</button>
     <button class="hdr-btn admin" id="adminBtn" style="display:none">ADMIN</button>
@@ -424,6 +445,34 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
       <button class="sort-btn on" data-sort="newest">Newest</button>
       <button class="sort-btn" data-sort="votes">Most Votes</button>
       <button class="sort-btn" data-sort="trending">Hot</button>
+    </div>
+  </div>
+
+  <!-- Cases View Header -->
+  <div id="casesHeader" style="display:none">
+    <div class="docket-stats">
+      <div class="stat"><span id="totalCases">0</span> Cases</div>
+      <div class="stat"><span id="totalArticles">0</span> Articles</div>
+      <div class="stat good-stat"><span id="totalGood">0</span> 👍 Good</div>
+      <div class="stat evil-stat"><span id="totalEvil">0</span> 👎 Evil</div>
+    </div>
+
+    <div id="myCasesSection" class="my-cases-collapsible">
+      <button class="my-cases-toggle" id="myCasesToggle">
+        <span>★ MY TRACKED CASES</span>
+        <span class="my-cases-count" id="myCasesCount">0</span>
+        <span class="arrow">▼</span>
+      </button>
+      <div class="my-cases-list" id="myCasesInline"></div>
+    </div>
+
+    <div class="cases-filters">
+      <button class="verdict-filter good" id="goodFilterCases">👍 Good <span id="goodNumCases">0</span></button>
+      <button class="verdict-filter evil" id="evilFilterCases">👎 Evil <span id="evilNumCases">0</span></button>
+      <button class="cat-filter" id="catFilterCases">
+        CATEGORY <span class="arrow">▼</span>
+        <div class="cat-dropdown" id="catDropdownCases"></div>
+      </button>
     </div>
   </div>
 
@@ -1885,8 +1934,82 @@ function checkRoute(){
 $('#drawer').onclick = e => { if(e.target.id === 'drawer') $('#drawer').classList.remove('open'); };
 document.onkeydown = e => { if(e.key === 'Escape'){ $('#drawer').classList.remove('open'); $('#submitModal').classList.remove('open'); $('#aboutModal').classList.remove('open'); $('#adminModal').classList.remove('open'); }};
 
-$('#tab-articles').onclick = () => { MODE='articles'; $('#tab-articles').classList.add('on'); $('#tab-cases').classList.remove('on'); loadFeed(); };
-$('#tab-cases').onclick = () => { MODE='cases'; $('#tab-cases').classList.add('on'); $('#tab-articles').classList.remove('on'); loadFeed(); };
+$('#tab-articles').onclick = () => {
+  MODE='articles';
+  $('#tab-articles').classList.add('on');
+  $('#tab-cases').classList.remove('on');
+  $('#filterSection').style.display = 'flex';
+  $('#casesHeader').style.display = 'none';
+  loadFeed();
+};
+$('#tab-cases').onclick = () => {
+  MODE='cases';
+  $('#tab-cases').classList.add('on');
+  $('#tab-articles').classList.remove('on');
+  $('#filterSection').style.display = 'none';
+  $('#casesHeader').style.display = 'block';
+  loadCasesStats();
+  loadFeed();
+};
+
+// My Cases toggle
+$('#myCasesToggle').onclick = () => {
+  $('#myCasesSection').classList.toggle('open');
+  if($('#myCasesSection').classList.contains('open')) {
+    renderMyCasesInline();
+  }
+};
+
+// Cases view filters
+$('#goodFilterCases').onclick = () => {
+  VERDICT_FILTER = VERDICT_FILTER === 'good' ? null : 'good';
+  $('#goodFilterCases').classList.toggle('on', VERDICT_FILTER === 'good');
+  $('#evilFilterCases').classList.toggle('on', VERDICT_FILTER === 'evil');
+  loadFeed();
+};
+$('#evilFilterCases').onclick = () => {
+  VERDICT_FILTER = VERDICT_FILTER === 'evil' ? null : 'evil';
+  $('#goodFilterCases').classList.toggle('on', VERDICT_FILTER === 'good');
+  $('#evilFilterCases').classList.toggle('on', VERDICT_FILTER === 'evil');
+  loadFeed();
+};
+
+async function loadCasesStats() {
+  const [casesRes, filingsRes, votesRes] = await Promise.all([
+    sb.from('cases').select('id', {count:'exact', head:true}).eq('status','live'),
+    sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live'),
+    sb.from('cases').select('good_votes, evil_votes').eq('status','live')
+  ]);
+
+  const goodCount = (votesRes.data||[]).filter(c => c.good_votes > c.evil_votes).length;
+  const evilCount = (votesRes.data||[]).filter(c => c.evil_votes > c.good_votes).length;
+
+  $('#totalCases').textContent = casesRes.count || 0;
+  $('#totalArticles').textContent = filingsRes.count || 0;
+  $('#totalGood').textContent = goodCount;
+  $('#totalEvil').textContent = evilCount;
+  $('#goodNumCases').textContent = goodCount;
+  $('#evilNumCases').textContent = evilCount;
+  $('#myCasesCount').textContent = MY_TRACKS.size;
+}
+
+async function renderMyCasesInline() {
+  const container = $('#myCasesInline');
+  if(MY_TRACKS.size === 0) {
+    container.innerHTML = '<div class="empty">Track cases to build your file. Click ☆ Track on any article.</div>';
+    return;
+  }
+
+  const { data } = await sb.from('cases')
+    .select('id, case_number, title_render, filing_count, good_votes, evil_votes')
+    .in('id', [...MY_TRACKS])
+    .eq('status', 'live');
+
+  container.innerHTML = (data||[]).map(c => caseCard(c)).join('') || '<div class="empty">No tracked cases found.</div>';
+
+  container.querySelectorAll('.caserow').forEach(el =>
+    el.addEventListener('click', () => openCase(el.dataset.case)));
+}
 
 // Sort buttons
 $$('.sort-btn').forEach(btn => {
