@@ -1095,8 +1095,8 @@ async function loadFeed(append = false){
     if(TIME_FILTER === 'today') query = query.gte('created_at', todayStart);
     else if(TIME_FILTER === 'week') query = query.gte('created_at', weekStart);
 
-    // Apply sort
-    if(SORT_BY === 'newest') query = query.order('created_at', {ascending: false});
+    // Apply sort - use published_at for newest, fall back to created_at
+    if(SORT_BY === 'newest') query = query.order('published_at', {ascending: false, nullsFirst: false});
     else if(SORT_BY === 'votes') query = query.order('cases(good_votes)', {ascending: false, nullsFirst: false});
     else if(SORT_BY === 'activity') query = query.order('cases(filing_count)', {ascending: false, nullsFirst: false});
     else if(SORT_BY === 'trending') query = query.order('cases(last_filed_at)', {ascending: false, nullsFirst: false});
