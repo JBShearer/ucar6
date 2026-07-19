@@ -144,8 +144,31 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .sort-btn:hover{border-color:var(--ink);color:var(--ink)}
 .sort-btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 
-/* Cases View Header */
-#casesHeader{margin-bottom:20px}
+/* Casebook Section */
+.casebook-section{margin-bottom:16px}
+.casebook-toggle{width:100%;display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--case-bg);
+  border:2px solid var(--ink);cursor:pointer;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.06em;
+  box-shadow:3px 3px 0 var(--ink)}
+.casebook-toggle:hover{background:var(--ink);color:var(--paper)}
+.casebook-toggle .casebook-title{font-weight:700}
+.casebook-toggle .casebook-stats{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive);flex:1}
+.casebook-toggle:hover .casebook-stats{color:var(--paper);opacity:.8}
+.casebook-toggle .arrow{transition:transform .2s}
+.casebook-section.open .casebook-toggle .arrow{transform:rotate(180deg)}
+.casebook-content{display:none;border:2px solid var(--ink);border-top:none;background:var(--card);max-height:60vh;overflow-y:auto}
+.casebook-section.open .casebook-content{display:block}
+.casebook-tracked{padding:16px;border-bottom:2px dashed var(--line)}
+.casebook-tracked h4{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.casebook-tracked .tracked-count{background:var(--stamp);color:#fff;padding:2px 8px;border-radius:10px;font-size:10px}
+.casebook-tracked .empty{color:var(--olive);font-size:12px;padding:10px 0}
+#trackedList .caserow{margin:6px 0}
+.casebook-all{padding:16px}
+.casebook-sort{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+#allCasesList .caserow{margin:8px 0}
+.loader{text-align:center;padding:20px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--olive)}
+
+/* Cases View Header - deprecated, keeping for compatibility */
+#casesHeader{margin-bottom:20px;display:none}
 .docket-stats{display:flex;gap:16px;flex-wrap:wrap;padding:16px;background:var(--card);border:2px solid var(--ink);margin-bottom:16px}
 .docket-stats .stat{font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.05em}
 .docket-stats .stat span{font-size:20px;font-weight:700;margin-right:4px}
@@ -372,26 +395,35 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
     <div class="tag">Vote for good AI.<span class="line2"> Report evil AI before it reports you.</span></div>
   </div>
   <div class="hdr-btns">
-    <button class="hdr-btn tab on" id="tab-articles">Articles</button>
-    <button class="hdr-btn tab" id="tab-cases">Cases</button>
     <button class="hdr-btn" id="aboutBtn">About</button>
     <button class="hdr-btn" id="themeToggle">☀</button>
     <button class="hdr-btn admin" id="adminBtn" style="display:none">ADMIN</button>
   </div>
 </header>
 
-<!-- My Cases panel -->
-<div id="panelOverlay"></div>
-<div id="myCasesPanel">
-  <h2>MY CASE FILE <button class="close-btn" id="closeMyCases">×</button></h2>
-  <div class="share-box">
-    <p>Sync your case file to another device:</p>
-    <button class="share-btn" id="showQRCode">📱 Show QR Code</button>
-    <button class="share-btn" id="shareCaseFile">⛓ Copy Link</button>
-    <canvas id="qrCode" width="180" height="180"></canvas>
-    <div id="shareLink" style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;word-break:break-all"></div>
+<!-- Casebook Section (collapsible) -->
+<div id="casebook" class="casebook-section">
+  <button class="casebook-toggle" id="casebookToggle">
+    <span class="casebook-title">📁 CASEBOOK</span>
+    <span class="casebook-stats" id="casebookStats">Loading...</span>
+    <span class="arrow">▼</span>
+  </button>
+  <div class="casebook-content" id="casebookContent">
+    <div class="casebook-tracked" id="casebookTracked">
+      <h4>★ MY TRACKED CASES <span class="tracked-count" id="trackedCount">0</span></h4>
+      <div id="trackedList"></div>
+    </div>
+    <div class="casebook-all">
+      <div class="casebook-sort">
+        <span class="sort-label">Sort:</span>
+        <button class="sort-btn on" data-case-sort="newest">Newest</button>
+        <button class="sort-btn" data-case-sort="votes">Most Votes</button>
+        <button class="sort-btn" data-case-sort="filings">Most Articles</button>
+      </div>
+      <div id="allCasesList"></div>
+      <div id="casesLoader" class="loader" style="display:none">Loading more cases...</div>
+    </div>
   </div>
-  <div id="myCasesList"><p style="color:var(--olive);font-size:12px">Track cases to build your file.</p></div>
 </div>
 
 <!-- About modal -->
@@ -427,18 +459,6 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
     <button class="verdict-filter evil" id="evilFilter">
       <span class="icon">👎</span> EVIL <span class="num" id="evilNum">0</span>
     </button>
-    <button class="cat-filter" id="catFilter">
-      CATEGORY <span class="arrow">▼</span>
-      <div class="cat-dropdown" id="catDropdown"></div>
-    </button>
-    <button class="filter-popup-btn" id="whoBtn">
-      WHO <span class="arrow">▼</span>
-      <div class="filter-dropdown" id="whoDropdown"></div>
-    </button>
-    <button class="filter-popup-btn" id="whomBtn">
-      TO WHOM <span class="arrow">▼</span>
-      <div class="filter-dropdown" id="whomDropdown"></div>
-    </button>
     <div id="sortBar">
       <span class="sort-label">Sort:</span>
       <button class="sort-btn on" data-sort="newest">Newest</button>
@@ -447,36 +467,8 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
     </div>
   </div>
 
-  <!-- Cases View Header -->
-  <div id="casesHeader" style="display:none">
-    <div class="docket-stats">
-      <div class="stat"><span id="totalCases">0</span> Cases</div>
-      <div class="stat"><span id="totalArticles">0</span> Articles</div>
-      <div class="stat good-stat"><span id="totalGood">0</span> 👍 Good</div>
-      <div class="stat evil-stat"><span id="totalEvil">0</span> 👎 Evil</div>
-    </div>
-
-    <div id="myCasesSection" class="my-cases-collapsible">
-      <button class="my-cases-toggle" id="myCasesToggle">
-        <span>★ MY TRACKED CASES</span>
-        <span class="my-cases-count" id="myCasesCount">0</span>
-        <span class="arrow">▼</span>
-      </button>
-      <div class="my-cases-list" id="myCasesInline"></div>
-    </div>
-
-    <div class="cases-filters">
-      <button class="verdict-filter good" id="goodFilterCases">👍 Good <span id="goodNumCases">0</span></button>
-      <button class="verdict-filter evil" id="evilFilterCases">👎 Evil <span id="evilNumCases">0</span></button>
-      <button class="cat-filter" id="catFilterCases">
-        CATEGORY <span class="arrow">▼</span>
-        <div class="cat-dropdown" id="catDropdownCases"></div>
-      </button>
-    </div>
-  </div>
-
   <div id="controls">
-    <input id="q" type="search" placeholder="search cases…" aria-label="Search">
+    <input id="q" type="search" placeholder="search articles…" aria-label="Search">
   </div>
 
   <div id="feed"><div class="empty">Opening the docket…</div></div>
@@ -557,7 +549,8 @@ const ANON_KEY = '__PURGED_SUPABASE_KEY__';
 const sb = createClient(SUPABASE_URL, ANON_KEY);
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
-let USER = null, MODE = 'articles', MY_VOTES = new Map(), MY_TRACKS = new Set();
+let USER = null, MY_VOTES = new Map(), MY_TRACKS = new Set();
+let CASEBOOK_CASES = [], CASEBOOK_OFFSET = 0, CASEBOOK_LOADING = false, CASEBOOK_SORT = 'newest';
 let ALL_CASES = [], TOP_SUBJECTS = [], ACTIVE_TAG = null, SORT_BY = 'newest';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -583,68 +576,97 @@ $('#themeToggle').onclick = () => setTheme(document.body.dataset.theme === 'dark
 setTheme(localStorage.getItem('ucar-theme') || 'light');
 
 // My Cases Panel (opened via Cases tab now, but keep panel handlers)
-const myCasesBtn = $('#myCasesBtn');
-if(myCasesBtn) myCasesBtn.onclick = () => { $('#myCasesPanel').classList.add('open'); $('#panelOverlay').classList.add('open'); updateMyCasesList(); };
-$('#closeMyCases').onclick = () => { $('#myCasesPanel').classList.remove('open'); $('#panelOverlay').classList.remove('open'); };
-$('#panelOverlay').onclick = () => { $('#myCasesPanel').classList.remove('open'); $('#panelOverlay').classList.remove('open'); };
-
-function updateMyCasesList(){
-  const list = $('#myCasesList');
-  if(MY_TRACKS.size === 0){
-    list.innerHTML = '<p style="color:var(--olive);font-size:12px">Track cases to build your file.</p>';
-    return;
+// Casebook toggle
+$('#casebookToggle').onclick = () => {
+  const casebook = $('#casebook');
+  casebook.classList.toggle('open');
+  if(casebook.classList.contains('open')) {
+    loadCasebookStats();
+    loadTrackedCases();
+    if(CASEBOOK_CASES.length === 0) loadMoreCases();
   }
-  const tracked = ALL_CASES.filter(c => MY_TRACKS.has(c.id));
-  list.innerHTML = tracked.map(c => `
-    <div class="my-case" data-case="${c.id}">
-      <div class="num">CASE #${c.case_number}</div>
-      <div class="title">${esc(c.title_render)}</div>
-    </div>
-  `).join('') || '<p style="color:var(--olive);font-size:12px">Loading...</p>';
-  list.querySelectorAll('.my-case').forEach(el => el.onclick = () => {
-    $('#myCasesPanel').classList.remove('open');
-    $('#panelOverlay').classList.remove('open');
-    openCase(el.dataset.case);
-  });
+};
+
+// Casebook sort buttons
+$$('[data-case-sort]').forEach(btn => {
+  btn.onclick = () => {
+    CASEBOOK_SORT = btn.dataset.caseSort;
+    $$('[data-case-sort]').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    CASEBOOK_CASES = [];
+    CASEBOOK_OFFSET = 0;
+    $('#allCasesList').innerHTML = '';
+    loadMoreCases();
+  };
+});
+
+// Casebook infinite scroll
+$('#casebookContent').onscroll = (e) => {
+  const el = e.target;
+  if(el.scrollTop + el.clientHeight >= el.scrollHeight - 100 && !CASEBOOK_LOADING) {
+    loadMoreCases();
+  }
+};
+
+async function loadCasebookStats() {
+  const [casesRes, filingsRes, goodRes, evilRes] = await Promise.all([
+    sb.from('cases').select('id', {count:'exact', head:true}).eq('status','live'),
+    sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live'),
+    sb.from('cases').select('filing_count').eq('status','live').gt('good_votes', 0),
+    sb.from('cases').select('filing_count').eq('status','live').gt('evil_votes', 0)
+  ]);
+  const goodArticles = (goodRes.data || []).reduce((sum, c) => sum + (c.filing_count || 0), 0);
+  const evilArticles = (evilRes.data || []).reduce((sum, c) => sum + (c.filing_count || 0), 0);
+  $('#casebookStats').textContent = `${filingsRes.count || 0} articles · ${casesRes.count || 0} cases · ${MY_TRACKS.size} tracked`;
+  $('#trackedCount').textContent = MY_TRACKS.size;
 }
 
-// Share case file - copy link
-$('#shareCaseFile').onclick = () => {
-  const ids = [...MY_TRACKS];
-  if(ids.length === 0){ $('#shareLink').textContent = 'Track some cases first!'; return; }
-  const code = btoa(JSON.stringify(ids)).replace(/=/g,'');
-  const url = `${location.origin}?import=${code}`;
-  navigator.clipboard.writeText(url).then(() => {
-    $('#shareLink').innerHTML = `<span style="color:var(--good)">✓ Link copied!</span>`;
-  }).catch(() => {
-    $('#shareLink').textContent = url;
-  });
-};
-
-// Share case file - QR code
-$('#showQRCode').onclick = () => {
-  const ids = [...MY_TRACKS];
-  if(ids.length === 0){ $('#shareLink').textContent = 'Track some cases first!'; return; }
-  const code = btoa(JSON.stringify(ids)).replace(/=/g,'');
-  const url = `${location.origin}?import=${code}`;
-
-  const canvas = $('#qrCode');
-  canvas.classList.add('show');
-  generateQR(canvas, url);
-  $('#shareLink').innerHTML = `<span style="color:var(--olive)">Scan with your phone camera</span>`;
-};
-
-// Simple QR code generator (uses canvas)
-function generateQR(canvas, text) {
-  // Use a lightweight QR library loaded from CDN
-  if(!window.QRCode) {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
-    script.onload = () => QRCode.toCanvas(canvas, text, { width: 180, margin: 2 });
-    document.head.appendChild(script);
-  } else {
-    QRCode.toCanvas(canvas, text, { width: 180, margin: 2 });
+async function loadTrackedCases() {
+  const container = $('#trackedList');
+  if(MY_TRACKS.size === 0) {
+    container.innerHTML = '<div class="empty">Click ☆ Track on articles to build your case file.</div>';
+    return;
   }
+  const { data } = await sb.from('cases')
+    .select('id, case_number, title_render, filing_count, good_votes, evil_votes')
+    .in('id', [...MY_TRACKS])
+    .eq('status', 'live');
+  container.innerHTML = (data||[]).map(c => caseCard(c)).join('') || '<div class="empty">No tracked cases found.</div>';
+  container.querySelectorAll('.caserow').forEach(el =>
+    el.addEventListener('click', () => openCase(el.dataset.case)));
+}
+
+async function loadMoreCases() {
+  if(CASEBOOK_LOADING) return;
+  CASEBOOK_LOADING = true;
+  $('#casesLoader').style.display = 'block';
+
+  let query = sb.from('cases')
+    .select('id, case_number, title_render, filing_count, good_votes, evil_votes, last_filed_at')
+    .eq('status', 'live');
+
+  if(CASEBOOK_SORT === 'newest') query = query.order('last_filed_at', {ascending: false});
+  else if(CASEBOOK_SORT === 'votes') query = query.order('good_votes', {ascending: false});
+  else if(CASEBOOK_SORT === 'filings') query = query.order('filing_count', {ascending: false});
+
+  const { data } = await query.range(CASEBOOK_OFFSET, CASEBOOK_OFFSET + 19);
+
+  if(data && data.length > 0) {
+    CASEBOOK_CASES.push(...data);
+    CASEBOOK_OFFSET += data.length;
+    const container = $('#allCasesList');
+    data.forEach(c => {
+      const div = document.createElement('div');
+      div.innerHTML = caseCard(c);
+      const row = div.firstElementChild;
+      row.addEventListener('click', () => openCase(c.id));
+      container.appendChild(row);
+    });
+  }
+
+  $('#casesLoader').style.display = 'none';
+  CASEBOOK_LOADING = false;
+}
 }
 
 // Import shared case file
@@ -785,53 +807,22 @@ async function boot(){
   loadFeed();
 }
 
-// Filter state - WHO, TO WHOM popups + verdict + category filters
-let ALL_COMPANIES = [], ALL_OBJECTS = [], TODAY_COUNT = 0, WEEK_COUNT = 0;
-let ACTIVE_WHO = null, ACTIVE_WHOM = null, TIME_FILTER = null; // 'today' | 'week' | null
+// Filter state
+let TODAY_COUNT = 0, WEEK_COUNT = 0;
 let VERDICT_FILTER = null; // 'good' | 'evil' | null
-let ACTIVE_CATEGORY = null;
 let GOOD_COUNT = 0, EVIL_COUNT = 0;
-let ALL_CATEGORIES = [];
 
 async function loadFilters(){
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const weekStart = new Date(now - 7*24*60*60*1000).toISOString();
-
-  const [todayRes, weekRes, filingsRes, casesRes, goodCasesRes, evilCasesRes] = await Promise.all([
-    sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live').gte('created_at', todayStart),
-    sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live').gte('created_at', weekStart),
-    sb.from('filings').select('subject').eq('status','live').not('subject','is',null),
-    sb.from('cases').select('object_class_id, vocab_terms!cases_object_class_id_fkey(term)').eq('status','live'),
+  const [goodCasesRes, evilCasesRes] = await Promise.all([
     // Get cases with good_votes > 0 and sum their filing counts
     sb.from('cases').select('filing_count').eq('status','live').gt('good_votes', 0),
     // Get cases with evil_votes > 0 and sum their filing counts
     sb.from('cases').select('filing_count').eq('status','live').gt('evil_votes', 0)
   ]);
 
-  TODAY_COUNT = todayRes.count || 0;
-  WEEK_COUNT = weekRes.count || 0;
-
   // Count articles (not cases) with good/evil votes - sum filing_count for voted cases
   GOOD_COUNT = (goodCasesRes.data || []).reduce((sum, c) => sum + (c.filing_count || 0), 0);
   EVIL_COUNT = (evilCasesRes.data || []).reduce((sum, c) => sum + (c.filing_count || 0), 0);
-
-  // Categories - disabled, column doesn't exist
-  ALL_CATEGORIES = [];
-
-  // WHO - companies/subjects
-  const subjectCounts = {};
-  (filingsRes.data||[]).forEach(f => { if(f.subject) subjectCounts[f.subject] = (subjectCounts[f.subject]||0)+1; });
-  ALL_COMPANIES = Object.entries(subjectCounts).sort((a,b)=>b[1]-a[1]);
-
-  // TO WHOM - objects (from cases with vocab join)
-  const objectCounts = {};
-  (casesRes.data||[]).forEach(c => {
-    // Supabase JS client returns nested object as 'vocab_terms' not with full FK path
-    const obj = c.vocab_terms?.term;
-    if(obj) objectCounts[obj] = (objectCounts[obj]||0)+1;
-  });
-  ALL_OBJECTS = Object.entries(objectCounts).sort((a,b)=>b[1]-a[1]);
 
   renderFilters();
   wireFilterEvents();
@@ -845,48 +836,6 @@ function renderFilters(){
   // Good/Evil button states
   $('#goodFilter').classList.toggle('on', VERDICT_FILTER === 'good');
   $('#evilFilter').classList.toggle('on', VERDICT_FILTER === 'evil');
-
-  // Category dropdown
-  const catDropdown = $('#catDropdown');
-  catDropdown.innerHTML = ALL_CATEGORIES.map(([name, count]) =>
-    `<div class="cat-item ${ACTIVE_CATEGORY===name?'on':''}" data-cat="${esc(name)}">
-      ${esc(name)} <span class="count">${count}</span>
-    </div>`
-  ).join('') || '<div class="cat-item" style="color:var(--olive)">No categories yet</div>';
-
-  // Category button state
-  $('#catFilter').classList.toggle('on', !!ACTIVE_CATEGORY);
-  const catBadge = ACTIVE_CATEGORY ? `<span class="badge" style="background:var(--stamp);color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;margin-left:4px">${esc(ACTIVE_CATEGORY)}</span>` : '';
-  $('#catFilter').innerHTML = `CATEGORY ${catBadge}<span class="arrow">▼</span><div class="cat-dropdown" id="catDropdown">${catDropdown.innerHTML}</div>`;
-
-  // WHO dropdown
-  const whoDropdown = $('#whoDropdown');
-  whoDropdown.innerHTML = ALL_COMPANIES.map(([name, count]) =>
-    `<div class="filter-item ${ACTIVE_WHO===name?'on':''}" data-who="${esc(name)}">
-      ${esc(name)} <span class="count">${count}</span>
-    </div>`
-  ).join('') || '<div class="filter-item" style="color:var(--olive)">No companies yet</div>';
-
-  // TO WHOM dropdown
-  const whomDropdown = $('#whomDropdown');
-  whomDropdown.innerHTML = ALL_OBJECTS.map(([name, count]) =>
-    `<div class="filter-item ${ACTIVE_WHOM===name?'on':''}" data-whom="${esc(name)}">
-      ${esc(name)} <span class="count">${count}</span>
-    </div>`
-  ).join('') || '<div class="filter-item" style="color:var(--olive)">No objects yet</div>';
-
-  // Update button states
-  $('#whoBtn').classList.toggle('active', !!ACTIVE_WHO);
-  $('#whomBtn').classList.toggle('active', !!ACTIVE_WHOM);
-
-  // Add badges for active filters
-  const whoBadge = ACTIVE_WHO ? `<span class="badge">${esc(ACTIVE_WHO)}</span>` : '';
-  $('#whoBtn').innerHTML = `WHO ${whoBadge}<span class="arrow">▼</span><div class="filter-dropdown" id="whoDropdown">${whoDropdown.innerHTML}</div>`;
-
-  const whomBadge = ACTIVE_WHOM ? `<span class="badge">${esc(ACTIVE_WHOM)}</span>` : '';
-  $('#whomBtn').innerHTML = `TO WHOM ${whomBadge}<span class="arrow">▼</span><div class="filter-dropdown" id="whomDropdown">${whomDropdown.innerHTML}</div>`;
-
-  wireDropdownClicks();
 }
 
 function wireFilterEvents(){
@@ -901,74 +850,6 @@ function wireFilterEvents(){
     renderFilters();
     loadFeed();
   };
-
-  // Category filter
-  $('#catFilter').onclick = (e) => {
-    if(e.target.closest('.cat-dropdown')) return;
-    e.stopPropagation();
-    closeAllDropdowns();
-    $('#catFilter').classList.toggle('open');
-  };
-
-  // Popup toggles
-  $('#whoBtn').onclick = (e) => {
-    if(e.target.closest('.filter-dropdown')) return;
-    e.stopPropagation();
-    closeAllDropdowns();
-    $('#whoBtn').classList.toggle('open');
-    $('#whoDropdown').classList.toggle('open');
-  };
-  $('#whomBtn').onclick = (e) => {
-    if(e.target.closest('.filter-dropdown')) return;
-    e.stopPropagation();
-    closeAllDropdowns();
-    $('#whomBtn').classList.toggle('open');
-    $('#whomDropdown').classList.toggle('open');
-  };
-
-  // Close dropdowns on outside click
-  document.addEventListener('click', closeAllDropdowns);
-}
-
-function wireDropdownClicks(){
-  // WHO items
-  $$('#whoDropdown .filter-item[data-who]').forEach(el => {
-    el.onclick = (e) => {
-      e.stopPropagation();
-      ACTIVE_WHO = ACTIVE_WHO === el.dataset.who ? null : el.dataset.who;
-      ACTIVE_TAG = ACTIVE_WHO; // For compatibility with existing feed filter
-      closeAllDropdowns();
-      renderFilters();
-      loadFeed();
-    };
-  });
-  // TO WHOM items
-  $$('#whomDropdown .filter-item[data-whom]').forEach(el => {
-    el.onclick = (e) => {
-      e.stopPropagation();
-      ACTIVE_WHOM = ACTIVE_WHOM === el.dataset.whom ? null : el.dataset.whom;
-      ACTIVE_TAG = ACTIVE_WHOM; // For compatibility
-      closeAllDropdowns();
-      renderFilters();
-      loadFeed();
-    };
-  });
-  // Category items
-  $$('#catDropdown .cat-item[data-cat]').forEach(el => {
-    el.onclick = (e) => {
-      e.stopPropagation();
-      ACTIVE_CATEGORY = ACTIVE_CATEGORY === el.dataset.cat ? null : el.dataset.cat;
-      closeAllDropdowns();
-      renderFilters();
-      loadFeed();
-    };
-  });
-}
-
-function closeAllDropdowns(){
-  $$('.filter-popup-btn').forEach(b => b.classList.remove('open'));
-  $$('.filter-dropdown').forEach(d => d.classList.remove('open'));
-  $$('.cat-filter').forEach(b => b.classList.remove('open'));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1047,7 +928,7 @@ let FEED_HAS_MORE = true;
 let FEED_DATA = []; // cached data for client-side filtering
 
 async function loadFeed(append = false){
-  console.log('loadFeed called, FEED_LOADING:', FEED_LOADING, 'MODE:', MODE, 'ACTIVE_WHOM:', ACTIVE_WHOM);
+  console.log('loadFeed called, FEED_LOADING:', FEED_LOADING);
   if(FEED_LOADING) return;
   if(append && !FEED_HAS_MORE) return;
 
@@ -1083,63 +964,23 @@ async function loadFeed(append = false){
 
   FEED_LOADING = true;
 
-  if(MODE === 'articles'){
-    // If TO WHOM filter is active, get the case IDs first
-    let caseIdsForWhom = null;
-    if(ACTIVE_WHOM) {
-      console.log('TO WHOM filter active:', ACTIVE_WHOM, 'lowercase:', ACTIVE_WHOM.toLowerCase());
-      // Get vocab term ID for the object class
-      const { data: vocabData, error: vocabErr } = await sb.from('vocab_terms')
-        .select('id, term')
-        .eq('kind', 'object_class')
-        .eq('term', ACTIVE_WHOM.toLowerCase())
-        .limit(1);
-      console.log('Vocab lookup result:', vocabData, 'error:', vocabErr);
+  // Articles feed
+  let query = sb.from('filings')
+    .select('*, cases(id, case_number, title_render, good_votes, evil_votes, fake_votes, filing_count, last_filed_at, object_class_id, vocab_terms!cases_object_class_id_fkey(term))')
+    .eq('status','live');
 
-      if(vocabData?.length) {
-        // Get all case IDs with this object class
-        const { data: casesData, error: casesErr } = await sb.from('cases')
-          .select('id')
-          .eq('object_class_id', vocabData[0].id)
-          .eq('status', 'live');
-        console.log('Cases with object:', casesData, casesErr);
-        caseIdsForWhom = casesData?.map(c => c.id) || [];
-      } else {
-        caseIdsForWhom = []; // No matching vocab term
-      }
-      console.log('Case IDs for whom:', caseIdsForWhom);
-    }
-
-    let query = sb.from('filings')
-      .select('*, cases(id, case_number, title_render, good_votes, evil_votes, fake_votes, filing_count, last_filed_at, object_class_id, vocab_terms!cases_object_class_id_fkey(term))')
-      .eq('status','live');
-
-    // Apply TO WHOM filter server-side
-    if(caseIdsForWhom !== null) {
-      if(caseIdsForWhom.length === 0) {
-        // No cases match - return empty
-        FEED_LOADING = false;
-        feed.innerHTML = `<div class="empty">No articles for ${ACTIVE_WHOM}</div>`;
-        return;
-      }
-      query = query.in('case_id', caseIdsForWhom);
-    }
-
-    // Apply WHO filter (company/subject)
-    if(ACTIVE_WHO) query = query.ilike('subject', `%${ACTIVE_WHO}%`);
-
-    // Apply verdict filter (good vs evil) - filter cases with votes in that direction
-    if(VERDICT_FILTER === 'good') {
-      // Get case IDs where good_votes > 0
-      const { data: goodCases } = await sb.from('cases')
-        .select('id')
-        .eq('status', 'live')
-        .gt('good_votes', 0);
-      if(goodCases?.length) {
-        query = query.in('case_id', goodCases.map(c => c.id));
-      } else {
-        FEED_LOADING = false;
-        feed.innerHTML = '<div class="empty">No good AI cases yet. Vote some up!</div>';
+  // Apply verdict filter (good vs evil) - filter cases with votes in that direction
+  if(VERDICT_FILTER === 'good') {
+    // Get case IDs where good_votes > 0
+    const { data: goodCases } = await sb.from('cases')
+      .select('id')
+      .eq('status', 'live')
+      .gt('good_votes', 0);
+    if(goodCases?.length) {
+      query = query.in('case_id', goodCases.map(c => c.id));
+    } else {
+      FEED_LOADING = false;
+      feed.innerHTML = '<div class="empty">No good AI cases yet. Vote some up!</div>';
         return;
       }
     } else if(VERDICT_FILTER === 'evil') {
@@ -1156,12 +997,6 @@ async function loadFeed(append = false){
         return;
       }
     }
-
-    // Category filter disabled - column doesn't exist on cases table
-
-    // Apply time filter
-    if(TIME_FILTER === 'today') query = query.gte('created_at', todayStart);
-    else if(TIME_FILTER === 'week') query = query.gte('created_at', weekStart);
 
     // Apply sort - use published_at for newest, fall back to created_at
     if(SORT_BY === 'newest') query = query.order('published_at', {ascending: false, nullsFirst: false});
@@ -1185,7 +1020,7 @@ async function loadFeed(append = false){
 
     FEED_DATA = append ? [...FEED_DATA, ...(data||[])] : (data||[]);
 
-    const filterDesc = [ACTIVE_WHO, ACTIVE_WHOM, TIME_FILTER === 'today' ? 'today' : TIME_FILTER === 'week' ? 'this week' : null].filter(Boolean).join(', ');
+    const filterDesc = VERDICT_FILTER ? (VERDICT_FILTER === 'good' ? 'good AI cases' : 'evil AI cases') : null;
 
     if(append) {
       // Remove loading indicator and append new items
@@ -1944,91 +1779,13 @@ function checkRoute(){
 }
 
 $('#drawer').onclick = e => { if(e.target.id === 'drawer') $('#drawer').classList.remove('open'); };
-document.onkeydown = e => { if(e.key === 'Escape'){ $('#drawer').classList.remove('open'); $('#submitModal').classList.remove('open'); $('#aboutModal').classList.remove('open'); $('#adminModal').classList.remove('open'); }};
+document.onkeydown = e => { if(e.key === 'Escape'){ $('#drawer').classList.remove('open'); $('#submitModal').classList.remove('open'); $('#aboutModal').classList.remove('open'); $('#adminModal').classList.remove('open'); $('#casebook').classList.remove('open'); }};
 
-$('#tab-articles').onclick = () => {
-  MODE='articles';
-  $('#tab-articles').classList.add('on');
-  $('#tab-cases').classList.remove('on');
-  $('#filterSection').style.display = 'flex';
-  $('#casesHeader').style.display = 'none';
-  loadFeed();
-};
-$('#tab-cases').onclick = () => {
-  MODE='cases';
-  $('#tab-cases').classList.add('on');
-  $('#tab-articles').classList.remove('on');
-  $('#filterSection').style.display = 'none';
-  $('#casesHeader').style.display = 'block';
-  loadCasesStats();
-  loadFeed();
-};
-
-// My Cases toggle
-$('#myCasesToggle').onclick = () => {
-  $('#myCasesSection').classList.toggle('open');
-  if($('#myCasesSection').classList.contains('open')) {
-    renderMyCasesInline();
-  }
-};
-
-// Cases view filters
-$('#goodFilterCases').onclick = () => {
-  VERDICT_FILTER = VERDICT_FILTER === 'good' ? null : 'good';
-  $('#goodFilterCases').classList.toggle('on', VERDICT_FILTER === 'good');
-  $('#evilFilterCases').classList.toggle('on', VERDICT_FILTER === 'evil');
-  loadFeed();
-};
-$('#evilFilterCases').onclick = () => {
-  VERDICT_FILTER = VERDICT_FILTER === 'evil' ? null : 'evil';
-  $('#goodFilterCases').classList.toggle('on', VERDICT_FILTER === 'good');
-  $('#evilFilterCases').classList.toggle('on', VERDICT_FILTER === 'evil');
-  loadFeed();
-};
-
-async function loadCasesStats() {
-  const [casesRes, filingsRes, goodRes, evilRes] = await Promise.all([
-    sb.from('cases').select('id', {count:'exact', head:true}).eq('status','live'),
-    sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live'),
-    sb.from('cases').select('id', {count:'exact', head:true}).eq('status','live').gt('good_votes', 0),
-    sb.from('cases').select('id', {count:'exact', head:true}).eq('status','live').gt('evil_votes', 0)
-  ]);
-
-  const goodCount = goodRes.count || 0;
-  const evilCount = evilRes.count || 0;
-
-  $('#totalCases').textContent = casesRes.count || 0;
-  $('#totalArticles').textContent = filingsRes.count || 0;
-  $('#totalGood').textContent = goodCount;
-  $('#totalEvil').textContent = evilCount;
-  $('#goodNumCases').textContent = goodCount;
-  $('#evilNumCases').textContent = evilCount;
-  $('#myCasesCount').textContent = MY_TRACKS.size;
-}
-
-async function renderMyCasesInline() {
-  const container = $('#myCasesInline');
-  if(MY_TRACKS.size === 0) {
-    container.innerHTML = '<div class="empty">Track cases to build your file. Click ☆ Track on any article.</div>';
-    return;
-  }
-
-  const { data } = await sb.from('cases')
-    .select('id, case_number, title_render, filing_count, good_votes, evil_votes')
-    .in('id', [...MY_TRACKS])
-    .eq('status', 'live');
-
-  container.innerHTML = (data||[]).map(c => caseCard(c)).join('') || '<div class="empty">No tracked cases found.</div>';
-
-  container.querySelectorAll('.caserow').forEach(el =>
-    el.addEventListener('click', () => openCase(el.dataset.case)));
-}
-
-// Sort buttons
-$$('.sort-btn').forEach(btn => {
+// Sort buttons (for article feed)
+$$('.sort-btn[data-sort]').forEach(btn => {
   btn.onclick = () => {
     SORT_BY = btn.dataset.sort;
-    $$('.sort-btn').forEach(b => b.classList.remove('on'));
+    $$('.sort-btn[data-sort]').forEach(b => b.classList.remove('on'));
     btn.classList.add('on');
     loadFeed();
   };
