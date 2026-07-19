@@ -230,10 +230,12 @@ main{max-width:920px;margin:0 auto;padding:16px}
 
 /* Case rows in list view */
 .caserow{border:2px solid var(--ink);background:var(--case-bg);margin:10px 0;padding:14px 16px;
-  cursor:pointer;position:relative;box-shadow:3px 3px 0 var(--ink)}
+  cursor:pointer;position:relative;box-shadow:3px 3px 0 var(--ink);display:flex;justify-content:space-between;align-items:center}
 .caserow::before{content:'';position:absolute;top:-8px;left:16px;width:50px;height:8px;
   background:var(--case-tab);border:2px solid var(--ink);border-bottom:none;border-radius:3px 3px 0 0}
 .caserow:hover{box-shadow:4px 4px 0 var(--stamp)}
+.caserow .case-main{flex:1}
+.caserow .case-actions{display:flex;gap:6px;flex-shrink:0}
 .caserow .num{font-family:'Oswald',sans-serif;color:var(--stamp);font-weight:700;font-size:12px;letter-spacing:.1em}
 .caserow .t{font-family:'Oswald',sans-serif;font-size:15px;text-transform:uppercase;margin:4px 0}
 .caserow .c{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive)}
@@ -951,9 +953,15 @@ function caseCard(c){
   const tracked = MY_TRACKS.has(c.id);
 
   return `<div class="caserow" data-case="${c.id}">
-    <div class="num">CASE #${c.case_number}</div>
-    <div class="t">${esc(c.title_render)}</div>
-    <div class="c">${c.filing_count} article${c.filing_count===1?'':'s'} · ${c.good_votes} good / ${c.evil_votes} evil</div>
+    <div class="case-main">
+      <div class="num">CASE #${c.case_number}</div>
+      <div class="t">${esc(c.title_render)}</div>
+      <div class="c">${c.filing_count} article${c.filing_count===1?'':'s'}</div>
+    </div>
+    <div class="case-actions">
+      <button class="act-btn good ${vote==='good'?'on':''}" data-vote="good" onclick="event.stopPropagation()">👍 ${c.good_votes||0}</button>
+      <button class="act-btn evil ${vote==='evil'?'on':''}" data-vote="evil" onclick="event.stopPropagation()">👎 ${c.evil_votes||0}</button>
+    </div>
   </div>`;
 }
 
@@ -1181,7 +1189,11 @@ async function loadFeed(append = false){
     }
 
     feed.querySelectorAll('.caserow').forEach(el =>
-      el.addEventListener('click', () => openCase(el.dataset.case)));
+      el.addEventListener('click', e => {
+        if(e.target.closest('.case-actions')) return;
+        openCase(el.dataset.case);
+      }));
+    wireArticles(feed);  // Wire vote buttons on case cards too
   }
 
   FEED_LOADING = false;
@@ -1212,7 +1224,9 @@ function wireArticles(root){
   root.querySelectorAll('[data-vote]').forEach(btn => {
     btn.addEventListener('click', async e => {
       e.stopPropagation();
-      const caseId = btn.closest('.article').dataset.case;
+      const article = btn.closest('.article');
+      const caserow = btn.closest('.caserow');
+      const caseId = article?.dataset.case || caserow?.dataset.case;
       const kind = btn.dataset.vote;
       if(!USER || !caseId) return;
 
