@@ -798,25 +798,23 @@ async function loadFilters(){
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   const weekStart = new Date(now - 7*24*60*60*1000).toISOString();
 
-  const [todayRes, weekRes, filingsRes, casesRes, goodRes, evilRes] = await Promise.all([
+  const [todayRes, weekRes, filingsRes, casesRes, goodCasesRes, evilCasesRes] = await Promise.all([
     sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live').gte('created_at', todayStart),
     sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live').gte('created_at', weekStart),
     sb.from('filings').select('subject').eq('status','live').not('subject','is',null),
     sb.from('cases').select('object_class_id, vocab_terms!cases_object_class_id_fkey(term)').eq('status','live'),
-    // Count good cases (good_votes > evil_votes) - use gt filter
-    sb.from('cases').select('id', {count:'exact', head:true}).eq('status','live').gt('good_votes', 0),
-    // Count evil cases (evil_votes > good_votes) - use gt filter
-    sb.from('cases').select('id', {count:'exact', head:true}).eq('status','live').gt('evil_votes', 0)
+    // Get cases with good_votes > 0 and sum their filing counts
+    sb.from('cases').select('filing_count').eq('status','live').gt('good_votes', 0),
+    // Get cases with evil_votes > 0 and sum their filing counts
+    sb.from('cases').select('filing_count').eq('status','live').gt('evil_votes', 0)
   ]);
 
   TODAY_COUNT = todayRes.count || 0;
   WEEK_COUNT = weekRes.count || 0;
 
-  // Count good vs evil - using server-side counts
-  // Note: This counts cases with ANY good/evil votes, not strictly where one exceeds the other
-  // For precise counts we'd need an RPC function, but this is a good approximation
-  GOOD_COUNT = goodRes.count || 0;
-  EVIL_COUNT = evilRes.count || 0;
+  // Count articles (not cases) with good/evil votes - sum filing_count for voted cases
+  GOOD_COUNT = (goodCasesRes.data || []).reduce((sum, c) => sum + (c.filing_count || 0), 0);
+  EVIL_COUNT = (evilCasesRes.data || []).reduce((sum, c) => sum + (c.filing_count || 0), 0);
 
   // Categories - disabled, column doesn't exist
   ALL_CATEGORIES = [];
