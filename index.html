@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Use Case Arms Race · Build the case for AI</title>
+<title>Use Case Arms Race · Vote for Good AI. Report Evil AI.</title>
 <meta name="description" content="A public docket of AI deployments. Every use case is a case. Every news article is evidence.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Archivo:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -110,6 +110,32 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .time-filter:hover{border-color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
 .time-filter.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .time-filter .num{font-weight:700;margin-right:4px}
+
+/* Good/Evil filter buttons */
+.verdict-filter{background:var(--card);border:2px solid var(--line);padding:8px 14px;cursor:pointer;
+  font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.05em;box-shadow:2px 2px 0 var(--line);
+  display:flex;align-items:center;gap:6px}
+.verdict-filter:hover{border-color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.verdict-filter.on{border-color:var(--ink)}
+.verdict-filter.good.on{background:var(--good);color:#fff;border-color:var(--good)}
+.verdict-filter.evil.on{background:var(--evil);color:#fff;border-color:var(--evil)}
+.verdict-filter .num{font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:11px}
+.verdict-filter .icon{font-size:14px}
+
+/* Category filter */
+.cat-filter{background:var(--card);border:2px solid var(--line);padding:8px 14px;cursor:pointer;
+  font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.05em;box-shadow:2px 2px 0 var(--line);position:relative}
+.cat-filter:hover{border-color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.cat-filter.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.cat-filter .arrow{font-size:10px;margin-left:6px}
+.cat-dropdown{position:absolute;top:100%;left:0;background:var(--card);border:2px solid var(--ink);
+  min-width:200px;max-height:300px;overflow-y:auto;z-index:100;display:none;box-shadow:3px 3px 0 var(--ink)}
+.cat-filter.open .cat-dropdown{display:block}
+.cat-dropdown .cat-item{display:flex;align-items:center;padding:8px 12px;cursor:pointer;font-size:13px;
+  font-family:'Archivo',sans-serif;border-bottom:1px solid var(--line)}
+.cat-dropdown .cat-item:hover{background:var(--paper)}
+.cat-dropdown .cat-item.on{background:var(--stamp);color:#fff}
+.cat-dropdown .cat-item .count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.7}
 
 #sortBar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-left:auto}
 .sort-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive)}
@@ -295,7 +321,7 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
 <header>
   <div class="brand">
     <h1>USE CASE ARMS RACE<span> →</span></h1>
-    <div class="tag">Build the case for good AI.<span class="line2"> Report bad AI before it reports you.</span></div>
+    <div class="tag">Vote for good AI.<span class="line2"> Report evil AI before it reports you.</span></div>
   </div>
   <div class="hdr-btns">
     <button class="hdr-btn tab on" id="tab-articles">Articles</button>
@@ -348,6 +374,16 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
 
 <main>
   <div id="filterSection">
+    <button class="verdict-filter good" id="goodFilter">
+      <span class="icon">👍</span> GOOD <span class="num" id="goodNum">0</span>
+    </button>
+    <button class="verdict-filter evil" id="evilFilter">
+      <span class="icon">👎</span> EVIL <span class="num" id="evilNum">0</span>
+    </button>
+    <button class="cat-filter" id="catFilter">
+      CATEGORY <span class="arrow">▼</span>
+      <div class="cat-dropdown" id="catDropdown"></div>
+    </button>
     <button class="filter-popup-btn" id="whoBtn">
       WHO <span class="arrow">▼</span>
       <div class="filter-dropdown" id="whoDropdown"></div>
@@ -355,12 +391,6 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
     <button class="filter-popup-btn" id="whomBtn">
       TO WHOM <span class="arrow">▼</span>
       <div class="filter-dropdown" id="whomDropdown"></div>
-    </button>
-    <button class="time-filter" id="todayFilter">
-      <span class="num" id="todayNum">0</span> Today
-    </button>
-    <button class="time-filter" id="weekFilter">
-      <span class="num" id="weekNum">0</span> This Week
     </button>
     <div id="sortBar">
       <span class="sort-label">Sort:</span>
@@ -379,7 +409,7 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
 </main>
 
 <footer>
-  Use Case Arms Race · Build the case for good AI
+  Use Case Arms Race · Vote for good AI. Report evil AI before it reports you.
 </footer>
 
 <div id="drawer" role="dialog" aria-modal="true">
@@ -673,24 +703,39 @@ async function boot(){
   loadFeed();
 }
 
-// Filter state - WHO, TO WHOM popups + time filters
+// Filter state - WHO, TO WHOM popups + verdict + category filters
 let ALL_COMPANIES = [], ALL_OBJECTS = [], TODAY_COUNT = 0, WEEK_COUNT = 0;
 let ACTIVE_WHO = null, ACTIVE_WHOM = null, TIME_FILTER = null; // 'today' | 'week' | null
+let VERDICT_FILTER = null; // 'good' | 'evil' | null
+let ACTIVE_CATEGORY = null;
+let GOOD_COUNT = 0, EVIL_COUNT = 0;
+let ALL_CATEGORIES = [];
 
 async function loadFilters(){
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   const weekStart = new Date(now - 7*24*60*60*1000).toISOString();
 
-  const [todayRes, weekRes, filingsRes, casesRes] = await Promise.all([
+  const [todayRes, weekRes, filingsRes, casesRes, votesRes, catsRes] = await Promise.all([
     sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live').gte('created_at', todayStart),
     sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live').gte('created_at', weekStart),
     sb.from('filings').select('subject').eq('status','live').not('subject','is',null),
-    sb.from('cases').select('object_class_id, vocab_terms!cases_object_class_id_fkey(term)').eq('status','live')
+    sb.from('cases').select('object_class_id, vocab_terms!cases_object_class_id_fkey(term)').eq('status','live'),
+    sb.from('cases').select('good_votes, evil_votes').eq('status','live'),
+    sb.from('cases').select('category').eq('status','live').not('category','is',null)
   ]);
 
   TODAY_COUNT = todayRes.count || 0;
   WEEK_COUNT = weekRes.count || 0;
+
+  // Count good vs evil (where one exceeds the other)
+  GOOD_COUNT = (votesRes.data||[]).filter(c => c.good_votes > c.evil_votes).length;
+  EVIL_COUNT = (votesRes.data||[]).filter(c => c.evil_votes > c.good_votes).length;
+
+  // Categories
+  const catCounts = {};
+  (catsRes.data||[]).forEach(c => { if(c.category) catCounts[c.category] = (catCounts[c.category]||0)+1; });
+  ALL_CATEGORIES = Object.entries(catCounts).sort((a,b)=>b[1]-a[1]);
 
   // WHO - companies/subjects
   const subjectCounts = {};
@@ -711,9 +756,26 @@ async function loadFilters(){
 }
 
 function renderFilters(){
-  // Update counts
-  $('#todayNum').textContent = TODAY_COUNT;
-  $('#weekNum').textContent = WEEK_COUNT;
+  // Update good/evil counts
+  $('#goodNum').textContent = GOOD_COUNT;
+  $('#evilNum').textContent = EVIL_COUNT;
+
+  // Good/Evil button states
+  $('#goodFilter').classList.toggle('on', VERDICT_FILTER === 'good');
+  $('#evilFilter').classList.toggle('on', VERDICT_FILTER === 'evil');
+
+  // Category dropdown
+  const catDropdown = $('#catDropdown');
+  catDropdown.innerHTML = ALL_CATEGORIES.map(([name, count]) =>
+    `<div class="cat-item ${ACTIVE_CATEGORY===name?'on':''}" data-cat="${esc(name)}">
+      ${esc(name)} <span class="count">${count}</span>
+    </div>`
+  ).join('') || '<div class="cat-item" style="color:var(--olive)">No categories yet</div>';
+
+  // Category button state
+  $('#catFilter').classList.toggle('on', !!ACTIVE_CATEGORY);
+  const catBadge = ACTIVE_CATEGORY ? `<span class="badge" style="background:var(--stamp);color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;margin-left:4px">${esc(ACTIVE_CATEGORY)}</span>` : '';
+  $('#catFilter').innerHTML = `CATEGORY ${catBadge}<span class="arrow">▼</span><div class="cat-dropdown" id="catDropdown">${catDropdown.innerHTML}</div>`;
 
   // WHO dropdown
   const whoDropdown = $('#whoDropdown');
@@ -734,8 +796,6 @@ function renderFilters(){
   // Update button states
   $('#whoBtn').classList.toggle('active', !!ACTIVE_WHO);
   $('#whomBtn').classList.toggle('active', !!ACTIVE_WHOM);
-  $('#todayFilter').classList.toggle('on', TIME_FILTER === 'today');
-  $('#weekFilter').classList.toggle('on', TIME_FILTER === 'week');
 
   // Add badges for active filters
   const whoBadge = ACTIVE_WHO ? `<span class="badge">${esc(ACTIVE_WHO)}</span>` : '';
@@ -748,6 +808,26 @@ function renderFilters(){
 }
 
 function wireFilterEvents(){
+  // Good/Evil verdict filters
+  $('#goodFilter').onclick = () => {
+    VERDICT_FILTER = VERDICT_FILTER === 'good' ? null : 'good';
+    renderFilters();
+    loadFeed();
+  };
+  $('#evilFilter').onclick = () => {
+    VERDICT_FILTER = VERDICT_FILTER === 'evil' ? null : 'evil';
+    renderFilters();
+    loadFeed();
+  };
+
+  // Category filter
+  $('#catFilter').onclick = (e) => {
+    if(e.target.closest('.cat-dropdown')) return;
+    e.stopPropagation();
+    closeAllDropdowns();
+    $('#catFilter').classList.toggle('open');
+  };
+
   // Popup toggles
   $('#whoBtn').onclick = (e) => {
     if(e.target.closest('.filter-dropdown')) return;
@@ -762,18 +842,6 @@ function wireFilterEvents(){
     closeAllDropdowns();
     $('#whomBtn').classList.toggle('open');
     $('#whomDropdown').classList.toggle('open');
-  };
-
-  // Time filters
-  $('#todayFilter').onclick = () => {
-    TIME_FILTER = TIME_FILTER === 'today' ? null : 'today';
-    renderFilters();
-    loadFeed();
-  };
-  $('#weekFilter').onclick = () => {
-    TIME_FILTER = TIME_FILTER === 'week' ? null : 'week';
-    renderFilters();
-    loadFeed();
   };
 
   // Close dropdowns on outside click
@@ -803,11 +871,22 @@ function wireDropdownClicks(){
       loadFeed();
     };
   });
+  // Category items
+  $$('#catDropdown .cat-item[data-cat]').forEach(el => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      ACTIVE_CATEGORY = ACTIVE_CATEGORY === el.dataset.cat ? null : el.dataset.cat;
+      closeAllDropdowns();
+      renderFilters();
+      loadFeed();
+    };
+  });
 }
 
 function closeAllDropdowns(){
   $$('.filter-popup-btn').forEach(b => b.classList.remove('open'));
   $$('.filter-dropdown').forEach(d => d.classList.remove('open'));
+  $$('.cat-filter').forEach(b => b.classList.remove('open'));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -962,6 +1041,49 @@ async function loadFeed(append = false){
     // Apply WHO filter (company/subject)
     if(ACTIVE_WHO) query = query.ilike('subject', `%${ACTIVE_WHO}%`);
 
+    // Apply verdict filter (good vs evil)
+    if(VERDICT_FILTER === 'good') {
+      // Get case IDs where good > evil
+      const { data: allCases } = await sb.from('cases')
+        .select('id, good_votes, evil_votes')
+        .eq('status', 'live');
+      const goodCases = (allCases||[]).filter(c => c.good_votes > c.evil_votes);
+      if(goodCases.length) {
+        query = query.in('case_id', goodCases.map(c => c.id));
+      } else {
+        FEED_LOADING = false;
+        feed.innerHTML = '<div class="empty">No good AI cases yet. Vote some up!</div>';
+        return;
+      }
+    } else if(VERDICT_FILTER === 'evil') {
+      const { data: allCases } = await sb.from('cases')
+        .select('id, good_votes, evil_votes')
+        .eq('status', 'live');
+      const evilCases = (allCases||[]).filter(c => c.evil_votes > c.good_votes);
+      if(evilCases.length) {
+        query = query.in('case_id', evilCases.map(c => c.id));
+      } else {
+        FEED_LOADING = false;
+        feed.innerHTML = '<div class="empty">No evil AI cases yet. Report some!</div>';
+        return;
+      }
+    }
+
+    // Apply category filter
+    if(ACTIVE_CATEGORY) {
+      const { data: catCases } = await sb.from('cases')
+        .select('id')
+        .eq('status', 'live')
+        .eq('category', ACTIVE_CATEGORY);
+      if(catCases?.length) {
+        query = query.in('case_id', catCases.map(c => c.id));
+      } else {
+        FEED_LOADING = false;
+        feed.innerHTML = `<div class="empty">No articles in ${ACTIVE_CATEGORY}</div>`;
+        return;
+      }
+    }
+
     // Apply time filter
     if(TIME_FILTER === 'today') query = query.gte('created_at', todayStart);
     else if(TIME_FILTER === 'week') query = query.gte('created_at', weekStart);
@@ -1009,9 +1131,13 @@ async function loadFeed(append = false){
     wireArticles(feed);
   } else {
     let query = sb.from('cases')
-      .select('id, case_number, title_render, filing_count, good_votes, evil_votes, fake_votes, last_filed_at')
-      .eq('status','live')
-      .range(FEED_OFFSET, FEED_OFFSET + PAGE_SIZE - 1);
+      .select('id, case_number, title_render, filing_count, good_votes, evil_votes, fake_votes, last_filed_at, category')
+      .eq('status','live');
+
+    // Apply category filter
+    if(ACTIVE_CATEGORY) {
+      query = query.eq('category', ACTIVE_CATEGORY);
+    }
 
     // Apply sort for cases view
     if(SORT_BY === 'newest') query = query.order('case_number', {ascending: false});
@@ -1019,7 +1145,16 @@ async function loadFeed(append = false){
     else if(SORT_BY === 'activity') query = query.order('filing_count', {ascending: false});
     else if(SORT_BY === 'trending') query = query.order('last_filed_at', {ascending: false, nullsFirst: false});
 
-    const { data } = await query;
+    query = query.range(FEED_OFFSET, FEED_OFFSET + PAGE_SIZE - 1);
+
+    let { data } = await query;
+
+    // Apply verdict filter client-side (Supabase can't compare columns easily)
+    if(VERDICT_FILTER === 'good') {
+      data = (data||[]).filter(c => c.good_votes > c.evil_votes);
+    } else if(VERDICT_FILTER === 'evil') {
+      data = (data||[]).filter(c => c.evil_votes > c.good_votes);
+    }
 
     FEED_HAS_MORE = data && data.length === PAGE_SIZE;
     FEED_OFFSET += data?.length || 0;
