@@ -1305,6 +1305,17 @@ function wireArticles(root){
         if(kind === 'evil') { evilDelta = 1; if(oldVote === 'good') goodDelta = -1; }
       }
 
+      // Update case vote counts in DB (increment/decrement columns directly)
+      if(goodDelta !== 0 || evilDelta !== 0) {
+        const { data: current } = await sb.from('cases').select('good_votes, evil_votes').eq('id', caseId).single();
+        if(current) {
+          await sb.from('cases').update({
+            good_votes: Math.max(0, (current.good_votes || 0) + goodDelta),
+            evil_votes: Math.max(0, (current.evil_votes || 0) + evilDelta)
+          }).eq('id', caseId);
+        }
+      }
+
       // Update button states and counts immediately
       if(goodBtn) {
         goodBtn.classList.toggle('on', MY_VOTES.get(caseId) === 'good');
