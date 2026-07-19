@@ -493,8 +493,10 @@ const ago = d => { const s=(Date.now()-new Date(d))/1e3;
 const fmtDate = d => {
   const date = new Date(d);
   const now = new Date();
+  const daysDiff = (now - date) / (1000 * 60 * 60 * 24);
   const opts = {month:'short', day:'numeric'};
-  if (date.getFullYear() !== now.getFullYear()) opts.year = '2-digit';
+  // Show year if article is older than 60 days or from a different year
+  if (daysDiff > 60 || date.getFullYear() !== now.getFullYear()) opts.year = '2-digit';
   return date.toLocaleDateString('en-US', opts);
 };
 
