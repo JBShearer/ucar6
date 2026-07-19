@@ -1130,14 +1130,14 @@ async function loadFeed(append = false){
     // Apply WHO filter (company/subject)
     if(ACTIVE_WHO) query = query.ilike('subject', `%${ACTIVE_WHO}%`);
 
-    // Apply verdict filter (good vs evil)
+    // Apply verdict filter (good vs evil) - filter cases with votes in that direction
     if(VERDICT_FILTER === 'good') {
-      // Get case IDs where good > evil
-      const { data: allCases } = await sb.from('cases')
-        .select('id, good_votes, evil_votes')
-        .eq('status', 'live');
-      const goodCases = (allCases||[]).filter(c => c.good_votes > c.evil_votes);
-      if(goodCases.length) {
+      // Get case IDs where good_votes > 0
+      const { data: goodCases } = await sb.from('cases')
+        .select('id')
+        .eq('status', 'live')
+        .gt('good_votes', 0);
+      if(goodCases?.length) {
         query = query.in('case_id', goodCases.map(c => c.id));
       } else {
         FEED_LOADING = false;
@@ -1145,11 +1145,12 @@ async function loadFeed(append = false){
         return;
       }
     } else if(VERDICT_FILTER === 'evil') {
-      const { data: allCases } = await sb.from('cases')
-        .select('id, good_votes, evil_votes')
-        .eq('status', 'live');
-      const evilCases = (allCases||[]).filter(c => c.evil_votes > c.good_votes);
-      if(evilCases.length) {
+      // Get case IDs where evil_votes > 0
+      const { data: evilCases } = await sb.from('cases')
+        .select('id')
+        .eq('status', 'live')
+        .gt('evil_votes', 0);
+      if(evilCases?.length) {
         query = query.in('case_id', evilCases.map(c => c.id));
       } else {
         FEED_LOADING = false;
@@ -1211,6 +1212,13 @@ async function loadFeed(append = false){
       .eq('status','live');
 
     // Apply sort for cases view
+    // Apply verdict filter server-side
+    if(VERDICT_FILTER === 'good') {
+      query = query.gt('good_votes', 0);
+    } else if(VERDICT_FILTER === 'evil') {
+      query = query.gt('evil_votes', 0);
+    }
+
     if(SORT_BY === 'newest') query = query.order('case_number', {ascending: false});
     else if(SORT_BY === 'votes') query = query.order('good_votes', {ascending: false});
     else if(SORT_BY === 'activity') query = query.order('filing_count', {ascending: false});
@@ -1219,13 +1227,6 @@ async function loadFeed(append = false){
     query = query.range(FEED_OFFSET, FEED_OFFSET + PAGE_SIZE - 1);
 
     let { data } = await query;
-
-    // Apply verdict filter client-side (Supabase can't compare columns easily)
-    if(VERDICT_FILTER === 'good') {
-      data = (data||[]).filter(c => c.good_votes > c.evil_votes);
-    } else if(VERDICT_FILTER === 'evil') {
-      data = (data||[]).filter(c => c.evil_votes > c.good_votes);
-    }
 
     FEED_HAS_MORE = data && data.length === PAGE_SIZE;
     FEED_OFFSET += data?.length || 0;
@@ -1237,7 +1238,7 @@ async function loadFeed(append = false){
     } else {
       feed.innerHTML = (data?.length)
         ? data.map(c => caseCard(c)).join('')
-        : `<div class="empty">No cases yet.</div>`;
+        : `<div class="empty">${VERDICT_FILTER ? 'No ' + VERDICT_FILTER + ' cases yet.' : 'No cases yet.'}</div>`;
     }
 
     if(FEED_HAS_MORE) {
