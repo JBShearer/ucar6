@@ -157,9 +157,26 @@ main{max-width:920px;margin:0 auto;padding:16px}
    ARTICLE CARDS - Evidence filed into cases
    ═══════════════════════════════════════════════════════════════════════════ */
 .article{background:var(--article-bg);border:1px solid var(--line);margin:12px 0;position:relative;
-  box-shadow:2px 2px 0 var(--line);cursor:pointer}
+  box-shadow:2px 2px 0 var(--line);cursor:pointer;transition:all .3s ease}
 .article:hover{box-shadow:3px 3px 0 var(--stamp)}
 .article-inner{padding:16px 16px 12px;display:grid;grid-template-columns:80px 1fr;gap:14px}
+
+/* Good case styling */
+.article.verdict-good{border-color:var(--good);border-width:2px;background:linear-gradient(135deg, rgba(46,107,63,.05) 0%, var(--article-bg) 100%)}
+.article.verdict-good .article-stamp{background:var(--good)}
+.article.verdict-good:hover{box-shadow:3px 3px 0 var(--good)}
+
+/* Evil case styling */
+.article.verdict-evil{border-color:var(--evil);border-width:2px;background:linear-gradient(135deg, rgba(139,0,0,.05) 0%, var(--article-bg) 100%)}
+.article.verdict-evil .article-stamp{background:var(--evil)}
+.article.verdict-evil:hover{box-shadow:3px 3px 0 var(--evil)}
+
+/* Verdict change animations */
+@keyframes sizzle{0%{transform:scale(1)}25%{transform:scale(1.02) rotate(-1deg)}50%{transform:scale(1) rotate(1deg)}75%{transform:scale(1.01)}100%{transform:scale(1)}}
+@keyframes glow-good{0%{box-shadow:0 0 0 rgba(46,107,63,0)}50%{box-shadow:0 0 20px rgba(46,107,63,.5)}100%{box-shadow:0 0 0 rgba(46,107,63,0)}}
+@keyframes glow-evil{0%{box-shadow:0 0 0 rgba(139,0,0,0)}50%{box-shadow:0 0 20px rgba(139,0,0,.5)}100%{box-shadow:0 0 0 rgba(139,0,0,0)}}
+.article.verdict-good.just-voted{animation:glow-good .6s ease-out}
+.article.verdict-evil.just-voted{animation:sizzle .4s ease-out, glow-evil .6s ease-out}
 
 /* Article thumbnail - below the stamp */
 .article-thumb{width:80px;height:50px;overflow:hidden;border:1px solid var(--line);margin-top:8px}
@@ -230,13 +247,23 @@ main{max-width:920px;margin:0 auto;padding:16px}
 
 /* Case rows in list view */
 .caserow{border:2px solid var(--ink);background:var(--case-bg);margin:10px 0;padding:14px 16px;
-  cursor:pointer;position:relative;box-shadow:3px 3px 0 var(--ink)}
+  cursor:pointer;position:relative;box-shadow:3px 3px 0 var(--ink);transition:all .3s ease}
 .caserow::before{content:'';position:absolute;top:-8px;left:16px;width:50px;height:8px;
   background:var(--case-tab);border:2px solid var(--ink);border-bottom:none;border-radius:3px 3px 0 0}
 .caserow:hover{box-shadow:4px 4px 0 var(--stamp)}
 .caserow .num{font-family:'Oswald',sans-serif;color:var(--stamp);font-weight:700;font-size:12px;letter-spacing:.1em}
 .caserow .t{font-family:'Oswald',sans-serif;font-size:15px;text-transform:uppercase;margin:4px 0}
 .caserow .c{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive)}
+
+/* Good/Evil case styling */
+.caserow.verdict-good{border-color:var(--good);background:linear-gradient(135deg, rgba(46,107,63,.08) 0%, var(--case-bg) 100%)}
+.caserow.verdict-good::before{background:var(--good)}
+.caserow.verdict-good:hover{box-shadow:4px 4px 0 var(--good)}
+.caserow.verdict-good .num{color:var(--good)}
+.caserow.verdict-evil{border-color:var(--evil);background:linear-gradient(135deg, rgba(139,0,0,.08) 0%, var(--case-bg) 100%)}
+.caserow.verdict-evil::before{background:var(--evil)}
+.caserow.verdict-evil:hover{box-shadow:4px 4px 0 var(--evil)}
+.caserow.verdict-evil .num{color:var(--evil)}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    DRAWER PANEL
@@ -396,8 +423,7 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
       <span class="sort-label">Sort:</span>
       <button class="sort-btn on" data-sort="newest">Newest</button>
       <button class="sort-btn" data-sort="votes">Most Votes</button>
-      <button class="sort-btn" data-sort="activity">Activity</button>
-      <button class="sort-btn" data-sort="trending">Trending</button>
+      <button class="sort-btn" data-sort="trending">Hot</button>
     </div>
   </div>
 
@@ -905,9 +931,14 @@ function articleCard(a, c){
   const domain = a.source_domain || 'source';
   const articleDate = a.published_at || a.created_at;
 
+  // Determine case verdict
+  const goodVotes = c?.good_votes || 0;
+  const evilVotes = c?.evil_votes || 0;
+  const verdict = goodVotes > evilVotes ? 'verdict-good' : evilVotes > goodVotes ? 'verdict-evil' : '';
+
   const thumb = a.image_url ? `<div class="article-thumb"><img src="${esc(a.image_url)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : '';
 
-  return `<div class="article" data-article="${a.id}" data-case="${c?.id || ''}">
+  return `<div class="article ${verdict}" data-article="${a.id}" data-case="${c?.id || ''}">
     <div class="article-inner">
       <div class="article-stamp-col">
         <div class="article-stamp">
@@ -948,8 +979,9 @@ function articleCard(a, c){
 function caseCard(c){
   const vote = MY_VOTES.get(c.id);
   const tracked = MY_TRACKS.has(c.id);
+  const verdict = c.good_votes > c.evil_votes ? 'verdict-good' : c.evil_votes > c.good_votes ? 'verdict-evil' : '';
 
-  return `<div class="caserow" data-case="${c.id}">
+  return `<div class="caserow ${verdict}" data-case="${c.id}">
     <div class="num">CASE #${c.case_number}</div>
     <div class="t">${esc(c.title_render)}</div>
     <div class="c">${c.filing_count} article${c.filing_count===1?'':'s'} · ${c.good_votes} 👍 / ${c.evil_votes} 👎</div>
@@ -1217,13 +1249,35 @@ function wireArticles(root){
       const kind = btn.dataset.vote;
       if(!USER || !caseId) return;
 
-      if(MY_VOTES.get(caseId) === kind){
+      const articleEl = article || caserow;
+      const oldVote = MY_VOTES.get(caseId);
+
+      if(oldVote === kind){
         await sb.from('votes').delete().eq('user_id',USER.id).eq('case_id',caseId);
         MY_VOTES.delete(caseId);
       } else {
         await sb.from('votes').upsert({ user_id: USER.id, case_id: caseId, kind });
         MY_VOTES.set(caseId, kind);
       }
+
+      // Update button states immediately
+      const goodBtn = articleEl?.querySelector('[data-vote="good"]');
+      const evilBtn = articleEl?.querySelector('[data-vote="evil"]');
+      if(goodBtn) goodBtn.classList.toggle('on', MY_VOTES.get(caseId) === 'good');
+      if(evilBtn) evilBtn.classList.toggle('on', MY_VOTES.get(caseId) === 'evil');
+
+      // Add verdict class and animation
+      if(articleEl) {
+        const newVote = MY_VOTES.get(caseId);
+        articleEl.classList.remove('verdict-good', 'verdict-evil', 'just-voted');
+        if(newVote === 'good') {
+          articleEl.classList.add('verdict-good', 'just-voted');
+        } else if(newVote === 'evil') {
+          articleEl.classList.add('verdict-evil', 'just-voted');
+        }
+        setTimeout(() => articleEl.classList.remove('just-voted'), 600);
+      }
+
       loadFeed();
     });
   });
