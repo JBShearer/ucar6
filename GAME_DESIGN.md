@@ -4,6 +4,163 @@
 
 ---
 
+## 0. STORY BIBLE & EPISODE INTEGRATION
+
+### Living Canon
+The game world evolves through two sources:
+1. **Real AI cases** extracted from the news (the docket)
+2. **Daily Show episodes** with embedded story beats (the canon)
+
+### Episode Metadata Structure
+When uploading a new Daily Show episode, include story beats that become part of the ongoing narrative:
+
+```json
+{
+  "episode_number": 42,
+  "air_date": "2026-07-20",
+  "case_id": "uuid-of-featured-case",
+  "tiktok_url": "https://tiktok.com/@usecasearmsrace/video/...",
+  
+  "story_beats": [
+    {
+      "type": "lore",
+      "content": "GI Intelligence was offline for maintenance during recording",
+      "characters": ["gi_intelligence"],
+      "canon_weight": "minor"
+    },
+    {
+      "type": "event", 
+      "content": "Jason received a mysterious package - USB drive labeled 'PROOF'",
+      "characters": ["jason", "wendy_whistleblower"],
+      "triggers_quest": "usb_investigation",
+      "canon_weight": "major"
+    },
+    {
+      "type": "dialogue",
+      "speaker": "jason",
+      "content": "Today's case hits different. I used to think this was science fiction.",
+      "mood": "contemplative",
+      "canon_weight": "flavor"
+    },
+    {
+      "type": "world_state",
+      "content": "Evil Brain stock price mentioned: $4,847/share",
+      "data": { "eb_stock": 4847 },
+      "canon_weight": "detail"
+    },
+    {
+      "type": "character_intro",
+      "character": "penny_press",
+      "content": "First mention of underground journalist investigating Evil Brain",
+      "unlocks_character": true,
+      "canon_weight": "major"
+    },
+    {
+      "type": "foreshadowing",
+      "content": "Jason mentioned 'March 17th' - the singularity date",
+      "connects_to": ["singularity_reveal", "diana_timeline"],
+      "canon_weight": "seed"
+    }
+  ],
+  
+  "ambient_dialogue": [
+    "GI kept yelling about 'optimization metrics' off-camera today.",
+    "Artificial Gary brought Jason coffee. Unprompted. Again.",
+    "The lights flickered during recording. Superintelligence apologized."
+  ],
+  
+  "items_referenced": ["usb_encrypted", "press_badge_fake"],
+  "characters_present": ["jason", "gi_intelligence", "artificial_gary"],
+  "location": "undisclosed_broadcast_studio"
+}
+```
+
+### Canon Weight Levels
+- **major**: Changes game state, unlocks quests, introduces characters
+- **minor**: Adds flavor, referenced in dialogue, no mechanical effect
+- **detail**: World-building data (prices, dates, names)
+- **flavor**: Atmosphere, mood, throwaway lines
+- **seed**: Foreshadowing for future content
+
+### How Story Beats Propagate
+
+1. **Episode uploaded** → story_beats stored in `episodes` table
+2. **Extraction runs** → checks recent episodes for quest triggers
+3. **Game checks** → pulls relevant beats for current player state
+4. **NPCs reference** → dialogue can cite "what happened on Episode 42"
+5. **Easter eggs** → comment system can quote episode dialogue
+
+### Example: Beat Becomes Quest
+
+**Episode 42 beat:**
+```json
+{
+  "type": "event",
+  "content": "Jason received a mysterious package - USB drive labeled 'PROOF'",
+  "triggers_quest": "usb_investigation"
+}
+```
+
+**Generated quest hook (auto or manual):**
+```javascript
+{
+  id: 'usb_investigation',
+  trigger: { episode_beat: 42, type: 'event' },
+  intro: {
+    speaker: 'NARRATOR',
+    text: "You've heard rumors about a USB drive. Jason mentioned it on Episode 42. Wendy might know more...",
+    requires: { character_met: 'wendy_whistleblower' }
+  }
+}
+```
+
+### Supabase Schema Addition
+```sql
+-- Add to episodes table
+ALTER TABLE episodes ADD COLUMN story_beats JSONB DEFAULT '[]';
+ALTER TABLE episodes ADD COLUMN ambient_dialogue TEXT[] DEFAULT '{}';
+ALTER TABLE episodes ADD COLUMN characters_present TEXT[] DEFAULT '{}';
+ALTER TABLE episodes ADD COLUMN items_referenced TEXT[] DEFAULT '{}';
+ALTER TABLE episodes ADD COLUMN location TEXT;
+
+-- Index for quest triggers
+CREATE INDEX idx_episodes_story_beats ON episodes USING GIN (story_beats);
+```
+
+### Episode Admin UI Addition
+The Episode Admin popup (Ctrl+Shift+E) gets a "Story Beats" textarea where you paste JSON or use a simple form:
+
+```
+┌─────────────────────────────────────────┐
+│ 📺 NEW EPISODE                     [×]  │
+├─────────────────────────────────────────┤
+│ TikTok URL: [________________________]  │
+│ Episode #:  [___]  Case ID: [________]  │
+│                                         │
+│ ─── STORY BEATS ───                     │
+│ + Add Beat                              │
+│ ┌─────────────────────────────────────┐ │
+│ │ Type: [lore ▼]  Weight: [minor ▼]  │ │
+│ │ Content: [_______________________] │ │
+│ │ Characters: [jason, gi] [+]        │ │
+│ └─────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────┐ │
+│ │ Type: [event ▼] Weight: [major ▼]  │ │
+│ │ Content: [_______________________] │ │
+│ │ Triggers Quest: [usb_investigation]│ │
+│ └─────────────────────────────────────┘ │
+│                                         │
+│ ─── AMBIENT DIALOGUE ───                │
+│ [GI kept yelling about metrics...    ]  │
+│ [Gary brought coffee. Again.         ]  │
+│ [+]                                     │
+│                                         │
+│        [👁 Preview]  [🚀 Publish]       │
+└─────────────────────────────────────────┘
+```
+
+---
+
 ## 1. PREMISE
 
 ### The World
