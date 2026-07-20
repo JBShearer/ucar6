@@ -144,6 +144,37 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .sort-btn:hover{border-color:var(--ink);color:var(--ink)}
 .sort-btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 
+/* Daily Show Section */
+.daily-show{max-width:920px;margin:0 auto 16px;padding:0 16px}
+.daily-show-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.daily-show-badge{font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;letter-spacing:.08em;
+  background:linear-gradient(135deg,#FF6B6B,#4ECDC4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:shimmer 3s infinite}
+@keyframes shimmer{0%,100%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(30deg)}}
+.daily-show-date{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive)}
+.daily-show-content{background:var(--case-bg);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);
+  padding:20px;display:flex;gap:20px;flex-wrap:wrap;align-items:center}
+.daily-case{flex:1;min-width:250px}
+.daily-case-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.15em;color:var(--olive);margin-bottom:4px}
+.daily-case-title{font-family:'Oswald',sans-serif;font-size:22px;text-transform:uppercase;line-height:1.2;margin:0 0 8px;color:var(--ink)}
+.daily-case-tagline{font-family:'Archivo',sans-serif;font-size:13px;color:var(--olive);margin:0;font-style:italic}
+.daily-share{display:flex;flex-direction:column;gap:8px}
+.daily-share-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--olive)}
+.daily-share-buttons{display:flex;gap:6px}
+.daily-btn{width:40px;height:40px;border:2px solid var(--ink);cursor:pointer;font-size:16px;
+  transition:all .15s;box-shadow:2px 2px 0 var(--ink);display:flex;align-items:center;justify-content:center}
+.daily-btn:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.daily-btn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink)}
+.daily-btn.buffer{background:#231F20;color:#fff;font-size:12px;width:auto;padding:0 12px}
+.daily-btn.linkedin{background:#0A66C2;color:#fff;font-weight:700}
+.daily-btn.tiktok{background:#000;color:#fff}
+.daily-btn.instagram{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff}
+.daily-btn.youtube{background:#FF0000;color:#fff}
+.daily-show-admin{margin-top:10px;display:flex;gap:8px}
+.daily-admin-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 12px;border:1px dashed var(--olive);
+  background:none;color:var(--olive);cursor:pointer}
+.daily-admin-btn:hover{border-style:solid;color:var(--ink)}
+
 /* Casebook Section */
 .casebook-section{margin-bottom:16px;max-width:920px;margin-left:auto;margin-right:auto;padding:0 16px}
 .casebook-toggle{width:100%;display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--case-bg);
@@ -412,6 +443,35 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
   </div>
 </header>
 
+<!-- Daily Show Section -->
+<div id="dailyShow" class="daily-show">
+  <div class="daily-show-header">
+    <div class="daily-show-badge">📺 DAILY SHOW</div>
+    <div class="daily-show-date" id="showDate"></div>
+  </div>
+  <div class="daily-show-content" id="dailyShowContent">
+    <div class="daily-case">
+      <div class="daily-case-label">TODAY'S USE CASE</div>
+      <h2 class="daily-case-title" id="dailyCaseTitle">Loading...</h2>
+      <p class="daily-case-tagline" id="dailyCaseTagline"></p>
+    </div>
+    <div class="daily-share">
+      <div class="daily-share-label">Share the show:</div>
+      <div class="daily-share-buttons">
+        <button class="daily-btn buffer" data-platform="buffer" title="Add to Buffer queue">📅 Buffer</button>
+        <button class="daily-btn linkedin" data-platform="linkedin" title="Share on LinkedIn">in</button>
+        <button class="daily-btn tiktok" data-platform="tiktok" title="Share on TikTok">♪</button>
+        <button class="daily-btn instagram" data-platform="instagram" title="Share on Instagram">📷</button>
+        <button class="daily-btn youtube" data-platform="youtube" title="Share on YouTube">▶</button>
+      </div>
+    </div>
+  </div>
+  <div class="daily-show-admin" id="dailyShowAdmin" style="display:none">
+    <button class="daily-admin-btn" id="pickDailyCase">🎲 Pick Random Case</button>
+    <button class="daily-admin-btn" id="editDailyShow">✏️ Edit Show</button>
+  </div>
+</div>
+
 <!-- Casebook Section (collapsible) -->
 <div id="casebook" class="casebook-section">
   <button class="casebook-toggle" id="casebookToggle">
@@ -607,6 +667,133 @@ function setTheme(t){
 }
 $('#themeToggle').onclick = () => setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark');
 setTheme(localStorage.getItem('ucar-theme') || 'light');
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DAILY SHOW
+// ═══════════════════════════════════════════════════════════════════════════
+let DAILY_CASE = null;
+
+async function loadDailyShow() {
+  const today = new Date().toISOString().split('T')[0];
+  $('#showDate').textContent = new Date().toLocaleDateString('en-US', {weekday:'long', month:'short', day:'numeric'});
+
+  // Try to load today's featured case from localStorage or pick one
+  const stored = localStorage.getItem('ucar-daily-show');
+  let daily = stored ? JSON.parse(stored) : null;
+
+  // If no stored daily or it's from a different day, pick a new one
+  if (!daily || daily.date !== today) {
+    // Pick a random interesting case (has votes, recent activity)
+    const { data } = await sb.from('cases')
+      .select('id, case_number, title_render, filing_count, good_votes, evil_votes')
+      .eq('status', 'live')
+      .gt('filing_count', 0)
+      .order('last_filed_at', { ascending: false })
+      .limit(50);
+
+    if (data && data.length > 0) {
+      const pick = data[Math.floor(Math.random() * Math.min(data.length, 20))];
+      daily = { date: today, caseId: pick.id, case: pick };
+      localStorage.setItem('ucar-daily-show', JSON.stringify(daily));
+    }
+  }
+
+  if (daily?.case) {
+    DAILY_CASE = daily.case;
+    $('#dailyCaseTitle').textContent = daily.case.title_render;
+    $('#dailyCaseTagline').textContent = `Case #${daily.case.case_number} · ${daily.case.filing_count} article${daily.case.filing_count === 1 ? '' : 's'} filed`;
+    $('#dailyShowContent').style.cursor = 'pointer';
+    $('#dailyShowContent').onclick = () => openCase(daily.case.id);
+  } else {
+    $('#dailyCaseTitle').textContent = 'No case selected';
+    $('#dailyCaseTagline').textContent = 'Check back soon!';
+  }
+
+  // Show admin controls if admin
+  if (localStorage.getItem('ucar-admin-key')) {
+    $('#dailyShowAdmin').style.display = 'flex';
+  }
+}
+
+// Daily Show share buttons
+$$('.daily-btn').forEach(btn => {
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    if (!DAILY_CASE) return;
+
+    const platform = btn.dataset.platform;
+    const caseTitle = DAILY_CASE.title_render;
+    const caseUrl = `${location.origin}?case=${DAILY_CASE.id}`;
+
+    // Funny/punchy share formats
+    const shareTexts = {
+      linkedin: `🤖 Today's AI Use Case: ${caseTitle}\n\nYes, this is real. AI is doing this now.\n\nSee more at the Use Case Arms Race docket 👇`,
+      tiktok: `AI can now ${caseTitle.toLowerCase()}. We're cooked. 🫠 #AI #tech #usecasearmsrace`,
+      instagram: `📺 DAILY USE CASE\n\n${caseTitle}\n\nThis is not a drill. AI is doing this.\n\n#AI #ArtificialIntelligence #TechNews #UseCaseArmsRace`,
+      youtube: `AI Use Case of the Day: ${caseTitle} | Use Case Arms Race`,
+      buffer: `🤖 Today's AI Use Case: ${caseTitle}\n\nTrack what AI is doing to people at usecasearmsrace.com`
+    };
+
+    const text = encodeURIComponent(shareTexts[platform] || shareTexts.buffer);
+    const url = encodeURIComponent(caseUrl);
+
+    let shareUrl;
+    switch(platform) {
+      case 'buffer':
+        // Buffer share URL
+        shareUrl = `https://buffer.com/add?text=${text}&url=${url}`;
+        break;
+      case 'linkedin':
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+        break;
+      case 'tiktok':
+        // TikTok doesn't have direct share URL, copy to clipboard instead
+        navigator.clipboard.writeText(`${shareTexts.tiktok}\n\n${caseUrl}`);
+        btn.textContent = '✓';
+        setTimeout(() => btn.textContent = '♪', 1500);
+        return;
+      case 'instagram':
+        // Instagram doesn't have direct share, copy to clipboard
+        navigator.clipboard.writeText(`${shareTexts.instagram}\n\n${caseUrl}`);
+        btn.textContent = '✓';
+        setTimeout(() => btn.textContent = '📷', 1500);
+        return;
+      case 'youtube':
+        // Copy YouTube-formatted title
+        navigator.clipboard.writeText(shareTexts.youtube);
+        btn.textContent = '✓';
+        setTimeout(() => btn.textContent = '▶', 1500);
+        return;
+    }
+
+    if (shareUrl) {
+      window.open(shareUrl, '_blank', 'width=600,height=500');
+    }
+  };
+});
+
+// Admin: Pick random case
+$('#pickDailyCase')?.addEventListener('click', async () => {
+  const { data } = await sb.from('cases')
+    .select('id, case_number, title_render, filing_count, good_votes, evil_votes')
+    .eq('status', 'live')
+    .gt('filing_count', 0)
+    .order('last_filed_at', { ascending: false })
+    .limit(100);
+
+  if (data && data.length > 0) {
+    const pick = data[Math.floor(Math.random() * data.length)];
+    const today = new Date().toISOString().split('T')[0];
+    const daily = { date: today, caseId: pick.id, case: pick };
+    localStorage.setItem('ucar-daily-show', JSON.stringify(daily));
+    DAILY_CASE = pick;
+    $('#dailyCaseTitle').textContent = pick.title_render;
+    $('#dailyCaseTagline').textContent = `Case #${pick.case_number} · ${pick.filing_count} article${pick.filing_count === 1 ? '' : 's'} filed`;
+  }
+});
+
+// Load daily show on init
+loadDailyShow();
 
 // Casebook toggle
 $('#casebookToggle').onclick = () => {
