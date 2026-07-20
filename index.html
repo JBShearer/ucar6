@@ -174,6 +174,25 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .watch-btn.linkedin{background:#0A66C2;color:#fff;border-color:#0A66C2}
 .daily-status{text-align:center;margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--evil)}
 
+/* Episode Admin Popup */
+.episode-popup{position:fixed;bottom:20px;right:20px;width:320px;background:var(--paper);border:3px solid var(--ink);
+  box-shadow:6px 6px 0 var(--ink);z-index:1000;display:none;font-size:13px}
+.episode-popup.open{display:block}
+.episode-popup-header{background:var(--ink);color:var(--paper);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;
+  font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.08em}
+.episode-popup-header button{background:none;border:none;color:var(--paper);font-size:20px;cursor:pointer;line-height:1}
+.episode-popup-body{padding:14px}
+.episode-popup-body label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;
+  color:var(--olive);margin:10px 0 4px}
+.episode-popup-body label:first-child{margin-top:0}
+.episode-popup-body input{width:100%;padding:8px;border:2px solid var(--ink);font-family:'IBM Plex Mono',monospace;font-size:11px;
+  background:var(--card);color:var(--ink)}
+.episode-popup-actions{display:flex;gap:8px;margin-top:14px}
+.episode-popup-actions button{flex:1;padding:10px;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.08em;cursor:pointer}
+.episode-popup-actions .primary{background:var(--ink);color:var(--paper);border:2px solid var(--ink)}
+.episode-popup-actions .secondary{background:none;border:2px solid var(--ink);color:var(--ink)}
+#epStatus{margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--olive)}
+
 /* Slot Machine */
 .slot-machine{max-width:920px;margin:0 auto 20px;padding:0 16px}
 .slot-header{text-align:center;margin-bottom:12px}
@@ -699,6 +718,39 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
   </div>
 </div>
 
+<!-- Episode Admin Popup (floating) -->
+<div id="episodePopup" class="episode-popup">
+  <div class="episode-popup-header">
+    <span>📺 NEW EPISODE</span>
+    <button id="closeEpisodePopup">×</button>
+  </div>
+  <div class="episode-popup-body">
+    <label>TikTok URL</label>
+    <input id="epTiktokUrl" type="url" placeholder="https://www.tiktok.com/@usecasearmsrace/video/...">
+
+    <label>YouTube Short URL <span style="opacity:.5">(optional)</span></label>
+    <input id="epYoutubeUrl" type="url" placeholder="https://youtube.com/shorts/...">
+
+    <label>Instagram URL <span style="opacity:.5">(optional)</span></label>
+    <input id="epInstagramUrl" type="url" placeholder="https://instagram.com/reel/...">
+
+    <label>LinkedIn URL <span style="opacity:.5">(optional)</span></label>
+    <input id="epLinkedinUrl" type="url" placeholder="https://linkedin.com/posts/...">
+
+    <label>Case Title</label>
+    <input id="epCaseTitle" type="text" placeholder="VERB OBJECT · WITH INSTRUMENT">
+
+    <label>Case ID <span style="opacity:.5">(from docket URL)</span></label>
+    <input id="epCaseId" type="text" placeholder="uuid or leave blank">
+
+    <div class="episode-popup-actions">
+      <button id="epPreview" class="secondary">👁 Preview</button>
+      <button id="epPublish" class="primary">🚀 Publish</button>
+    </div>
+    <div id="epStatus"></div>
+  </div>
+</div>
+
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -844,6 +896,92 @@ window.setDailyEpisode = function(episodeData) {
 
 // Load on init
 loadDailyShow();
+
+// Episode Admin Popup
+function openEpisodePopup() {
+  $('#episodePopup').classList.add('open');
+}
+
+$('#closeEpisodePopup')?.addEventListener('click', () => {
+  $('#episodePopup').classList.remove('open');
+});
+
+// Extract TikTok video ID from URL
+function extractTiktokId(url) {
+  const match = url.match(/video\/(\d+)/);
+  return match ? match[1] : null;
+}
+
+// Extract YouTube video ID from URL
+function extractYoutubeId(url) {
+  const match = url.match(/(?:shorts\/|v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
+$('#epPreview')?.addEventListener('click', () => {
+  const episode = buildEpisodeFromForm();
+  if (episode) {
+    displayEpisode(episode);
+    $('#epStatus').textContent = '👁 Preview loaded - check the Daily Show above';
+  }
+});
+
+$('#epPublish')?.addEventListener('click', () => {
+  const episode = buildEpisodeFromForm();
+  if (episode) {
+    localStorage.setItem('ucar-daily-episode', JSON.stringify(episode));
+    DAILY_EPISODE = episode;
+    displayEpisode(episode);
+    $('#epStatus').textContent = '✅ Published! Episode is now live.';
+    setTimeout(() => $('#episodePopup').classList.remove('open'), 1500);
+  }
+});
+
+function buildEpisodeFromForm() {
+  const tiktokUrl = $('#epTiktokUrl').value.trim();
+  const youtubeUrl = $('#epYoutubeUrl').value.trim();
+  const instagramUrl = $('#epInstagramUrl').value.trim();
+  const linkedinUrl = $('#epLinkedinUrl').value.trim();
+  const caseTitle = $('#epCaseTitle').value.trim();
+  const caseId = $('#epCaseId').value.trim();
+
+  if (!tiktokUrl && !youtubeUrl) {
+    $('#epStatus').textContent = '⚠️ Need at least TikTok or YouTube URL';
+    return null;
+  }
+
+  return {
+    tiktokUrl: tiktokUrl || null,
+    tiktokVideoId: tiktokUrl ? extractTiktokId(tiktokUrl) : null,
+    youtubeUrl: youtubeUrl || null,
+    youtubeId: youtubeUrl ? extractYoutubeId(youtubeUrl) : null,
+    instagramUrl: instagramUrl || null,
+    linkedinUrl: linkedinUrl || null,
+    caseTitle: caseTitle || 'DAILY USE CASE',
+    caseId: caseId || null,
+    date: new Date().toISOString().split('T')[0]
+  };
+}
+
+// Show popup if admin (keyboard shortcut: Ctrl+Shift+E)
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+    if (localStorage.getItem('ucar-admin-key')) {
+      openEpisodePopup();
+    }
+  }
+});
+
+// Also add button to daily show for admin
+if (localStorage.getItem('ucar-admin-key')) {
+  const adminBtn = document.createElement('button');
+  adminBtn.textContent = '+ New Episode';
+  adminBtn.className = 'daily-admin-btn';
+  adminBtn.style.cssText = 'position:absolute;top:10px;right:10px;';
+  adminBtn.onclick = openEpisodePopup;
+  $('#dailyShow').style.position = 'relative';
+  $('#dailyShow').appendChild(adminBtn);
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DOOMSDAY SLOTS
