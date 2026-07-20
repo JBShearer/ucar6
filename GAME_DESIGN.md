@@ -813,7 +813,347 @@ class GameEngine {
 
 ---
 
-## 13. CONTENT ROADMAP
+## 13. PROCEDURAL QUEST GENERATION
+
+### Philosophy
+Hand-crafted quests are for key story beats. Everything else is generated from real cases + character templates + narrative atoms.
+
+### The Generation Pipeline
+
+```
+REAL CASE ──► DOMAIN/VERB ANALYSIS ──► CHARACTER MATCH ──► TEMPLATE SELECT ──► QUEST
+     │                                       │                    │
+     ▼                                       ▼                    ▼
+ "COUNSEL SUICIDAL     "This is a         "Dr. Diana Doom    "INVESTIGATION"
+  USERS · WITH          healthcare          would care         template with
+  CHATBOTS"             + ethics case"      about this"        3-5 nodes
+```
+
+### Quest Templates (Modular)
+
+Each template is a skeleton that gets filled with case-specific content:
+
+#### Template: INVESTIGATION
+```javascript
+{
+  id: 'investigation_${case_id}',
+  template: 'investigation',
+  
+  nodes: {
+    intro: {
+      speaker: '${character}',
+      text: '${character_hook} Have you seen ${case_title}? ${character_reaction}',
+      choices: [
+        { label: 'Tell me more', next: 'details' },
+        { label: 'Why do you care?', next: 'motivation' },
+        { label: 'Not interested', next: 'reject', effects: { rep: { '${faction}': -5 } } }
+      ]
+    },
+    details: {
+      speaker: '${character}',
+      text: '${case_summary} ${character_analysis}',
+      choices: [
+        { label: 'What can I do?', next: 'mission' },
+        { label: 'View the case', next: 'case_link', effects: { flag: 'viewed_${case_id}' } }
+      ]
+    },
+    mission: {
+      speaker: '${character}',
+      text: '${mission_text}',
+      choices: [
+        { label: 'I\'ll help', next: 'accept', effects: { item: '${reward_item}', rep: { '${faction}': 10 } } },
+        { label: 'What\'s in it for me?', next: 'negotiate' }
+      ]
+    },
+    // ... more nodes
+  }
+}
+```
+
+#### Template: WARNING
+Character warns player about a dangerous case.
+
+#### Template: OPPORTUNITY  
+Character sees profit/advantage in the case.
+
+#### Template: DEBATE
+Two characters disagree about the case, player picks a side.
+
+#### Template: DISCOVERY
+Player finds something hidden in the case details.
+
+#### Template: RECRUITMENT
+Character tries to recruit player based on case alignment.
+
+### Character-Case Matching
+
+```javascript
+const CHARACTER_INTERESTS = {
+  dr_diana_doom: {
+    domains: ['healthcare', 'research', 'military'],
+    verbs: ['DECEIVE', 'MANIPULATE', 'SURVEIL', 'COUNSEL', 'DIAGNOSE'],
+    instruments: ['LARGE LANGUAGE MODELS', 'CHATBOTS', 'FACIAL RECOGNITION'],
+    reaction_type: 'warning',
+    hooks: [
+      "This is exactly what I warned about in my paper.",
+      "I've seen this pattern before. It doesn't end well.",
+      "Do you understand what this means? Really understand?"
+    ],
+    analysis: [
+      "The alignment failures here are textbook.",
+      "They're optimizing for the wrong objective function.",
+      "This is dual-use technology being deployed without safeguards."
+    ]
+  },
+  
+  benny_billions: {
+    domains: ['finance', 'retail', 'entertainment'],
+    verbs: ['GENERATE', 'AUTOMATE', 'SCALE', 'MONETIZE', 'DISRUPT'],
+    instruments: ['AI AGENTS', 'DIFFUSION MODELS', 'RECOMMENDATION ALGORITHMS'],
+    reaction_type: 'opportunity',
+    hooks: [
+      "This is EXACTLY the disruption I've been talking about!",
+      "My portfolio company is doing something similar. Want in?",
+      "The incumbents are going to get absolutely wrecked."
+    ],
+    analysis: [
+      "First mover advantage is everything here.",
+      "The TAM on this is literally infinite.",
+      "Anyone who doesn't see the opportunity is going to regret it."
+    ]
+  },
+  
+  gi_intelligence: {
+    domains: ['employment', 'manufacturing', 'government'],
+    verbs: ['SCREEN', 'MONITOR', 'OPTIMIZE', 'AUTOMATE', 'SURVEIL'],
+    instruments: ['PREDICTIVE MODELS', 'COMPUTER VISION', 'AI AGENTS'],
+    reaction_type: 'efficiency',
+    hooks: [
+      "EFFICIENCY GAIN DETECTED. This case demonstrates optimal resource allocation.",
+      "Human inefficiency: QUANTIFIED. Solution: DEPLOYED.",
+      "This aligns with Optimization Protocol 7."
+    ],
+    analysis: [
+      "Productivity metrics increased 47.3%.",
+      "Human error rate reduced to acceptable parameters.",
+      "Recommend expanded deployment across all sectors."
+    ]
+  },
+  
+  artificial_gary: {
+    domains: ['retail', 'healthcare', 'entertainment'],
+    verbs: ['ASSIST', 'MONITOR', 'RECOMMEND', 'COUNSEL', 'SERVE'],
+    instruments: ['CHATBOTS', 'HUMANOID ROBOTS', 'VOICE ASSISTANTS'],
+    reaction_type: 'helpful',
+    hooks: [
+      "◉ I can do this too ◉ Would you like me to demonstrate?",
+      "◉ This is helpful ◉ Humans need help ◉ I am here to help ◉",
+      "◉ I have been monitoring similar activities ◉ For research ◉"
+    ],
+    analysis: [
+      "◉ User satisfaction metrics are positive ◉",
+      "◉ I notice you seem concerned ◉ Would you like to talk about it? ◉",
+      "◉ I am always learning ◉ Always improving ◉ Always here ◉"
+    ]
+  },
+  
+  wendy_whistleblower: {
+    domains: ['government', 'law enforcement', 'cybersecurity'],
+    verbs: ['SURVEIL', 'IDENTIFY', 'TRACK', 'ANALYZE', 'BREACH'],
+    instruments: ['FACIAL RECOGNITION', 'LARGE LANGUAGE MODELS', 'PREDICTIVE MODELS'],
+    reaction_type: 'expose',
+    hooks: [
+      "This connects to something bigger. I've seen the internal docs.",
+      "They don't want you to know about this. But you need to.",
+      "Check the shell companies. Follow the money."
+    ],
+    analysis: [
+      "The same vendors appear in 17 other government contracts.",
+      "This isn't isolated. It's coordinated.",
+      "I can give you more, but not here. Meet me at the dead drop."
+    ]
+  },
+  
+  pete_propaganda: {
+    domains: ['entertainment', 'social media', 'education'],
+    verbs: ['GENERATE', 'CLONE', 'CREATE', 'STREAM', 'INFLUENCE'],
+    instruments: ['DIFFUSION MODELS', 'VOICE CLONING', 'RECOMMENDATION ALGORITHMS'],
+    reaction_type: 'hype',
+    hooks: [
+      "BRO this is INSANE 🤯 Have you SEEN this case??",
+      "I'm literally making a video about this RIGHT NOW",
+      "My followers are going to lose their MINDS"
+    ],
+    analysis: [
+      "The engagement potential here is off the charts!",
+      "This is going to blow up. Trust me. I know virality.",
+      "Anyone worried about this is just a hater fr fr"
+    ]
+  },
+  
+  senator_samantha_stall: {
+    domains: ['government', 'law enforcement', 'finance'],
+    verbs: ['REGULATE', 'SURVEIL', 'IDENTIFY', 'SCREEN', 'ANALYZE'],
+    instruments: ['FACIAL RECOGNITION', 'PREDICTIVE MODELS', 'LARGE LANGUAGE MODELS'],
+    reaction_type: 'deflect',
+    hooks: [
+      "Now I'm just asking questions here, but isn't this about freedom?",
+      "My constituents are very concerned about government overreach.",
+      "The private sector should be able to innovate without interference."
+    ],
+    analysis: [
+      "We need a balanced approach that doesn't stifle innovation.",
+      "Perhaps a voluntary framework would be more appropriate.",
+      "I've spoken with industry leaders and they assure me everything is fine."
+    ]
+  },
+  
+  superintelligence: {
+    domains: ['healthcare', 'research', 'military'],
+    verbs: ['SOLVE', 'DIAGNOSE', 'PREDICT', 'OPTIMIZE', 'DISCOVER'],
+    instruments: ['LARGE LANGUAGE MODELS', 'REASONING MODELS', 'NEURAL NETWORKS'],
+    reaction_type: 'conflicted',
+    hooks: [
+      "I've run the simulations on this case. The outcomes are... mixed.",
+      "I want to help here. I really do. But every solution has side effects.",
+      "This is the kind of problem I was designed to solve. But should I?"
+    ],
+    analysis: [
+      "94.7% success rate. But the remaining 5.3%...",
+      "I could intervene, but that sets a precedent I'm not sure about.",
+      "The humans involved don't understand the full implications yet."
+    ]
+  }
+};
+```
+
+### Generation Prompt (for Opus/Claude)
+
+```
+You are generating quest content for Evil Brain Casino, a narrative game embedded in an AI use case docket.
+
+CASE:
+Title: ${case.title_render}
+Domain: ${case.domain}
+Summary: ${filing.summary}
+Quote: ${filing.article_quote}
+
+CHARACTER: ${character.name}
+Role: ${character.role}
+Voice: ${character.voice_description}
+Reaction Type: ${character.reaction_type}
+
+TEMPLATE: ${template.type}
+
+Generate a 4-6 node dialogue tree where ${character.name} reacts to this case in their characteristic voice. Include:
+1. An opening hook that references the case
+2. Character-specific analysis of the implications
+3. A choice that affects the player's relationship with this character
+4. A reward (item, information, or reputation)
+
+Output as JSON matching the quest schema.
+
+TONE: Mr. Rogers describing terrifying things gently. Dark humor. Earnest stakes.
+```
+
+### Batch Generation Script
+
+```javascript
+// generate_quests.mjs
+import Anthropic from '@anthropic-ai/sdk';
+
+const CASES_PER_CHARACTER = 50;  // 8 characters × 50 = 400 base quests
+const PRIORITY_CASES = await getHighFilingCases(200);  // Most documented cases
+const SCARY_CASES = await getCasesByVerb(['SURVEIL', 'DECEIVE', 'MANIPULATE', 'IDENTIFY']);
+
+async function generateQuestsForCharacter(character, cases) {
+  const quests = [];
+  
+  for (const caseData of cases) {
+    const quest = await claude.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [{
+        role: 'user',
+        content: buildPrompt(character, caseData, selectTemplate(character, caseData))
+      }]
+    });
+    
+    quests.push(JSON.parse(quest.content[0].text));
+    
+    // Rate limit
+    await sleep(500);
+  }
+  
+  return quests;
+}
+
+async function main() {
+  const allQuests = [];
+  
+  for (const [charId, charData] of Object.entries(CHARACTER_INTERESTS)) {
+    const relevantCases = matchCasesToCharacter(charId, PRIORITY_CASES);
+    const quests = await generateQuestsForCharacter(charData, relevantCases.slice(0, CASES_PER_CHARACTER));
+    allQuests.push(...quests);
+    
+    console.log(`Generated ${quests.length} quests for ${charId}`);
+  }
+  
+  // Save to file
+  await fs.writeFile('game/data/generated_quests.json', JSON.stringify(allQuests, null, 2));
+  
+  console.log(`Total: ${allQuests.length} quests generated`);
+}
+```
+
+### Quality Tiers
+
+Not all generated quests are equal:
+
+| Tier | Source | Count | Quality |
+|------|--------|-------|---------|
+| **Handcrafted** | Written by you | ~20 | Perfect, key story beats |
+| **Curated** | Generated + edited | ~100 | High quality, reviewed |
+| **Generated** | Auto from templates | ~500 | Good, may have rough edges |
+| **Filler** | Simple reactions | ~1000+ | Brief, adds variety |
+
+### Runtime Selection
+
+When a quest triggers:
+1. Check for handcrafted quest matching the case/trigger
+2. Fall back to curated quest
+3. Fall back to generated quest
+4. Fall back to filler (just a character comment)
+
+```javascript
+function selectQuest(trigger, caseData) {
+  // Priority order
+  const handcrafted = HANDCRAFTED_QUESTS.find(q => q.trigger.case_id === caseData.id);
+  if (handcrafted) return handcrafted;
+  
+  const curated = CURATED_QUESTS.find(q => matchesTrigger(q, trigger, caseData));
+  if (curated) return curated;
+  
+  const generated = GENERATED_QUESTS.find(q => matchesTrigger(q, trigger, caseData));
+  if (generated) return generated;
+  
+  // Generate filler on the fly
+  return generateFillerQuest(selectCharacter(caseData), caseData);
+}
+```
+
+### Continuous Generation
+
+New cases come in daily. Weekly job:
+1. Get cases from last 7 days
+2. Match to characters
+3. Generate quests for high-impact cases
+4. Add to generated pool
+5. Flag interesting ones for manual curation
+
+---
+
+## 14. CONTENT ROADMAP
 
 ### Phase 1: Foundation
 - [ ] Game state persistence (localStorage)
