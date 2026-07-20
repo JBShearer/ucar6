@@ -575,15 +575,16 @@ function setTheme(t){
 $('#themeToggle').onclick = () => setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark');
 setTheme(localStorage.getItem('ucar-theme') || 'light');
 
-// My Cases Panel (opened via Cases tab now, but keep panel handlers)
 // Casebook toggle
 $('#casebookToggle').onclick = () => {
+  console.log('Casebook toggle clicked');
   const casebook = $('#casebook');
   casebook.classList.toggle('open');
+  console.log('Casebook open:', casebook.classList.contains('open'));
   if(casebook.classList.contains('open')) {
-    loadCasebookStats();
-    loadTrackedCases();
-    if(CASEBOOK_CASES.length === 0) loadMoreCases();
+    loadCasebookStats().catch(e => console.error('loadCasebookStats error:', e));
+    loadTrackedCases().catch(e => console.error('loadTrackedCases error:', e));
+    if(CASEBOOK_CASES.length === 0) loadMoreCases().catch(e => console.error('loadMoreCases error:', e));
   }
 };
 
