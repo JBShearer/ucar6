@@ -1153,14 +1153,14 @@ async function spinSlots() {
 
     let pos = 0;
     const spinInterval = setInterval(() => {
-      pos += 44;
-      strip.style.transform = `translateY(-${pos % (44 * 30)}px)`;
+      pos += 54;
+      strip.style.transform = `translateY(-${pos % (54 * 30)}px)`;
     }, 50);
 
     await new Promise(r => setTimeout(r, 800 + i * 400));
     clearInterval(spinInterval);
     strip.classList.remove('spinning');
-    strip.style.transform = `translateY(-${LAND_INDEX * 44}px)`;
+    strip.style.transform = `translateY(-${LAND_INDEX * 54}px)`;
   }
 
   // Check if we hit the secret doomsday combo
