@@ -610,16 +610,20 @@ $('#casebookContent').onscroll = (e) => {
 };
 
 async function loadCasebookStats() {
-  const [casesRes, filingsRes, goodRes, evilRes] = await Promise.all([
+  // Get tracked count from actual live cases, not stale localStorage
+  let trackedCount = 0;
+  if (MY_TRACKS.size > 0) {
+    const trackedRes = await sb.from('cases').select('id', {count:'exact', head:true}).in('id', [...MY_TRACKS]).eq('status','live');
+    trackedCount = trackedRes.count || 0;
+  }
+
+  const [casesRes, filingsRes] = await Promise.all([
     sb.from('cases').select('id', {count:'exact', head:true}).eq('status','live'),
-    sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live'),
-    sb.from('cases').select('filing_count').eq('status','live').gt('good_votes', 0),
-    sb.from('cases').select('filing_count').eq('status','live').gt('evil_votes', 0)
+    sb.from('filings').select('id', {count:'exact', head:true}).eq('status','live')
   ]);
-  const goodArticles = (goodRes.data || []).reduce((sum, c) => sum + (c.filing_count || 0), 0);
-  const evilArticles = (evilRes.data || []).reduce((sum, c) => sum + (c.filing_count || 0), 0);
-  $('#casebookStats').textContent = `${filingsRes.count || 0} articles · ${casesRes.count || 0} cases · ${MY_TRACKS.size} tracked`;
-  $('#trackedCount').textContent = MY_TRACKS.size;
+
+  $('#casebookStats').textContent = `${filingsRes.count || 0} articles · ${casesRes.count || 0} cases · ${trackedCount} tracked`;
+  $('#trackedCount').textContent = trackedCount;
 }
 
 async function loadTrackedCases() {
