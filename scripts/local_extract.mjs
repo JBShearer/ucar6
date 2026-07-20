@@ -259,7 +259,7 @@ async function processOne(prospect) {
     // Create filing (upsert to handle duplicates)
     const sourceDomain = new URL(url).hostname.replace(/^www\./, '');
 
-    await sb('filings', {
+    const filingResult = await sb('filings', {
       method: 'POST',
       headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
       body: JSON.stringify({
@@ -275,6 +275,17 @@ async function processOne(prospect) {
         impact: result.impact || 3,
         image_url: og_image || null,
         status: 'live'
+      })
+    });
+
+    // Update case filing_count and last_filed_at
+    const caseData = await sb(`cases?id=eq.${caseId}&select=filing_count`);
+    const currentCount = caseData[0]?.filing_count || 0;
+    await sb(`cases?id=eq.${caseId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        filing_count: currentCount + 1,
+        last_filed_at: new Date().toISOString()
       })
     });
 
