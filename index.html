@@ -1209,7 +1209,7 @@ async function spinSlots() {
 let manualReelIndex = [0, 0, 0];
 let manualReelItems = [[], [], []];
 
-function cycleReel(reelNum, forceDooms = false) {
+function cycleReel(reelNum, forceDooms = false, direction = 1) {
   if (SLOT_SPINNING) return;
 
   const items = reelNum === 0 ? SLOT_VERBS : reelNum === 1 ? SLOT_OBJECTS : SLOT_INSTRUMENTS;
@@ -1220,20 +1220,22 @@ function cycleReel(reelNum, forceDooms = false) {
     manualReelItems[reelNum] = [...dooms, ...items.filter(i => !dooms.includes(i))];
   }
 
-  // Cycle to next item (or jump to doomsday on long-press/ctrl)
+  const len = manualReelItems[reelNum].length;
+
+  // Cycle in direction (or jump to doomsday on long-press/ctrl)
   if (forceDooms && dooms.length) {
     manualReelIndex[reelNum] = Math.floor(Math.random() * dooms.length);
   } else {
-    manualReelIndex[reelNum] = (manualReelIndex[reelNum] + 1) % manualReelItems[reelNum].length;
+    manualReelIndex[reelNum] = (manualReelIndex[reelNum] + direction + len) % len;
   }
 
   const newItem = manualReelItems[reelNum][manualReelIndex[reelNum]];
   const strip = $(`#strip${reelNum + 1}`);
   const doomClass = dooms.includes(newItem) ? 'doomsday' : '';
 
-  // Quick animation
+  // Quick animation - direction affects slide
   strip.style.transition = 'transform 0.15s ease-out';
-  strip.style.transform = 'translateY(-10px)';
+  strip.style.transform = `translateY(${direction > 0 ? '-15' : '15'}px)`;
   setTimeout(() => {
     strip.innerHTML = `<div class="reel-item ${doomClass}">${newItem}</div>`;
     strip.style.transform = 'translateY(0)';
@@ -1244,25 +1246,46 @@ function cycleReel(reelNum, forceDooms = false) {
   $('#nearMiss').classList.remove('show');
 }
 
-// Attach touch/click handlers to reels
+// Attach swipe/touch/click handlers to reels
 document.querySelectorAll('.slots-reel[data-reel]').forEach(reel => {
   const reelNum = parseInt(reel.dataset.reel);
+  let touchStartY = 0;
+  let touchStartTime = 0;
+  let hasSwiped = false;
 
-  // Click/tap cycles forward
-  reel.addEventListener('click', (e) => {
-    cycleReel(reelNum, e.ctrlKey || e.metaKey);
-  });
-
-  // Long press (500ms) jumps to random doomsday
-  let pressTimer;
+  // Swipe up/down to cycle through items
   reel.addEventListener('touchstart', (e) => {
-    pressTimer = setTimeout(() => {
+    touchStartY = e.touches[0].clientY;
+    touchStartTime = Date.now();
+    hasSwiped = false;
+  }, {passive: true});
+
+  reel.addEventListener('touchmove', (e) => {
+    if (SLOT_SPINNING) return;
+    const deltaY = touchStartY - e.touches[0].clientY;
+    const threshold = 30; // pixels needed to trigger
+
+    if (Math.abs(deltaY) > threshold && !hasSwiped) {
+      hasSwiped = true;
+      // Swipe up = next item, swipe down = previous
+      cycleReel(reelNum, false, deltaY > 0 ? 1 : -1);
+      touchStartY = e.touches[0].clientY; // reset for continuous swiping
+    }
+  }, {passive: true});
+
+  reel.addEventListener('touchend', (e) => {
+    // Long press (500ms without swipe) = doomsday
+    if (!hasSwiped && Date.now() - touchStartTime > 500) {
       cycleReel(reelNum, true);
       e.preventDefault();
-    }, 500);
-  }, {passive: false});
-  reel.addEventListener('touchend', () => clearTimeout(pressTimer));
-  reel.addEventListener('touchmove', () => clearTimeout(pressTimer));
+    }
+  });
+
+  // Click cycles forward (desktop)
+  reel.addEventListener('click', (e) => {
+    if (hasSwiped) return; // don't trigger on swipe end
+    cycleReel(reelNum, e.ctrlKey || e.metaKey);
+  });
 });
 
 // Slots modal open/close
