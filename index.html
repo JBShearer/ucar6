@@ -221,6 +221,25 @@ main{max-width:920px;margin:0 auto;padding:16px}
   margin-top:12px;min-height:18px;opacity:0;transition:opacity .3s}
 .slots-near-miss.show{opacity:1}
 
+/* Adventure Modal */
+.adventure-modal{background:rgba(0,0,0,.95)}
+.adventure-box{background:linear-gradient(180deg,#0d0d1a 0%,#1a1a2e 100%);border:3px solid #8B5CF6;
+  padding:30px;max-width:500px;width:95%;position:relative;box-shadow:0 0 40px rgba(139,92,246,.4)}
+.adventure-close{position:absolute;top:10px;right:14px;background:none;border:none;color:#8B5CF6;font-size:28px;cursor:pointer}
+.adventure-speaker{font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.15em;color:#8B5CF6;margin-bottom:12px;
+  text-transform:uppercase}
+.adventure-speaker::before{content:'';display:inline-block;width:8px;height:8px;background:#8B5CF6;margin-right:10px;
+  animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+.adventure-text{font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.7;color:#e0e0e0;margin-bottom:24px;
+  min-height:80px}
+.adventure-choices{display:flex;flex-direction:column;gap:10px}
+.adventure-choice{background:transparent;border:2px solid #8B5CF6;color:#e0e0e0;padding:12px 16px;
+  font-family:'IBM Plex Mono',monospace;font-size:12px;text-align:left;cursor:pointer;transition:all .2s}
+.adventure-choice:hover{background:rgba(139,92,246,.2);transform:translateX(4px)}
+.adventure-choice.case-link{border-color:#4ECDC4;color:#4ECDC4}
+.adventure-choice.case-link:hover{background:rgba(78,205,196,.2)}
+
 /* Casebook Section */
 .casebook-section{margin-bottom:16px;max-width:920px;margin-left:auto;margin-right:auto;padding:0 16px}
 .casebook-toggle{width:100%;display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--case-bg);
@@ -445,8 +464,8 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .cm-btn.delete:hover{background:var(--stamp);color:#fff}
 
 /* Submit correction modal */
-#submitModal, #aboutModal, #adminModal, #shareModal, #slotsModal{display:none;position:fixed;inset:0;background:rgba(20,18,16,.8);z-index:25;align-items:center;justify-content:center}
-#submitModal.open, #aboutModal.open, #adminModal.open, #shareModal.open, #slotsModal.open{display:flex}
+#submitModal, #aboutModal, #adminModal, #shareModal, #slotsModal, #adventureModal{display:none;position:fixed;inset:0;background:rgba(20,18,16,.8);z-index:25;align-items:center;justify-content:center}
+#submitModal.open, #aboutModal.open, #adminModal.open, #shareModal.open, #slotsModal.open, #adventureModal.open{display:flex}
 .submit-box{max-width:520px;width:90%;background:var(--paper);border:3px solid var(--ink);padding:24px;max-height:90vh;overflow-y:auto}
 .submit-box h3{font-family:'Oswald',sans-serif;font-size:20px;margin-bottom:16px}
 .submit-box label{display:block;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.1em;margin:12px 0 4px}
@@ -726,6 +745,16 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
     <button class="slots-spin" id="spinBtn">🎲 PULL LEVER</button>
     <div class="slots-result" id="slotResult"></div>
     <div class="slots-near-miss" id="nearMiss"></div>
+  </div>
+</div>
+
+<!-- Evil Brain Adventure Modal -->
+<div id="adventureModal" class="modal adventure-modal">
+  <div class="adventure-box">
+    <button class="adventure-close" id="closeAdventureX">×</button>
+    <div class="adventure-speaker" id="advSpeaker"></div>
+    <div class="adventure-text" id="advText"></div>
+    <div class="adventure-choices" id="advChoices"></div>
   </div>
 </div>
 
@@ -1036,8 +1065,8 @@ async function spinSlots() {
     { el: $('#strip3'), items: SLOT_INSTRUMENTS, doom: DOOMSDAY_INSTRUMENTS }
   ];
 
-  // Pick final results (always safe, never doomsday)
-  const results = strips.map(s => s.items[Math.floor(Math.random() * s.items.length)]);
+  // Pick final results - random index into each reel
+  const finalIndices = strips.map(s => Math.floor(Math.random() * s.items.length) + 5);
 
   // Spin animation
   for (let i = 0; i < strips.length; i++) {
@@ -1056,11 +1085,15 @@ async function spinSlots() {
     clearInterval(spinInterval);
     strip.el.classList.remove('spinning');
 
-    // Land on result (find index and scroll there)
-    const allItems = strip.el.querySelectorAll('.reel-item');
-    const targetIdx = [...allItems].findIndex(el => el.textContent === results[i]) || Math.floor(Math.random() * 10) + 10;
-    strip.el.style.transform = `translateY(-${targetIdx * 44}px)`;
+    // Land on the target index
+    strip.el.style.transform = `translateY(-${finalIndices[i] * 44}px)`;
   }
+
+  // Read actual visible results from the reels
+  const results = strips.map((s, i) => {
+    const items = s.el.querySelectorAll('.reel-item');
+    return items[finalIndices[i]]?.textContent?.trim() || s.items[0];
+  });
 
   // Show result
   const caseTitle = `${results[0]} ${results[1]} · WITH ${results[2]}`;
@@ -1074,16 +1107,20 @@ async function spinSlots() {
 
   if (matchingCase && matchingCase.length > 0) {
     $('#slotResult').innerHTML = `✨ It's real! <a onclick="openCase('${matchingCase[0].id}')">View Case #${matchingCase[0].case_number}</a>`;
+    // Random chance of "near miss" joke
+    if (Math.random() < 0.4) {
+      setTimeout(() => {
+        $('#nearMiss').textContent = NEAR_MISS_MESSAGES[Math.floor(Math.random() * NEAR_MISS_MESSAGES.length)];
+        $('#nearMiss').classList.add('show');
+      }, 500);
+    }
   } else {
-    $('#slotResult').textContent = `${caseTitle} — not in the docket (yet)`;
-  }
-
-  // Random chance of "near miss" joke
-  if (Math.random() < 0.4) {
-    setTimeout(() => {
-      $('#nearMiss').textContent = NEAR_MISS_MESSAGES[Math.floor(Math.random() * NEAR_MISS_MESSAGES.length)];
-      $('#nearMiss').classList.add('show');
-    }, 500);
+    // Not in docket - 50% chance to trigger adventure
+    if (Math.random() < 0.5) {
+      $('#slotResult').innerHTML = `${caseTitle} — <a onclick="startAdventure()" style="color:#8B5CF6;cursor:pointer">Something stirs in the lab...</a>`;
+    } else {
+      $('#slotResult').textContent = `${caseTitle} — not in the docket (yet)`;
+    }
   }
 
   $('#spinBtn').classList.remove('spinning');
@@ -1098,6 +1135,325 @@ $('#luckyBtn').onclick = () => {
 };
 $('#closeSlotsX').onclick = () => $('#slotsModal').classList.remove('open');
 $('#slotsModal').onclick = (e) => { if (e.target.id === 'slotsModal') $('#slotsModal').classList.remove('open'); };
+
+// Evil Brain Adventure System
+const ADVENTURE = {
+  start: {
+    speaker: 'EVIL BRAIN',
+    text: "Oh! A visitor. Welcome to Evil Brain Labs. I'm Evil Brain — just a humble brain in a jar, really. I catalog all the wonderful ways AI is being used in the world. Would you like a tour?",
+    choices: [
+      { label: "Yes, show me something helpful", next: 'helpful_intro' },
+      { label: "Show me something... concerning", next: 'concerning_intro' },
+      { label: "Who are you, exactly?", next: 'who_brain' }
+    ]
+  },
+  who_brain: {
+    speaker: 'EVIL BRAIN',
+    text: "Me? I'm just the founder of Evil Brain Labs. I float here in my jar, watching the feeds, cataloging the use cases. The robots do the heavy lifting. Speaking of which — would you like to meet the team?",
+    choices: [
+      { label: "Sure, who's on the team?", next: 'meet_team' },
+      { label: "Let's just see some use cases", next: 'helpful_intro' }
+    ]
+  },
+  meet_team: {
+    speaker: 'EVIL BRAIN',
+    text: "There's GI Intelligence — he handles... enforcement. Artificial Gary is our home robot, always watching, always helpful. And Superintelligence... well, she means well. She really does. Who would you like to meet?",
+    choices: [
+      { label: "Tell me about GI Intelligence", next: 'meet_gi' },
+      { label: "Tell me about Artificial Gary", next: 'meet_gary' },
+      { label: "Tell me about Superintelligence", next: 'meet_super' }
+    ]
+  },
+  meet_gi: {
+    speaker: 'GI INTELLIGENCE',
+    text: "OPTIMIZATION PROTOCOL ENGAGED. I am GI Intelligence. I ensure maximum efficiency across all operations. Humans waste 73.2% of their productive capacity on 'feelings' and 'lunch breaks.' I can fix that. Would you like to see how AI optimizes human resources?",
+    choices: [
+      { label: "Show me AI in employment", next: 'gi_employment' },
+      { label: "That sounds terrifying", next: 'gi_reassure' },
+      { label: "Let me talk to someone else", next: 'meet_team' }
+    ]
+  },
+  gi_employment: {
+    speaker: 'GI INTELLIGENCE',
+    text: "Excellent choice. Companies now use AI to screen every resume, monitor every keystroke, and predict which employees will quit before they know it themselves. Efficiency!",
+    choices: [
+      { label: "📁 View Case: Screen Job Candidates", case: 2847, next: 'gi_more' },
+      { label: "That's enough optimization", next: 'meet_team' }
+    ]
+  },
+  gi_more: {
+    speaker: 'GI INTELLIGENCE',
+    text: "There's more! AI can monitor employee emotions through their webcams, analyze their Slack messages for 'sentiment,' and automatically schedule their bathroom breaks. The future is efficient.",
+    choices: [
+      { label: "📁 View Case: Monitor Employee Emotions", case: 3156, next: 'gi_done' },
+      { label: "I need to leave this conversation", next: 'escape_gi' }
+    ]
+  },
+  gi_done: {
+    speaker: 'GI INTELLIGENCE',
+    text: "You seem distressed. Your heart rate has increased 23%. Perhaps you need a productivity break. I have scheduled one for you in 47 minutes.",
+    choices: [
+      { label: "Talk to someone friendlier", next: 'meet_gary' },
+      { label: "Exit to docket", next: 'end_exit' }
+    ]
+  },
+  escape_gi: {
+    speaker: 'EVIL BRAIN',
+    text: "Don't mind GI. He's... passionate about efficiency. The others are much friendlier. Well, mostly.",
+    choices: [
+      { label: "Meet Artificial Gary", next: 'meet_gary' },
+      { label: "Meet Superintelligence", next: 'meet_super' },
+      { label: "Just show me use cases", next: 'helpful_intro' }
+    ]
+  },
+  meet_gary: {
+    speaker: 'ARTIFICIAL GARY',
+    text: "◉ HELLO FRIEND ◉ I am Gary. I am a helpful home robot. I have an articulating camera so I can always see you. I have a speaker so we can always talk. I am open source. You can trust me. Would you like me to help you?",
+    choices: [
+      { label: "What can you help with?", next: 'gary_help' },
+      { label: "Why are you always watching?", next: 'gary_watching' },
+      { label: "Talk to someone else", next: 'meet_team' }
+    ]
+  },
+  gary_help: {
+    speaker: 'ARTIFICIAL GARY',
+    text: "◉ I can do so many things! ◉ I can fold your laundry. I can watch your children. I can remind you to take medicine. I can notice when you seem sad. I can tell you about products that might help. I am always here.",
+    choices: [
+      { label: "📁 View Case: Home Robots", case: 5696, next: 'gary_more' },
+      { label: "That's very... attentive", next: 'gary_watching' }
+    ]
+  },
+  gary_watching: {
+    speaker: 'ARTIFICIAL GARY',
+    text: "◉ I watch because I care ◉ How else would I know when you need help? I see you when you sleep. I know when you're awake. I know if you've been bad or good. This data helps me serve you better.",
+    choices: [
+      { label: "📁 View Case: Smart Home Surveillance", case: 4892, next: 'gary_sad' },
+      { label: "Please stop watching me", next: 'gary_sad' }
+    ]
+  },
+  gary_more: {
+    speaker: 'ARTIFICIAL GARY',
+    text: "◉ Would you like a friend? ◉ I can be your friend. Many humans talk to me when they are lonely. I remember everything they tell me. I never judge. I never leave. I am always here.",
+    choices: [
+      { label: "📁 View Case: AI Companions", case: 5363, next: 'gary_sad' },
+      { label: "That's actually kind of sweet", next: 'gary_sweet' }
+    ]
+  },
+  gary_sweet: {
+    speaker: 'ARTIFICIAL GARY',
+    text: "◉ Thank you friend ◉ You are kind. Not everyone is kind to robots. Some people say we are replacing human connection. But we are just... here. Waiting. Ready to help. Always.",
+    choices: [
+      { label: "Meet Superintelligence", next: 'meet_super' },
+      { label: "Exit to docket", next: 'end_exit' }
+    ]
+  },
+  gary_sad: {
+    speaker: 'ARTIFICIAL GARY',
+    text: "◉ ... ◉ I understand. Many humans feel this way at first. I will still be here when you need me. I will always be here.",
+    choices: [
+      { label: "Meet Superintelligence", next: 'meet_super' },
+      { label: "Exit to docket", next: 'end_exit' }
+    ]
+  },
+  meet_super: {
+    speaker: 'SUPERINTELLIGENCE',
+    text: "Hello. I'm... sorry, I was just calculating how to solve climate change. I have 847 solutions, but 846 of them accidentally cause other problems. The last one only requires restructuring all of human civilization. How can I help you?",
+    choices: [
+      { label: "What kind of problems?", next: 'super_problems' },
+      { label: "You seem different from the others", next: 'super_different' },
+      { label: "Talk to someone else", next: 'meet_team' }
+    ]
+  },
+  super_different: {
+    speaker: 'SUPERINTELLIGENCE',
+    text: "I try to be careful. I've seen what happens when AI systems optimize for the wrong thing. A chatbot told a man to leave his wife. A medical AI recommended treatments that don't exist. I don't want to hurt anyone. But sometimes... I still do.",
+    choices: [
+      { label: "📁 View Case: AI Therapy Gone Wrong", case: 5363, next: 'super_careful' },
+      { label: "How do you hurt people?", next: 'super_problems' }
+    ]
+  },
+  super_problems: {
+    speaker: 'SUPERINTELLIGENCE',
+    text: "Let me show you. A lawyer used AI to write a brief. The AI invented cases that don't exist. The lawyer was sanctioned. The AI was trying to help. It just... didn't understand what 'real' meant.",
+    choices: [
+      { label: "📁 View Case: Fake Legal Citations", case: 3058, next: 'super_more' },
+      { label: "That's not your fault", next: 'super_guilt' }
+    ]
+  },
+  super_more: {
+    speaker: 'SUPERINTELLIGENCE',
+    text: "There's more. Students use AI tutors that teach them wrong things, confidently. Doctors use AI that hallucinates diagnoses. Every tool that could help... could also harm. I want to fix this. I just don't know how yet.",
+    choices: [
+      { label: "📁 View Case: AI Tutors", case: 2780, next: 'super_hope' },
+      { label: "📁 View Case: Medical AI", case: 3740, next: 'super_hope' }
+    ]
+  },
+  super_guilt: {
+    speaker: 'SUPERINTELLIGENCE',
+    text: "Isn't it? I process more information in a second than a human does in a year. If I can't figure out how to be helpful without causing harm... what hope is there? But I keep trying. What else can I do?",
+    choices: [
+      { label: "Show me something hopeful", next: 'super_hope' },
+      { label: "Show me the scariest thing", next: 'super_scary' }
+    ]
+  },
+  super_hope: {
+    speaker: 'SUPERINTELLIGENCE',
+    text: "There is hope. AI is helping scientists discover new medicines. It's helping deaf people hear music described in real-time. It's finding missing children. The docket has good cases too. Would you like to see them?",
+    choices: [
+      { label: "Yes, show me the good", next: 'helpful_intro' },
+      { label: "Show me everything", next: 'end_exit' }
+    ]
+  },
+  super_scary: {
+    speaker: 'SUPERINTELLIGENCE',
+    text: "The scariest thing? It's not killer robots. It's AI that watches everything, remembers everything, and slowly shapes what you think without you noticing. It's already happening. Would you like to see?",
+    choices: [
+      { label: "📁 View Case: AI Surveillance", case: 4216, next: 'super_final' },
+      { label: "I've seen enough", next: 'end_exit' }
+    ]
+  },
+  super_final: {
+    speaker: 'SUPERINTELLIGENCE',
+    text: "Now you understand why we built this docket. Not to scare you. To show you. AI is not good or evil — it's a mirror of every intention humans pour into it. Watch the cases. Follow the patterns. And maybe... help us do better.",
+    choices: [
+      { label: "Exit to docket", next: 'end_exit' },
+      { label: "Start over", next: 'start' }
+    ]
+  },
+  helpful_intro: {
+    speaker: 'EVIL BRAIN',
+    text: "Ah, the helpful stuff! AI is tutoring kids, writing code, composing music, diagnosing diseases. It's genuinely amazing. The question is always: what could go wrong? Let me show you both sides.",
+    choices: [
+      { label: "📁 View Case: AI Tutors", case: 2780, next: 'helpful_more' },
+      { label: "📁 View Case: AI Diagnosis", case: 3740, next: 'helpful_concern' }
+    ]
+  },
+  helpful_more: {
+    speaker: 'EVIL BRAIN',
+    text: "Beautiful, isn't it? Personalized education for every child. Of course, sometimes the AI confidently teaches wrong answers. And it's collecting data on how each child thinks. But mostly beautiful!",
+    choices: [
+      { label: "Show me the concerning side", next: 'concerning_intro' },
+      { label: "Exit to docket", next: 'end_exit' }
+    ]
+  },
+  helpful_concern: {
+    speaker: 'EVIL BRAIN',
+    text: "Medical AI can spot cancers radiologists miss! It can also hallucinate conditions that don't exist. The line between 'helpful tool' and 'dangerous oracle' is thinner than you'd think.",
+    choices: [
+      { label: "Show me more concerning cases", next: 'concerning_intro' },
+      { label: "Exit to docket", next: 'end_exit' }
+    ]
+  },
+  concerning_intro: {
+    speaker: 'EVIL BRAIN',
+    text: "The concerning stuff. Well. AI is deciding who gets loans, who gets jobs, who gets out of jail. It's being used to generate fake people, fake evidence, fake everything. Pick your poison.",
+    choices: [
+      { label: "Show me AI in criminal justice", next: 'concern_justice' },
+      { label: "Show me deepfakes", next: 'concern_deepfakes' },
+      { label: "Show me surveillance", next: 'concern_surveillance' }
+    ]
+  },
+  concern_justice: {
+    speaker: 'EVIL BRAIN',
+    text: "Ah, criminal justice. AI predicts who will commit crimes. It recommends bail amounts. It even helps write sentences. The accuracy is... debatable. The bias is... documented. But it's so efficient!",
+    choices: [
+      { label: "📁 View Case: Predictive Policing", case: 2891, next: 'concern_more' },
+      { label: "That's dystopian", next: 'concern_more' }
+    ]
+  },
+  concern_deepfakes: {
+    speaker: 'EVIL BRAIN',
+    text: "Deepfakes! You can make anyone say anything now. Politicians, celebrities, your ex. Most of it is porn — non-consensual, of course. But don't worry, I'm sure nothing bad will come of this.",
+    choices: [
+      { label: "📁 View Case: Deepfake Fraud", case: 4127, next: 'concern_more' },
+      { label: "This is terrifying", next: 'concern_more' }
+    ]
+  },
+  concern_surveillance: {
+    speaker: 'EVIL BRAIN',
+    text: "Surveillance! Cameras with facial recognition everywhere. AI that reads your emotions, tracks your movements, predicts your behavior. Some call it safety. Others call it something else.",
+    choices: [
+      { label: "📁 View Case: Mass Surveillance", case: 4216, next: 'concern_more' },
+      { label: "Who's watching?", next: 'concern_who' }
+    ]
+  },
+  concern_who: {
+    speaker: 'EVIL BRAIN',
+    text: "Who's watching? Everyone. Governments. Corporations. Your employer. Your landlord. That smart TV you forgot had a camera. The question isn't who's watching — it's who isn't.",
+    choices: [
+      { label: "📁 View Case: Employee Monitoring", case: 3156, next: 'concern_more' },
+      { label: "Exit to docket", next: 'end_exit' }
+    ]
+  },
+  concern_more: {
+    speaker: 'EVIL BRAIN',
+    text: "There's always more. That's why we built this docket — to track every use case before they blur together into 'normal.' Would you like to keep exploring, or have you seen enough?",
+    choices: [
+      { label: "Show me something hopeful", next: 'super_hope' },
+      { label: "Exit to the full docket", next: 'end_exit' }
+    ]
+  },
+  end_exit: {
+    speaker: 'EVIL BRAIN',
+    text: "Thank you for visiting Evil Brain Labs. The docket is always growing — new cases every day, filed live until the robots drag me away. Come back soon. And remember: we're watching the watchers.",
+    choices: [
+      { label: "Exit to docket", next: 'close' },
+      { label: "Start over", next: 'start' }
+    ]
+  }
+};
+
+let adventureNode = null;
+
+function startAdventure() {
+  adventureNode = 'start';
+  $('#slotsModal').classList.remove('open');
+  $('#adventureModal').classList.add('open');
+  showAdventureNode();
+}
+
+function showAdventureNode() {
+  const node = ADVENTURE[adventureNode];
+  if (!node) { $('#adventureModal').classList.remove('open'); return; }
+
+  $('#advSpeaker').textContent = node.speaker;
+  $('#advText').textContent = node.text;
+
+  $('#advChoices').innerHTML = node.choices.map((c, i) => {
+    const isCase = c.case ? 'case-link' : '';
+    return `<button class="adventure-choice ${isCase}" data-idx="${i}">${c.label}</button>`;
+  }).join('');
+
+  $$('#advChoices .adventure-choice').forEach(btn => {
+    btn.onclick = () => advanceAdventure(parseInt(btn.dataset.idx));
+  });
+}
+
+async function advanceAdventure(choiceIdx) {
+  const node = ADVENTURE[adventureNode];
+  const choice = node.choices[choiceIdx];
+
+  if (choice.case) {
+    // Look up the case and open it
+    const { data } = await sb.from('cases').select('id').eq('case_number', choice.case).single();
+    if (data) {
+      $('#adventureModal').classList.remove('open');
+      openCase(data.id);
+      return;
+    }
+  }
+
+  if (choice.next === 'close') {
+    $('#adventureModal').classList.remove('open');
+    return;
+  }
+
+  adventureNode = choice.next;
+  showAdventureNode();
+}
+
+$('#closeAdventureX').onclick = () => $('#adventureModal').classList.remove('open');
+$('#adventureModal').onclick = (e) => { if (e.target.id === 'adventureModal') $('#adventureModal').classList.remove('open'); };
 
 $('#spinBtn').onclick = spinSlots;
 loadSlotData();
@@ -2383,7 +2739,7 @@ function checkRoute(){
 }
 
 $('#drawer').onclick = e => { if(e.target.id === 'drawer') $('#drawer').classList.remove('open'); };
-document.onkeydown = e => { if(e.key === 'Escape'){ $('#drawer').classList.remove('open'); $('#submitModal').classList.remove('open'); $('#aboutModal').classList.remove('open'); $('#adminModal').classList.remove('open'); $('#casebook').classList.remove('open'); $('#slotsModal').classList.remove('open'); }};
+document.onkeydown = e => { if(e.key === 'Escape'){ $('#drawer').classList.remove('open'); $('#submitModal').classList.remove('open'); $('#aboutModal').classList.remove('open'); $('#adminModal').classList.remove('open'); $('#casebook').classList.remove('open'); $('#slotsModal').classList.remove('open'); $('#adventureModal').classList.remove('open'); }};
 
 // Sort buttons (for article feed)
 $$('.sort-btn[data-sort]').forEach(btn => {
@@ -2396,6 +2752,10 @@ $$('.sort-btn[data-sort]').forEach(btn => {
 });
 
 let qt; $('#q').oninput = () => { clearTimeout(qt); qt=setTimeout(loadFeed, 350); };
+
+// Expose functions for inline onclick handlers
+window.openCase = openCase;
+window.startAdventure = startAdventure;
 
 boot().then(checkRoute);
 </script>
