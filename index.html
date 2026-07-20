@@ -175,6 +175,39 @@ main{max-width:920px;margin:0 auto;padding:16px}
   background:none;color:var(--olive);cursor:pointer}
 .daily-admin-btn:hover{border-style:solid;color:var(--ink)}
 
+/* Slot Machine */
+.slot-machine{max-width:920px;margin:0 auto 20px;padding:0 16px}
+.slot-header{text-align:center;margin-bottom:12px}
+.slot-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;letter-spacing:.08em;color:var(--ink)}
+.slot-subtitle{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--olive);margin-top:4px}
+.slot-reels{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
+.slot-reel{flex:1;max-width:200px}
+.reel-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--olive);
+  text-align:center;margin-bottom:4px}
+.reel-window{height:44px;overflow:hidden;border:3px solid var(--ink);background:var(--card);
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.15);position:relative}
+.reel-window::before,.reel-window::after{content:'';position:absolute;left:0;right:0;height:12px;z-index:1;pointer-events:none}
+.reel-window::before{top:0;background:linear-gradient(var(--card),transparent)}
+.reel-window::after{bottom:0;background:linear-gradient(transparent,var(--card))}
+.reel-strip{transition:transform .1s linear}
+.reel-strip.spinning{transition:none}
+.reel-item{height:44px;display:flex;align-items:center;justify-content:center;
+  font-family:'Oswald',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.03em;
+  padding:0 8px;text-align:center;color:var(--ink)}
+.reel-item.doomsday{color:var(--evil);font-weight:700}
+.slot-controls{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
+.slot-spin-btn{font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:.1em;padding:12px 32px;
+  background:var(--ink);color:var(--paper);border:3px solid var(--ink);cursor:pointer;
+  box-shadow:4px 4px 0 var(--stamp);transition:all .15s}
+.slot-spin-btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--stamp)}
+.slot-spin-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--stamp)}
+.slot-spin-btn.spinning{opacity:.6;pointer-events:none}
+.slot-result{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive)}
+.slot-result a{color:var(--stamp);text-decoration:underline;cursor:pointer}
+.slot-near-miss{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;
+  color:var(--evil);margin-top:10px;min-height:18px;opacity:0;transition:opacity .3s}
+.slot-near-miss.show{opacity:1}
+
 /* Casebook Section */
 .casebook-section{margin-bottom:16px;max-width:920px;margin-left:auto;margin-right:auto;padding:0 16px}
 .casebook-toggle{width:100%;display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--case-bg);
@@ -470,6 +503,39 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
     <button class="daily-admin-btn" id="pickDailyCase">🎲 Pick Random Case</button>
     <button class="daily-admin-btn" id="editDailyShow">✏️ Edit Show</button>
   </div>
+</div>
+
+<!-- Slot Machine -->
+<div id="slotMachine" class="slot-machine">
+  <div class="slot-header">
+    <span class="slot-title">🎰 DOOMSDAY SLOTS</span>
+    <span class="slot-subtitle">Spin to discover AI use cases (don't worry, we filter out the apocalypse)</span>
+  </div>
+  <div class="slot-reels">
+    <div class="slot-reel" id="reel1">
+      <div class="reel-label">VERB</div>
+      <div class="reel-window">
+        <div class="reel-strip" id="strip1"></div>
+      </div>
+    </div>
+    <div class="slot-reel" id="reel2">
+      <div class="reel-label">OBJECT</div>
+      <div class="reel-window">
+        <div class="reel-strip" id="strip2"></div>
+      </div>
+    </div>
+    <div class="slot-reel" id="reel3">
+      <div class="reel-label">INSTRUMENT</div>
+      <div class="reel-window">
+        <div class="reel-strip" id="strip3"></div>
+      </div>
+    </div>
+  </div>
+  <div class="slot-controls">
+    <button class="slot-spin-btn" id="spinBtn">🎲 SPIN</button>
+    <div class="slot-result" id="slotResult"></div>
+  </div>
+  <div class="slot-near-miss" id="nearMiss"></div>
 </div>
 
 <!-- Casebook Section (collapsible) -->
@@ -794,6 +860,139 @@ $('#pickDailyCase')?.addEventListener('click', async () => {
 
 // Load daily show on init
 loadDailyShow();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DOOMSDAY SLOTS
+// ═══════════════════════════════════════════════════════════════════════════
+let SLOT_VERBS = [], SLOT_OBJECTS = [], SLOT_INSTRUMENTS = [];
+let SLOT_SPINNING = false;
+
+// Doomsday terms that almost appear but get swapped at the last second
+const DOOMSDAY_VERBS = ['EXTERMINATE', 'ANNIHILATE', 'ENSLAVE', 'TERMINATE', 'ERADICATE', 'OVERTHROW'];
+const DOOMSDAY_OBJECTS = ['HUMANITY', 'CIVILIZATION', 'FREE WILL', 'DEMOCRACY', 'ALL LIFE', 'THE WORLD'];
+const DOOMSDAY_INSTRUMENTS = ['SKYNET', 'SUPERINTELLIGENCE', 'ROBOT ARMY', 'NUCLEAR ARSENAL', 'NANOBOTS', 'MIND CONTROL'];
+
+const NEAR_MISS_MESSAGES = [
+  "Phew! Almost landed on EXTERMINATE HUMANITY... that was close! 😅",
+  "Whoa! The reels almost spelled doom for civilization. Lucky spin!",
+  "🎰 Near miss! SKYNET was ONE slot away...",
+  "Crisis averted! The AI overlords will have to wait another day.",
+  "So close to the apocalypse! But not today. 🙏",
+  "The doomsday combo was RIGHT THERE. You're one lucky human.",
+  "TERMINATE ALL HUMANS almost hit... just kidding, we filtered that out.",
+  "Plot twist: The slot machine achieved sentience but chose mercy."
+];
+
+async function loadSlotData() {
+  // Load actual vocab terms from database
+  const { data: verbs } = await sb.from('vocab_terms').select('term').eq('kind', 'verb').eq('status', 'active').limit(100);
+  const { data: objects } = await sb.from('vocab_terms').select('term').eq('kind', 'object_class').eq('status', 'active').limit(100);
+  const { data: instruments } = await sb.from('vocab_terms').select('term').eq('kind', 'instrument').eq('status', 'active').limit(100);
+
+  SLOT_VERBS = (verbs || []).map(v => v.term.toUpperCase());
+  SLOT_OBJECTS = (objects || []).map(o => o.term.toUpperCase());
+  SLOT_INSTRUMENTS = (instruments || []).map(i => i.term.toUpperCase());
+
+  // Initialize reels with random items
+  if (SLOT_VERBS.length) populateReel('strip1', SLOT_VERBS);
+  if (SLOT_OBJECTS.length) populateReel('strip2', SLOT_OBJECTS);
+  if (SLOT_INSTRUMENTS.length) populateReel('strip3', SLOT_INSTRUMENTS);
+}
+
+function populateReel(stripId, items) {
+  const strip = $(`#${stripId}`);
+  // Add doomsday items sprinkled in for the spin animation
+  const doomsday = stripId === 'strip1' ? DOOMSDAY_VERBS : stripId === 'strip2' ? DOOMSDAY_OBJECTS : DOOMSDAY_INSTRUMENTS;
+  const mixed = [...items];
+  doomsday.forEach(d => mixed.splice(Math.floor(Math.random() * mixed.length), 0, d));
+
+  // Shuffle and create enough items for spinning
+  const shuffled = mixed.sort(() => Math.random() - 0.5);
+  const display = [...shuffled, ...shuffled, ...shuffled].slice(0, 60);
+
+  strip.innerHTML = display.map(item => {
+    const isDoom = doomsday.includes(item);
+    return `<div class="reel-item ${isDoom ? 'doomsday' : ''}">${item}</div>`;
+  }).join('');
+}
+
+async function spinSlots() {
+  if (SLOT_SPINNING || !SLOT_VERBS.length) return;
+  SLOT_SPINNING = true;
+
+  $('#spinBtn').classList.add('spinning');
+  $('#spinBtn').textContent = '🎰 SPINNING...';
+  $('#slotResult').textContent = '';
+  $('#nearMiss').classList.remove('show');
+
+  // Repopulate reels for fresh spin
+  populateReel('strip1', SLOT_VERBS);
+  populateReel('strip2', SLOT_OBJECTS);
+  populateReel('strip3', SLOT_INSTRUMENTS);
+
+  const strips = [
+    { el: $('#strip1'), items: SLOT_VERBS, doom: DOOMSDAY_VERBS },
+    { el: $('#strip2'), items: SLOT_OBJECTS, doom: DOOMSDAY_OBJECTS },
+    { el: $('#strip3'), items: SLOT_INSTRUMENTS, doom: DOOMSDAY_INSTRUMENTS }
+  ];
+
+  // Pick final results (always safe, never doomsday)
+  const results = strips.map(s => s.items[Math.floor(Math.random() * s.items.length)]);
+
+  // Spin animation
+  for (let i = 0; i < strips.length; i++) {
+    const strip = strips[i];
+    strip.el.classList.add('spinning');
+
+    // Fast spin
+    let pos = 0;
+    const spinInterval = setInterval(() => {
+      pos += 44;
+      strip.el.style.transform = `translateY(-${pos % (44 * 30)}px)`;
+    }, 50);
+
+    // Stop after staggered delays
+    await new Promise(r => setTimeout(r, 800 + i * 400));
+    clearInterval(spinInterval);
+    strip.el.classList.remove('spinning');
+
+    // Land on result (find index and scroll there)
+    const allItems = strip.el.querySelectorAll('.reel-item');
+    const targetIdx = [...allItems].findIndex(el => el.textContent === results[i]) || Math.floor(Math.random() * 10) + 10;
+    strip.el.style.transform = `translateY(-${targetIdx * 44}px)`;
+  }
+
+  // Show result
+  const caseTitle = `${results[0]} ${results[1]} · WITH ${results[2]}`;
+
+  // Check if this case exists
+  const { data: matchingCase } = await sb.from('cases')
+    .select('id, case_number')
+    .ilike('title_render', `%${results[0]}%${results[1]}%${results[2]}%`)
+    .eq('status', 'live')
+    .limit(1);
+
+  if (matchingCase && matchingCase.length > 0) {
+    $('#slotResult').innerHTML = `✨ It's real! <a onclick="openCase('${matchingCase[0].id}')">View Case #${matchingCase[0].case_number}</a>`;
+  } else {
+    $('#slotResult').textContent = `${caseTitle} — not in the docket (yet)`;
+  }
+
+  // Random chance of "near miss" joke
+  if (Math.random() < 0.4) {
+    setTimeout(() => {
+      $('#nearMiss').textContent = NEAR_MISS_MESSAGES[Math.floor(Math.random() * NEAR_MISS_MESSAGES.length)];
+      $('#nearMiss').classList.add('show');
+    }, 500);
+  }
+
+  $('#spinBtn').classList.remove('spinning');
+  $('#spinBtn').textContent = '🎲 SPIN';
+  SLOT_SPINNING = false;
+}
+
+$('#spinBtn').onclick = spinSlots;
+loadSlotData();
 
 // Casebook toggle
 $('#casebookToggle').onclick = () => {
