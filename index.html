@@ -368,13 +368,22 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .cm-btn.delete:hover{background:var(--stamp);color:#fff}
 
 /* Submit correction modal */
-#submitModal, #aboutModal, #adminModal{display:none;position:fixed;inset:0;background:rgba(20,18,16,.8);z-index:25;align-items:center;justify-content:center}
-#submitModal.open, #aboutModal.open, #adminModal.open{display:flex}
+#submitModal, #aboutModal, #adminModal, #shareModal{display:none;position:fixed;inset:0;background:rgba(20,18,16,.8);z-index:25;align-items:center;justify-content:center}
+#submitModal.open, #aboutModal.open, #adminModal.open, #shareModal.open{display:flex}
 .submit-box{max-width:520px;width:90%;background:var(--paper);border:3px solid var(--ink);padding:24px;max-height:90vh;overflow-y:auto}
 .submit-box h3{font-family:'Oswald',sans-serif;font-size:20px;margin-bottom:16px}
 .submit-box label{display:block;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.1em;margin:12px 0 4px}
 .submit-box input,.submit-box select,.submit-box textarea{width:100%;padding:10px;border:2px solid var(--ink);
   background:var(--card);font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink)}
+.share-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.share-social{padding:14px 16px;border:2px solid var(--ink);cursor:pointer;font-family:'Oswald',sans-serif;
+  font-size:14px;letter-spacing:.05em;transition:all .15s;box-shadow:2px 2px 0 var(--ink)}
+.share-social:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.share-social:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink)}
+.share-social.twitter{background:#000;color:#fff;border-color:#000}
+.share-social.linkedin{background:#0A66C2;color:#fff;border-color:#0A66C2}
+.share-social.facebook{background:#1877F2;color:#fff;border-color:#1877F2}
+.share-social.bluesky{background:#0085FF;color:#fff;border-color:#0085FF}
 .submit-box .action-type{display:flex;gap:8px;margin:16px 0}
 .submit-box .action-type button{flex:1;padding:12px;border:2px solid var(--ink);background:none;cursor:pointer;
   font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.08em}
@@ -539,6 +548,28 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
     <label>ADMIN KEY</label>
     <input id="adminKeyInput" type="password" placeholder="Enter admin key" style="width:100%;padding:8px;margin-bottom:8px;font-family:'IBM Plex Mono',monospace">
     <button class="secondary" id="saveAdminKey" style="width:100%">Save Key</button>
+  </div>
+</div>
+
+<!-- Share Modal -->
+<div id="shareModal" class="modal">
+  <div class="submit-box" style="max-width:400px;position:relative">
+    <button class="close-btn" id="closeShareX" style="position:absolute;top:10px;right:14px;background:none;border:none;font-size:24px;cursor:pointer;color:var(--ink)">×</button>
+    <h3>📤 SHARE</h3>
+    <p id="shareTitle" style="font-family:'Oswald',sans-serif;font-size:14px;margin-bottom:16px;color:var(--olive)"></p>
+    <div class="share-buttons">
+      <button class="share-social twitter" data-platform="twitter">𝕏 Twitter</button>
+      <button class="share-social linkedin" data-platform="linkedin">in LinkedIn</button>
+      <button class="share-social facebook" data-platform="facebook">f Facebook</button>
+      <button class="share-social bluesky" data-platform="bluesky">🦋 Bluesky</button>
+    </div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px dashed var(--line)">
+      <label style="font-size:11px;color:var(--olive)">Or copy link:</label>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <input id="shareUrlInput" type="text" readonly style="flex:1;padding:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;border:2px solid var(--ink)">
+        <button class="primary" id="copyShareUrl">📋 Copy</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -963,14 +994,9 @@ function wireCaseButtons(root) {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const caseId = btn.dataset.case;
-      const url = `${location.origin}?case=${caseId}`;
-      try {
-        await navigator.clipboard.writeText(url);
-        btn.textContent = '✓ Copied';
-        setTimeout(() => btn.textContent = '⛓ Share', 2000);
-      } catch(err) {
-        prompt('Copy this link:', url);
-      }
+      const caseRow = btn.closest('.caserow');
+      const title = caseRow?.querySelector('.t')?.textContent || 'AI Use Case';
+      openShareModal(caseId, title, 'case');
     });
   });
   root.querySelectorAll('[data-action="chat-case"]').forEach(btn => {
@@ -981,6 +1007,65 @@ function wireCaseButtons(root) {
     });
   });
 }
+
+// Share Modal
+let SHARE_DATA = { url: '', title: '', type: '' };
+
+function openShareModal(id, title, type) {
+  const baseUrl = location.origin;
+  const url = type === 'case' ? `${baseUrl}?case=${id}` : `${baseUrl}?a=${id}`;
+  const shareText = type === 'case'
+    ? `🤖 AI Use Case: ${title} - tracked on the Use Case Arms Race docket`
+    : `${title} - from the Use Case Arms Race`;
+
+  SHARE_DATA = { url, title: shareText, type };
+
+  $('#shareTitle').textContent = title;
+  $('#shareUrlInput').value = url;
+  $('#shareModal').classList.add('open');
+}
+
+$('#closeShareX').onclick = () => $('#shareModal').classList.remove('open');
+$('#shareModal').onclick = e => { if(e.target.id === 'shareModal') $('#shareModal').classList.remove('open'); };
+
+$('#copyShareUrl').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(SHARE_DATA.url);
+    $('#copyShareUrl').textContent = '✓ Copied!';
+    setTimeout(() => $('#copyShareUrl').textContent = '📋 Copy', 2000);
+  } catch(err) {
+    $('#shareUrlInput').select();
+  }
+};
+
+$$('.share-social').forEach(btn => {
+  btn.onclick = () => {
+    const platform = btn.dataset.platform;
+    const text = encodeURIComponent(SHARE_DATA.title);
+    const url = encodeURIComponent(SHARE_DATA.url);
+    let shareUrl;
+
+    switch(platform) {
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+        break;
+      case 'linkedin':
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+        break;
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
+        break;
+      case 'bluesky':
+        shareUrl = `https://bsky.app/intent/compose?text=${text}%20${url}`;
+        break;
+    }
+
+    if(shareUrl) {
+      window.open(shareUrl, '_blank', 'width=600,height=400');
+    }
+    $('#shareModal').classList.remove('open');
+  };
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FEED with infinite scroll
@@ -1228,13 +1313,10 @@ function wireArticles(root){
   root.querySelectorAll('[data-action="share"]').forEach(btn => {
     btn.addEventListener('click', async e => {
       e.stopPropagation();
-      const articleId = btn.closest('.article').dataset.article;
-      const url = `${location.origin}?a=${articleId}`;
-      try {
-        await navigator.clipboard.writeText(url);
-        btn.textContent = '✓ Copied';
-        setTimeout(() => btn.textContent = '⛓ Share', 2000);
-      } catch { alert(url); }
+      const article = btn.closest('.article');
+      const articleId = article.dataset.article;
+      const title = article.querySelector('.article-title')?.textContent || 'AI News';
+      openShareModal(articleId, title, 'article');
     });
   });
 
