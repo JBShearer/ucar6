@@ -499,7 +499,7 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
 <header>
   <div class="brand">
     <h1>USE CASE ARMS RACE<span> →</span></h1>
-    <div class="tag"><span id="tagFade">Upvote the good AI use cases. Report evil AI before it reports you.</span><span id="tagStay" style="display:none">Live every day until robots drag us away.</span></div>
+    <div class="tag"><span id="tag1">Upvote the good AI use cases.</span><span id="tag2" style="display:none">Report evil AI before it reports you.</span><span id="tag3" style="display:none">Recording live every day until robots drag us away.</span></div>
   </div>
   <div class="hdr-btns">
     <button class="hdr-btn" id="aboutBtn">About</button>
@@ -2757,22 +2757,25 @@ let qt; $('#q').oninput = () => { clearTimeout(qt); qt=setTimeout(loadFeed, 350)
 window.openCase = openCase;
 window.startAdventure = startAdventure;
 
-// Tagline fade - first message fades after 5s, permanent message appears
-setTimeout(() => {
-  const fade = $('#tagFade');
-  const stay = $('#tagStay');
-  if (fade && stay) {
-    fade.style.transition = 'opacity 1.5s';
-    fade.style.opacity = '0';
+// Tagline fade sequence: Good AI → Bad AI → Recording live
+function fadeTag(from, to, delay) {
+  setTimeout(() => {
+    from.style.transition = 'opacity 1s';
+    from.style.opacity = '0';
     setTimeout(() => {
-      fade.style.display = 'none';
-      stay.style.display = 'inline';
-      stay.style.opacity = '0';
-      stay.style.transition = 'opacity 1s';
-      requestAnimationFrame(() => stay.style.opacity = '1');
-    }, 1500);
-  }
-}, 5000);
+      from.style.display = 'none';
+      to.style.display = 'inline';
+      to.style.opacity = '0';
+      to.style.transition = 'opacity 0.8s';
+      requestAnimationFrame(() => to.style.opacity = '1');
+    }, 1000);
+  }, delay);
+}
+const t1 = $('#tag1'), t2 = $('#tag2'), t3 = $('#tag3');
+if (t1 && t2 && t3) {
+  fadeTag(t1, t2, 4000);  // Good AI fades after 4s
+  fadeTag(t2, t3, 9000);  // Bad AI fades after 9s total
+}
 
 boot().then(checkRoute);
 </script>
