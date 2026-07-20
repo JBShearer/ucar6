@@ -1112,11 +1112,14 @@ async function spinSlots() {
   $('#slotResult').textContent = '';
   $('#nearMiss').classList.remove('show');
 
+  // 7% chance of triggering the adventure (rare)
+  const triggerAdventure = Math.random() < 0.07;
+
   // Pick a random REAL case - guaranteed to exist
   const pickedCase = SLOT_CASES[Math.floor(Math.random() * SLOT_CASES.length)];
-  const finalVerb = pickedCase.verb;
-  const finalObject = pickedCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
-  const finalInstrument = pickedCase.instrument;
+  const finalVerb = triggerAdventure ? DOOMSDAY_VERBS[Math.floor(Math.random() * DOOMSDAY_VERBS.length)] : pickedCase.verb;
+  const finalObject = triggerAdventure ? DOOMSDAY_OBJECTS[Math.floor(Math.random() * DOOMSDAY_OBJECTS.length)] : (pickedCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)]);
+  const finalInstrument = triggerAdventure ? DOOMSDAY_INSTRUMENTS[Math.floor(Math.random() * DOOMSDAY_INSTRUMENTS.length)] : pickedCase.instrument;
 
   // Build reels with the final result guaranteed at a known position
   const LAND_INDEX = 25;
@@ -1160,15 +1163,27 @@ async function spinSlots() {
     strip.style.transform = `translateY(-${LAND_INDEX * 44}px)`;
   }
 
-  // Always lands on a real case!
-  $('#slotResult').innerHTML = `✨ It's real! <a onclick="openCase('${pickedCase.id}')">View Case #${pickedCase.case_number}</a>`;
+  // Check if we hit the secret doomsday combo
+  const hitDoomsday = DOOMSDAY_VERBS.includes(finalVerb) && DOOMSDAY_OBJECTS.includes(finalObject) && DOOMSDAY_INSTRUMENTS.includes(finalInstrument);
 
-  // Random chance of "near miss" joke
-  if (Math.random() < 0.4) {
+  if (triggerAdventure || hitDoomsday) {
+    // Adventure trigger!
+    $('#slotResult').innerHTML = `<span style="color:#ff00ff">☠️ DOOMSDAY COMBO ☠️</span>`;
     setTimeout(() => {
-      $('#nearMiss').textContent = NEAR_MISS_MESSAGES[Math.floor(Math.random() * NEAR_MISS_MESSAGES.length)];
-      $('#nearMiss').classList.add('show');
-    }, 500);
+      $('#slotsModal').classList.remove('open');
+      startAdventure();
+    }, 1500);
+  } else {
+    // Normal case result
+    $('#slotResult').innerHTML = `✨ It's real! <a onclick="openCase('${pickedCase.id}')">View Case #${pickedCase.case_number}</a>`;
+
+    // Random chance of "near miss" joke
+    if (Math.random() < 0.4) {
+      setTimeout(() => {
+        $('#nearMiss').textContent = NEAR_MISS_MESSAGES[Math.floor(Math.random() * NEAR_MISS_MESSAGES.length)];
+        $('#nearMiss').classList.add('show');
+      }, 500);
+    }
   }
 
   $('#spinBtn').classList.remove('spinning');
