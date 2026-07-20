@@ -216,11 +216,12 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .slots-reels{display:flex;gap:8px;justify-content:center;margin-bottom:24px;padding:16px;
   background:linear-gradient(180deg,rgba(0,0,0,.6) 0%,rgba(20,0,40,.4) 100%);
   border:2px solid rgba(255,0,255,.3);border-radius:8px}
-.slots-reel{flex:1;max-width:150px}
+.slots-reel{flex:1;max-width:150px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.slots-reel:active .reel-window{border-color:#00ffff;box-shadow:inset 0 0 30px rgba(0,0,0,.9),0 0 25px rgba(0,255,255,.6)}
 .reel-label{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:.25em;
   color:#00ffff;text-align:center;margin-bottom:8px;text-shadow:0 0 10px rgba(0,255,255,.5)}
 .reel-window{height:54px;overflow:hidden;background:linear-gradient(180deg,#000 0%,#0a0a15 50%,#000 100%);
-  border:2px solid #ff00ff;border-radius:4px;
+  border:2px solid #ff00ff;border-radius:4px;transition:border-color .15s,box-shadow .15s;
   box-shadow:inset 0 0 30px rgba(0,0,0,.9),0 0 15px rgba(255,0,255,.4),inset 0 2px 0 rgba(255,255,255,.05)}
 .reel-strip{transition:transform .1s linear}
 .reel-strip.spinning{transition:none}
@@ -762,15 +763,15 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
       <div class="slots-subtitle">Spin to discover <span>real AI use cases</span> from the docket</div>
     </div>
     <div class="slots-reels">
-      <div class="slots-reel">
+      <div class="slots-reel" data-reel="0">
         <div class="reel-label">ACTION</div>
         <div class="reel-window"><div class="reel-strip" id="strip1"></div></div>
       </div>
-      <div class="slots-reel">
+      <div class="slots-reel" data-reel="1">
         <div class="reel-label">TARGET</div>
         <div class="reel-window"><div class="reel-strip" id="strip2"></div></div>
       </div>
-      <div class="slots-reel">
+      <div class="slots-reel" data-reel="2">
         <div class="reel-label">WEAPON</div>
         <div class="reel-window"><div class="reel-strip" id="strip3"></div></div>
       </div>
@@ -778,7 +779,7 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
     <button class="slots-spin" id="spinBtn">SPIN THE SLOTPOCALYPSE</button>
     <div class="slots-result" id="slotResult"></div>
     <div class="slots-near-miss" id="nearMiss"></div>
-    <div class="slots-footer">Every spin lands on a <span>real case</span> · Evil Brain Labs</div>
+    <div class="slots-footer">Click reels to browse · <span>Ctrl+click to lock doomsday</span></div>
   </div>
 </div>
 
@@ -1112,14 +1113,27 @@ async function spinSlots() {
   $('#slotResult').textContent = '';
   $('#nearMiss').classList.remove('show');
 
-  // 7% chance of triggering the adventure (rare)
-  const triggerAdventure = Math.random() < 0.07;
+  // Check if user manually selected items (doomsday items at front of list)
+  const hasManualVerb = manualReelItems[0].length && manualReelIndex[0] > 0;
+  const hasManualObject = manualReelItems[1].length && manualReelIndex[1] > 0;
+  const hasManualInstrument = manualReelItems[2].length && manualReelIndex[2] > 0;
+  const hasManualSelection = hasManualVerb || hasManualObject || hasManualInstrument;
+
+  // 7% chance of triggering the adventure (rare) - OR if user picked doomsday items
+  const manualVerb = hasManualVerb ? manualReelItems[0][manualReelIndex[0]] : null;
+  const manualObject = hasManualObject ? manualReelItems[1][manualReelIndex[1]] : null;
+  const manualInstrument = hasManualInstrument ? manualReelItems[2][manualReelIndex[2]] : null;
+
+  const triggerAdventure = !hasManualSelection && Math.random() < 0.07;
 
   // Pick a random REAL case - guaranteed to exist
   const pickedCase = SLOT_CASES[Math.floor(Math.random() * SLOT_CASES.length)];
-  const finalVerb = triggerAdventure ? DOOMSDAY_VERBS[Math.floor(Math.random() * DOOMSDAY_VERBS.length)] : pickedCase.verb;
-  const finalObject = triggerAdventure ? DOOMSDAY_OBJECTS[Math.floor(Math.random() * DOOMSDAY_OBJECTS.length)] : (pickedCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)]);
-  const finalInstrument = triggerAdventure ? DOOMSDAY_INSTRUMENTS[Math.floor(Math.random() * DOOMSDAY_INSTRUMENTS.length)] : pickedCase.instrument;
+  const finalVerb = manualVerb || (triggerAdventure ? DOOMSDAY_VERBS[Math.floor(Math.random() * DOOMSDAY_VERBS.length)] : pickedCase.verb);
+  const finalObject = manualObject || (triggerAdventure ? DOOMSDAY_OBJECTS[Math.floor(Math.random() * DOOMSDAY_OBJECTS.length)] : (pickedCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)]));
+  const finalInstrument = manualInstrument || (triggerAdventure ? DOOMSDAY_INSTRUMENTS[Math.floor(Math.random() * DOOMSDAY_INSTRUMENTS.length)] : pickedCase.instrument);
+
+  // Reset manual selections after spin
+  manualReelIndex = [0, 0, 0];
 
   // Build reels with the final result guaranteed at a known position
   const LAND_INDEX = 25;
@@ -1190,6 +1204,66 @@ async function spinSlots() {
   $('#spinBtn').textContent = 'SPIN THE SLOTPOCALYPSE';
   SLOT_SPINNING = false;
 }
+
+// Manual reel cycling - tap/click to browse, weighted toward doomsday
+let manualReelIndex = [0, 0, 0];
+let manualReelItems = [[], [], []];
+
+function cycleReel(reelNum, forceDooms = false) {
+  if (SLOT_SPINNING) return;
+
+  const items = reelNum === 0 ? SLOT_VERBS : reelNum === 1 ? SLOT_OBJECTS : SLOT_INSTRUMENTS;
+  const dooms = reelNum === 0 ? DOOMSDAY_VERBS : reelNum === 1 ? DOOMSDAY_OBJECTS : DOOMSDAY_INSTRUMENTS;
+
+  // Build list if not already (doomsday items first, then regular)
+  if (!manualReelItems[reelNum].length) {
+    manualReelItems[reelNum] = [...dooms, ...items.filter(i => !dooms.includes(i))];
+  }
+
+  // Cycle to next item (or jump to doomsday on long-press/ctrl)
+  if (forceDooms && dooms.length) {
+    manualReelIndex[reelNum] = Math.floor(Math.random() * dooms.length);
+  } else {
+    manualReelIndex[reelNum] = (manualReelIndex[reelNum] + 1) % manualReelItems[reelNum].length;
+  }
+
+  const newItem = manualReelItems[reelNum][manualReelIndex[reelNum]];
+  const strip = $(`#strip${reelNum + 1}`);
+  const doomClass = dooms.includes(newItem) ? 'doomsday' : '';
+
+  // Quick animation
+  strip.style.transition = 'transform 0.15s ease-out';
+  strip.style.transform = 'translateY(-10px)';
+  setTimeout(() => {
+    strip.innerHTML = `<div class="reel-item ${doomClass}">${newItem}</div>`;
+    strip.style.transform = 'translateY(0)';
+  }, 75);
+
+  // Clear result when manually adjusting
+  $('#slotResult').textContent = '';
+  $('#nearMiss').classList.remove('show');
+}
+
+// Attach touch/click handlers to reels
+document.querySelectorAll('.slots-reel[data-reel]').forEach(reel => {
+  const reelNum = parseInt(reel.dataset.reel);
+
+  // Click/tap cycles forward
+  reel.addEventListener('click', (e) => {
+    cycleReel(reelNum, e.ctrlKey || e.metaKey);
+  });
+
+  // Long press (500ms) jumps to random doomsday
+  let pressTimer;
+  reel.addEventListener('touchstart', (e) => {
+    pressTimer = setTimeout(() => {
+      cycleReel(reelNum, true);
+      e.preventDefault();
+    }, 500);
+  }, {passive: false});
+  reel.addEventListener('touchend', () => clearTimeout(pressTimer));
+  reel.addEventListener('touchmove', () => clearTimeout(pressTimer));
+});
 
 // Slots modal open/close
 let slotDataLoaded = false;
