@@ -192,65 +192,79 @@ main{max-width:920px;margin:0 auto;padding:16px}
 #epStatus{margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--olive)}
 
 /* Slots Modal - Evil Brain Casino */
-.slots-modal{background:radial-gradient(ellipse at center,rgba(20,0,40,.95) 0%,rgba(0,0,0,.98) 100%)}
-.slots-box{background:linear-gradient(180deg,#1a0a2e 0%,#0d0620 50%,#050208 100%);
-  border:3px solid transparent;border-image:linear-gradient(180deg,#ff00ff,#00ffff,#ff00ff) 1;
-  padding:30px 24px;max-width:520px;width:95%;position:relative;
-  box-shadow:0 0 80px rgba(255,0,255,.25),0 0 120px rgba(0,255,255,.15),inset 0 0 80px rgba(128,0,255,.1);
-  animation:casinoGlow 3s ease-in-out infinite}
-@keyframes casinoGlow{0%,100%{box-shadow:0 0 80px rgba(255,0,255,.25),0 0 120px rgba(0,255,255,.15),inset 0 0 80px rgba(128,0,255,.1)}
-  50%{box-shadow:0 0 100px rgba(255,0,255,.35),0 0 150px rgba(0,255,255,.25),inset 0 0 100px rgba(128,0,255,.15)}}
-.slots-close{position:absolute;top:8px;right:12px;background:none;border:none;color:#ff00ff;font-size:32px;cursor:pointer;
-  text-shadow:0 0 10px #ff00ff;transition:all .2s}
-.slots-close:hover{transform:scale(1.2);text-shadow:0 0 20px #ff00ff,0 0 40px #ff00ff}
-.slots-header{text-align:center;margin-bottom:20px}
-.slots-brain{font-size:48px;display:block;margin-bottom:8px;filter:drop-shadow(0 0 20px rgba(255,0,255,.5));animation:brainFloat 2s ease-in-out infinite}
-@keyframes brainFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-.slots-title{font-family:'Oswald',sans-serif;font-size:24px;font-weight:700;
-  background:linear-gradient(90deg,#ff00ff,#00ffff,#ff00ff);background-size:200% auto;
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  animation:shimmer 3s linear infinite;letter-spacing:.2em;text-transform:uppercase}
-@keyframes shimmer{0%{background-position:0% center}100%{background-position:200% center}}
-.slots-subtitle{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#aaa;margin-top:8px;letter-spacing:.1em}
-.slots-subtitle span{color:#00ffff}
-.slots-reels{display:flex;gap:8px;justify-content:center;margin-bottom:24px;padding:16px;
-  background:linear-gradient(180deg,rgba(0,0,0,.6) 0%,rgba(20,0,40,.4) 100%);
-  border:2px solid rgba(255,0,255,.3);border-radius:8px}
-.slots-reel{flex:1;max-width:150px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.slots-reel:active .reel-window{border-color:#00ffff;box-shadow:inset 0 0 30px rgba(0,0,0,.9),0 0 25px rgba(0,255,255,.6)}
-.reel-label{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:.25em;
-  color:#00ffff;text-align:center;margin-bottom:8px;text-shadow:0 0 10px rgba(0,255,255,.5)}
-.reel-window{height:54px;overflow:hidden;background:linear-gradient(180deg,#000 0%,#0a0a15 50%,#000 100%);
-  border:2px solid #ff00ff;border-radius:4px;transition:border-color .15s,box-shadow .15s;
-  box-shadow:inset 0 0 30px rgba(0,0,0,.9),0 0 15px rgba(255,0,255,.4),inset 0 2px 0 rgba(255,255,255,.05)}
+.slots-modal{background:radial-gradient(ellipse at center,rgba(10,0,20,.97) 0%,rgba(0,0,0,.99) 100%)}
+.slots-box{background:linear-gradient(180deg,#2a1a3e 0%,#1a0a2e 30%,#0d0518 100%);
+  border:4px solid #c0a000;border-radius:12px;padding:0;max-width:400px;width:95%;position:relative;
+  box-shadow:0 0 60px rgba(255,200,0,.2),0 0 100px rgba(255,0,255,.15),inset 0 2px 0 rgba(255,255,255,.1),inset 0 -2px 0 rgba(0,0,0,.3);
+  overflow:hidden}
+/* Top chrome bar with lights */
+.slots-top{background:linear-gradient(180deg,#ffd700 0%,#c0a000 50%,#806000 100%);padding:8px 16px;
+  display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #604000}
+.slots-lights{display:flex;gap:6px}
+.slots-light{width:10px;height:10px;border-radius:50%;animation:blink 1s ease-in-out infinite}
+.slots-light:nth-child(1){background:#ff0066;box-shadow:0 0 8px #ff0066;animation-delay:0s}
+.slots-light:nth-child(2){background:#00ff66;box-shadow:0 0 8px #00ff66;animation-delay:.33s}
+.slots-light:nth-child(3){background:#0066ff;box-shadow:0 0 8px #0066ff;animation-delay:.66s}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.slots-logo{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;color:#1a0a2e;letter-spacing:.15em;text-shadow:0 1px 0 rgba(255,255,255,.3)}
+.slots-close{background:none;border:none;color:#1a0a2e;font-size:24px;cursor:pointer;line-height:1;font-weight:700}
+/* Main body */
+.slots-body{padding:20px 16px 24px}
+.slots-header{text-align:center;margin-bottom:16px}
+.slots-brain{font-size:40px;display:block;margin-bottom:6px;filter:drop-shadow(0 0 15px rgba(255,0,255,.6));animation:brainFloat 2s ease-in-out infinite}
+@keyframes brainFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.02)}}
+.slots-title{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#ffd700;letter-spacing:.2em;
+  text-shadow:0 0 20px rgba(255,215,0,.5),0 2px 0 #806000}
+.slots-subtitle{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#ccc;margin-top:6px;letter-spacing:.08em}
+.slots-subtitle span{color:#0ff}
+/* Reel machine frame */
+.slots-machine{background:#0a0510;border:3px solid #ffd700;border-radius:8px;padding:12px;margin-bottom:16px;
+  box-shadow:inset 0 0 40px rgba(0,0,0,.8),0 0 20px rgba(255,215,0,.2)}
+.slots-reels{display:flex;gap:6px;justify-content:center}
+.slots-reel{flex:1;max-width:110px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.slots-reel:active .reel-window{border-color:#0ff;box-shadow:inset 0 4px 8px rgba(0,0,0,.9),0 0 15px rgba(0,255,255,.5)}
+.reel-label{font-family:'Oswald',sans-serif;font-size:8px;letter-spacing:.2em;color:#ffd700;text-align:center;
+  margin-bottom:4px;text-shadow:0 0 6px rgba(255,215,0,.4)}
+.reel-window{height:48px;overflow:hidden;background:linear-gradient(180deg,#1a1a1a 0%,#000 20%,#000 80%,#1a1a1a 100%);
+  border:2px solid #ffd700;border-radius:4px;position:relative;
+  box-shadow:inset 0 4px 8px rgba(0,0,0,.9),inset 0 -4px 8px rgba(0,0,0,.9)}
+.reel-window::before,.reel-window::after{content:'';position:absolute;left:0;right:0;height:12px;pointer-events:none;z-index:1}
+.reel-window::before{top:0;background:linear-gradient(180deg,rgba(0,0,0,.7) 0%,transparent 100%)}
+.reel-window::after{bottom:0;background:linear-gradient(0deg,rgba(0,0,0,.7) 0%,transparent 100%)}
 .reel-strip{transition:transform .1s linear}
 .reel-strip.spinning{transition:none}
-.reel-item{height:54px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;
-  font-size:11px;text-transform:uppercase;color:#fff;padding:0 6px;text-align:center;letter-spacing:.05em}
-.reel-item.doomsday{color:#ff0044;text-shadow:0 0 15px #ff0044,0 0 30px rgba(255,0,68,.5);animation:doomPulse 1s ease-in-out infinite}
-@keyframes doomPulse{0%,100%{opacity:1}50%{opacity:.7}}
-.slots-spin{display:block;margin:0 auto;font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:.15em;
-  padding:16px 36px;background:linear-gradient(180deg,#8B00FF 0%,#5B00AA 50%,#3D0073 100%);color:#fff;
-  border:none;border-radius:6px;cursor:pointer;text-transform:uppercase;position:relative;overflow:hidden;
-  box-shadow:0 4px 0 #2a0050,0 0 30px rgba(139,0,255,.5),inset 0 1px 0 rgba(255,255,255,.2);transition:all .15s}
-.slots-spin::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
-  background:linear-gradient(45deg,transparent 30%,rgba(255,255,255,.1) 50%,transparent 70%);
-  animation:spinShine 2s linear infinite}
-@keyframes spinShine{0%{transform:translateX(-100%) rotate(45deg)}100%{transform:translateX(100%) rotate(45deg)}}
-.slots-spin:hover{transform:translateY(-3px);box-shadow:0 7px 0 #2a0050,0 0 50px rgba(139,0,255,.7),inset 0 1px 0 rgba(255,255,255,.3)}
-.slots-spin:active{transform:translateY(2px);box-shadow:0 2px 0 #2a0050,0 0 20px rgba(139,0,255,.4)}
-.slots-spin.spinning{opacity:.7;pointer-events:none;animation:spinPulse .5s ease-in-out infinite}
-@keyframes spinPulse{0%,100%{box-shadow:0 4px 0 #2a0050,0 0 30px rgba(139,0,255,.5)}50%{box-shadow:0 4px 0 #2a0050,0 0 60px rgba(139,0,255,.8)}}
-.slots-result{text-align:center;margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#00ffff;min-height:24px}
-.slots-result a{color:#ff00ff;text-decoration:none;cursor:pointer;border-bottom:1px solid #ff00ff;
-  transition:all .2s;padding-bottom:2px}
-.slots-result a:hover{color:#fff;text-shadow:0 0 10px #ff00ff;border-color:#fff}
-.slots-near-miss{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#ff0044;
-  margin-top:14px;min-height:18px;opacity:0;transition:opacity .3s;letter-spacing:.05em}
-.slots-near-miss.show{opacity:1;animation:nearMissFlash .3s ease-out}
-@keyframes nearMissFlash{0%{text-shadow:0 0 30px #ff0044}100%{text-shadow:none}}
-.slots-footer{text-align:center;margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#888;letter-spacing:.1em}
-.slots-footer span{color:#ff00ff}
+.reel-item{height:48px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;
+  font-size:10px;font-weight:700;text-transform:uppercase;color:#fff;padding:0 4px;text-align:center;
+  letter-spacing:.03em;text-shadow:0 1px 2px rgba(0,0,0,.8)}
+.reel-item.doomsday{color:#ff0044;text-shadow:0 0 10px #ff0044,0 0 20px rgba(255,0,68,.6);animation:doomPulse .8s ease-in-out infinite}
+@keyframes doomPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.8;transform:scale(1.02)}}
+/* Spin button styled as lever */
+.slots-lever-area{display:flex;align-items:center;justify-content:center;gap:12px}
+.slots-spin{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;
+  padding:14px 28px;background:linear-gradient(180deg,#ff0066 0%,#cc0052 50%,#990040 100%);color:#fff;
+  border:3px solid #ffd700;border-radius:8px;cursor:pointer;text-transform:uppercase;position:relative;
+  box-shadow:0 4px 0 #660033,0 0 20px rgba(255,0,102,.4),inset 0 1px 0 rgba(255,255,255,.3);transition:all .1s}
+.slots-spin:hover{transform:translateY(-2px);box-shadow:0 6px 0 #660033,0 0 30px rgba(255,0,102,.6)}
+.slots-spin:active{transform:translateY(3px);box-shadow:0 1px 0 #660033,0 0 15px rgba(255,0,102,.3)}
+.slots-spin.spinning{background:linear-gradient(180deg,#666 0%,#444 100%);pointer-events:none;animation:none}
+/* Lever graphic */
+.slots-lever{width:20px;height:60px;background:linear-gradient(90deg,#888 0%,#ccc 50%,#888 100%);border-radius:4px;
+  position:relative;box-shadow:2px 0 4px rgba(0,0,0,.3)}
+.slots-lever::before{content:'';position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+  width:28px;height:28px;background:radial-gradient(circle,#ff0066 0%,#990040 100%);border-radius:50%;
+  border:3px solid #ffd700;box-shadow:0 0 10px rgba(255,0,102,.5)}
+.slots-lever.pulled{transform:rotate(15deg);transform-origin:bottom center}
+/* Results */
+.slots-result{text-align:center;margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0ff;min-height:20px;
+  text-shadow:0 0 10px rgba(0,255,255,.4)}
+.slots-result a{color:#ffd700;text-decoration:none;cursor:pointer;border-bottom:1px solid #ffd700;transition:all .2s}
+.slots-result a:hover{color:#fff;text-shadow:0 0 10px #ffd700}
+.slots-near-miss{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#ff0066;
+  margin-top:10px;min-height:16px;opacity:0;transition:opacity .3s}
+.slots-near-miss.show{opacity:1}
+.slots-footer{text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,215,0,.2);
+  font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888;letter-spacing:.08em}
+.slots-footer span{color:#ffd700}
 
 /* Adventure Modal */
 .adventure-modal{background:rgba(0,0,0,.95)}
@@ -756,30 +770,41 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
 <!-- Doomsday Slots Modal -->
 <div id="slotsModal" class="modal slots-modal">
   <div class="slots-box">
-    <button class="slots-close" id="closeSlotsX">×</button>
-    <div class="slots-header">
-      <span class="slots-brain">🧠</span>
-      <div class="slots-title">The Slotpocalypse</div>
-      <div class="slots-subtitle">Spin to discover <span>real AI use cases</span> from the docket</div>
+    <div class="slots-top">
+      <div class="slots-lights"><div class="slots-light"></div><div class="slots-light"></div><div class="slots-light"></div></div>
+      <div class="slots-logo">EVIL BRAIN CASINO</div>
+      <button class="slots-close" id="closeSlotsX">✕</button>
     </div>
-    <div class="slots-reels">
-      <div class="slots-reel" data-reel="0">
-        <div class="reel-label">ACTION</div>
-        <div class="reel-window"><div class="reel-strip" id="strip1"></div></div>
+    <div class="slots-body">
+      <div class="slots-header">
+        <span class="slots-brain">🧠</span>
+        <div class="slots-title">THE SLOTPOCALYPSE</div>
+        <div class="slots-subtitle">Swipe reels · Spin to discover <span>real cases</span></div>
       </div>
-      <div class="slots-reel" data-reel="1">
-        <div class="reel-label">TARGET</div>
-        <div class="reel-window"><div class="reel-strip" id="strip2"></div></div>
+      <div class="slots-machine">
+        <div class="slots-reels">
+          <div class="slots-reel" data-reel="0">
+            <div class="reel-label">ACTION</div>
+            <div class="reel-window"><div class="reel-strip" id="strip1"></div></div>
+          </div>
+          <div class="slots-reel" data-reel="1">
+            <div class="reel-label">TARGET</div>
+            <div class="reel-window"><div class="reel-strip" id="strip2"></div></div>
+          </div>
+          <div class="slots-reel" data-reel="2">
+            <div class="reel-label">WEAPON</div>
+            <div class="reel-window"><div class="reel-strip" id="strip3"></div></div>
+          </div>
+        </div>
       </div>
-      <div class="slots-reel" data-reel="2">
-        <div class="reel-label">WEAPON</div>
-        <div class="reel-window"><div class="reel-strip" id="strip3"></div></div>
+      <div class="slots-lever-area">
+        <div class="slots-lever" id="slotsLever"></div>
+        <button class="slots-spin" id="spinBtn">PULL</button>
       </div>
+      <div class="slots-result" id="slotResult"></div>
+      <div class="slots-near-miss" id="nearMiss"></div>
+      <div class="slots-footer">Long-press for doomsday · <span>All red = side quest</span></div>
     </div>
-    <button class="slots-spin" id="spinBtn">SPIN THE SLOTPOCALYPSE</button>
-    <div class="slots-result" id="slotResult"></div>
-    <div class="slots-near-miss" id="nearMiss"></div>
-    <div class="slots-footer">Click reels to browse · <span>Ctrl+click to lock doomsday</span></div>
   </div>
 </div>
 
@@ -1109,6 +1134,13 @@ async function spinSlots() {
   SLOT_SPINNING = true;
 
   $('#spinBtn').classList.add('spinning');
+  // Lever pull animation
+  const lever = $('#slotsLever');
+  if (lever) {
+    lever.classList.add('pulled');
+    setTimeout(() => lever.classList.remove('pulled'), 300);
+  }
+
   $('#spinBtn').textContent = '⚡ SPINNING ⚡';
   $('#slotResult').textContent = '';
   $('#nearMiss').classList.remove('show');
@@ -1186,14 +1218,14 @@ async function spinSlots() {
 
     let pos = 0;
     const spinInterval = setInterval(() => {
-      pos += 54;
-      strip.style.transform = `translateY(-${pos % (54 * 30)}px)`;
+      pos += 48;
+      strip.style.transform = `translateY(-${pos % (48 * 30)}px)`;
     }, 50);
 
     await new Promise(r => setTimeout(r, 800 + i * 400));
     clearInterval(spinInterval);
     strip.classList.remove('spinning');
-    strip.style.transform = `translateY(-${LAND_INDEX * 54}px)`;
+    strip.style.transform = `translateY(-${LAND_INDEX * 48}px)`;
   }
 
   // Check if we hit doomsday combo (all three are doomsday words)
@@ -1235,7 +1267,7 @@ async function spinSlots() {
   }
 
   $('#spinBtn').classList.remove('spinning');
-  $('#spinBtn').textContent = 'SPIN THE SLOTPOCALYPSE';
+  $('#spinBtn').textContent = 'PULL';
   SLOT_SPINNING = false;
 }
 
