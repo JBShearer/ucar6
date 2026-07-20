@@ -1038,48 +1038,6 @@ async function loadFeed(append = false){
     }
 
     wireArticles(feed);
-  } else {
-    let query = sb.from('cases')
-      .select('id, case_number, title_render, filing_count, good_votes, evil_votes, fake_votes, last_filed_at')
-      .eq('status','live');
-
-    // Apply sort for cases view
-    // Apply verdict filter server-side
-    if(VERDICT_FILTER === 'good') {
-      query = query.gt('good_votes', 0);
-    } else if(VERDICT_FILTER === 'evil') {
-      query = query.gt('evil_votes', 0);
-    }
-
-    if(SORT_BY === 'newest') query = query.order('case_number', {ascending: false});
-    else if(SORT_BY === 'votes') query = query.order('good_votes', {ascending: false});
-    else if(SORT_BY === 'activity') query = query.order('filing_count', {ascending: false});
-    else if(SORT_BY === 'trending') query = query.order('last_filed_at', {ascending: false, nullsFirst: false});
-
-    query = query.range(FEED_OFFSET, FEED_OFFSET + PAGE_SIZE - 1);
-
-    let { data } = await query;
-
-    FEED_HAS_MORE = data && data.length === PAGE_SIZE;
-    FEED_OFFSET += data?.length || 0;
-
-    if(append) {
-      feed.querySelector('.load-more')?.remove();
-      const newHtml = (data||[]).map(c => caseCard(c)).join('');
-      feed.insertAdjacentHTML('beforeend', newHtml);
-    } else {
-      feed.innerHTML = (data?.length)
-        ? data.map(c => caseCard(c)).join('')
-        : `<div class="empty">${VERDICT_FILTER ? 'No ' + VERDICT_FILTER + ' cases yet.' : 'No cases yet.'}</div>`;
-    }
-
-    if(FEED_HAS_MORE) {
-      feed.insertAdjacentHTML('beforeend', '<div class="load-more" style="text-align:center;padding:20px;color:var(--olive);font-size:12px">Scroll for more...</div>');
-    }
-
-    feed.querySelectorAll('.caserow').forEach(el =>
-      el.addEventListener('click', () => openCase(el.dataset.case)));
-  }
 
   FEED_LOADING = false;
 }
