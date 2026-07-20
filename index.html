@@ -148,11 +148,11 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .casebook-section{margin-bottom:16px;max-width:920px;margin-left:auto;margin-right:auto;padding:0 16px}
 .casebook-toggle{width:100%;display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--case-bg);
   border:2px solid var(--ink);cursor:pointer;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.06em;
-  box-shadow:3px 3px 0 var(--ink)}
-.casebook-toggle:hover{background:var(--ink);color:var(--paper)}
+  box-shadow:3px 3px 0 var(--ink);color:var(--ink);transition:transform .15s, box-shadow .15s}
+.casebook-toggle:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)}
+.casebook-toggle:active{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink)}
 .casebook-toggle .casebook-title{font-weight:700}
 .casebook-toggle .casebook-stats{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive);flex:1}
-.casebook-toggle:hover .casebook-stats{color:var(--paper);opacity:.8}
 .casebook-toggle .arrow{transition:transform .2s}
 .casebook-section.open .casebook-toggle .arrow{transform:rotate(180deg)}
 .casebook-content{display:none;border:2px solid var(--ink);border-top:none;background:var(--card);max-height:60vh;overflow-y:auto}
@@ -624,6 +624,16 @@ async function loadCasebookStats() {
 
   $('#casebookStats').textContent = `${filingsRes.count || 0} articles · ${casesRes.count || 0} cases · ${trackedCount} tracked`;
   $('#trackedCount').textContent = trackedCount;
+}
+
+// Quick update of tracked count without full reload
+function updateTrackedCount() {
+  const count = MY_TRACKS.size;
+  $('#trackedCount').textContent = count;
+  const statsEl = $('#casebookStats');
+  if(statsEl.textContent.includes('tracked')) {
+    statsEl.textContent = statsEl.textContent.replace(/\d+ tracked/, `${count} tracked`);
+  }
 }
 
 async function loadTrackedCases() {
@@ -1155,19 +1165,25 @@ function wireArticles(root){
   root.querySelectorAll('[data-action="track"]').forEach(btn => {
     btn.addEventListener('click', async e => {
       e.stopPropagation();
+      e.preventDefault();
       const caseId = btn.closest('.article').dataset.case;
       if(!USER || !caseId) return;
 
       if(MY_TRACKS.has(caseId)){
         await sb.from('tracks').delete().eq('user_id',USER.id).eq('case_id',caseId);
         MY_TRACKS.delete(caseId);
+        btn.classList.remove('on');
+        btn.textContent = '☆ Track';
       } else {
         await sb.from('tracks').upsert({ user_id: USER.id, case_id: caseId });
         MY_TRACKS.add(caseId);
+        btn.classList.add('on');
+        btn.textContent = '★ Tracked';
       }
       // Save to localStorage for cross-device sync
       localStorage.setItem('ucar-tracks', JSON.stringify([...MY_TRACKS]));
-      loadFeed();
+      // Update tracked count without reloading feed
+      updateTrackedCount();
     });
   });
 
