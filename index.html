@@ -499,7 +499,7 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
 <header>
   <div class="brand">
     <h1>USE CASE ARMS RACE<span> →</span></h1>
-    <div class="tag">Vote for good AI.<span class="line2"> Report evil AI before it reports you.</span></div>
+    <div class="tag"><span id="tagFade">Upvote the good AI use cases. Report evil AI before it reports you.</span><span id="tagStay" style="display:none">Live every day until robots drag us away.</span></div>
   </div>
   <div class="hdr-btns">
     <button class="hdr-btn" id="aboutBtn">About</button>
@@ -2756,6 +2756,23 @@ let qt; $('#q').oninput = () => { clearTimeout(qt); qt=setTimeout(loadFeed, 350)
 // Expose functions for inline onclick handlers
 window.openCase = openCase;
 window.startAdventure = startAdventure;
+
+// Tagline fade - first message fades after 5s, permanent message appears
+setTimeout(() => {
+  const fade = $('#tagFade');
+  const stay = $('#tagStay');
+  if (fade && stay) {
+    fade.style.transition = 'opacity 1.5s';
+    fade.style.opacity = '0';
+    setTimeout(() => {
+      fade.style.display = 'none';
+      stay.style.display = 'inline';
+      stay.style.opacity = '0';
+      stay.style.transition = 'opacity 1s';
+      requestAnimationFrame(() => stay.style.opacity = '1');
+    }, 1500);
+  }
+}, 5000);
 
 boot().then(checkRoute);
 </script>
