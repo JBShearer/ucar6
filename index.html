@@ -1012,17 +1012,36 @@ const NEAR_MISS_MESSAGES = [
   "Plot twist: The slot machine achieved sentience but chose mercy."
 ];
 
+let SLOT_CASES = []; // Real cases for the slot machine
+
 async function loadSlotData() {
-  // Load actual vocab terms from database
-  const { data: verbs } = await sb.from('vocab_terms').select('term').eq('kind', 'verb').eq('status', 'active').limit(100);
-  const { data: objects } = await sb.from('vocab_terms').select('term').eq('kind', 'object_class').eq('status', 'active').limit(100);
-  const { data: instruments } = await sb.from('vocab_terms').select('term').eq('kind', 'instrument').eq('status', 'active').limit(100);
+  // Load real cases - these are guaranteed to exist
+  const { data: cases } = await sb.from('cases')
+    .select('id, case_number, title_render')
+    .eq('status', 'live')
+    .gt('filing_count', 0)
+    .limit(500);
 
-  SLOT_VERBS = (verbs || []).map(v => v.term.toUpperCase());
-  SLOT_OBJECTS = (objects || []).map(o => o.term.toUpperCase());
-  SLOT_INSTRUMENTS = (instruments || []).map(i => i.term.toUpperCase());
+  SLOT_CASES = (cases || []).map(c => {
+    // Parse "VERB OBJECT · WITH INSTRUMENT" format
+    const match = c.title_render.match(/^(.+?)\s+(.+?)\s+·\s+WITH\s+(.+)$/i);
+    if (match) {
+      return { id: c.id, case_number: c.case_number, verb: match[1], object: match[2], instrument: match[3] };
+    }
+    // Handle "VERB · WITH INSTRUMENT" (no object)
+    const match2 = c.title_render.match(/^(.+?)\s+·\s+WITH\s+(.+)$/i);
+    if (match2) {
+      return { id: c.id, case_number: c.case_number, verb: match2[1], object: '', instrument: match2[2] };
+    }
+    return null;
+  }).filter(Boolean);
 
-  // Fallbacks if any list is empty
+  // Extract unique terms for the spinning animation
+  SLOT_VERBS = [...new Set(SLOT_CASES.map(c => c.verb))];
+  SLOT_OBJECTS = [...new Set(SLOT_CASES.map(c => c.object).filter(Boolean))];
+  SLOT_INSTRUMENTS = [...new Set(SLOT_CASES.map(c => c.instrument))];
+
+  // Fallbacks
   if (!SLOT_VERBS.length) SLOT_VERBS = ['ANALYZE', 'GENERATE', 'DETECT', 'PREDICT', 'MONITOR'];
   if (!SLOT_OBJECTS.length) SLOT_OBJECTS = ['USERS', 'DOCUMENTS', 'IMAGES', 'DATA', 'PATIENTS'];
   if (!SLOT_INSTRUMENTS.length) SLOT_INSTRUMENTS = ['NEURAL NETWORKS', 'CHATBOTS', 'COMPUTER VISION'];
@@ -1051,7 +1070,7 @@ function populateReel(stripId, items) {
 }
 
 async function spinSlots() {
-  if (SLOT_SPINNING || !SLOT_VERBS.length) return;
+  if (SLOT_SPINNING || !SLOT_CASES.length) return;
   SLOT_SPINNING = true;
 
   $('#spinBtn').classList.add('spinning');
@@ -1059,11 +1078,11 @@ async function spinSlots() {
   $('#slotResult').textContent = '';
   $('#nearMiss').classList.remove('show');
 
-  // Pick final results FIRST
-  const finalVerb = SLOT_VERBS[Math.floor(Math.random() * SLOT_VERBS.length)];
-  const finalObject = SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
-  const finalInstrument = SLOT_INSTRUMENTS[Math.floor(Math.random() * SLOT_INSTRUMENTS.length)];
-  const results = [finalVerb, finalObject, finalInstrument];
+  // Pick a random REAL case - guaranteed to exist
+  const pickedCase = SLOT_CASES[Math.floor(Math.random() * SLOT_CASES.length)];
+  const finalVerb = pickedCase.verb;
+  const finalObject = pickedCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
+  const finalInstrument = pickedCase.instrument;
 
   // Build reels with the final result guaranteed at a known position
   const LAND_INDEX = 25;
@@ -1074,8 +1093,7 @@ async function spinSlots() {
       if (i === LAND_INDEX) {
         display.push(finalItem);
       } else {
-        const item = shuffled[i % shuffled.length];
-        display.push(item);
+        display.push(shuffled[i % shuffled.length]);
       }
     }
     return display.map(item => {
@@ -1096,48 +1114,27 @@ async function spinSlots() {
     strip.classList.add('spinning');
     strip.style.transform = 'translateY(0)';
 
-    // Fast spin
     let pos = 0;
     const spinInterval = setInterval(() => {
       pos += 44;
       strip.style.transform = `translateY(-${pos % (44 * 30)}px)`;
     }, 50);
 
-    // Stop after staggered delays
     await new Promise(r => setTimeout(r, 800 + i * 400));
     clearInterval(spinInterval);
     strip.classList.remove('spinning');
-
-    // Land on the known position
     strip.style.transform = `translateY(-${LAND_INDEX * 44}px)`;
   }
 
-  // Show result - we know exactly what it is
-  const caseTitle = `${results[0]} ${results[1]} · WITH ${results[2]}`;
+  // Always lands on a real case!
+  $('#slotResult').innerHTML = `✨ It's real! <a onclick="openCase('${pickedCase.id}')">View Case #${pickedCase.case_number}</a>`;
 
-  // Check if this case exists
-  const { data: matchingCase } = await sb.from('cases')
-    .select('id, case_number')
-    .ilike('title_render', `%${results[0]}%${results[1]}%${results[2]}%`)
-    .eq('status', 'live')
-    .limit(1);
-
-  if (matchingCase && matchingCase.length > 0) {
-    $('#slotResult').innerHTML = `✨ It's real! <a onclick="openCase('${matchingCase[0].id}')">View Case #${matchingCase[0].case_number}</a>`;
-    // Random chance of "near miss" joke
-    if (Math.random() < 0.4) {
-      setTimeout(() => {
-        $('#nearMiss').textContent = NEAR_MISS_MESSAGES[Math.floor(Math.random() * NEAR_MISS_MESSAGES.length)];
-        $('#nearMiss').classList.add('show');
-      }, 500);
-    }
-  } else {
-    // Not in docket - 50% chance to trigger adventure
-    if (Math.random() < 0.5) {
-      $('#slotResult').innerHTML = `${caseTitle} — <a onclick="startAdventure()" style="color:#8B5CF6;cursor:pointer">Something stirs in the lab...</a>`;
-    } else {
-      $('#slotResult').textContent = `${caseTitle} — not in the docket (yet)`;
-    }
+  // Random chance of "near miss" joke
+  if (Math.random() < 0.4) {
+    setTimeout(() => {
+      $('#nearMiss').textContent = NEAR_MISS_MESSAGES[Math.floor(Math.random() * NEAR_MISS_MESSAGES.length)];
+      $('#nearMiss').classList.add('show');
+    }, 500);
   }
 
   $('#spinBtn').classList.remove('spinning');
