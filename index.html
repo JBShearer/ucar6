@@ -145,35 +145,34 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .sort-btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 
 /* Daily Show Section */
-.daily-show{max-width:920px;margin:0 auto 16px;padding:0 16px}
-.daily-show-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.daily-show-badge{font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;letter-spacing:.08em;
+.daily-show{max-width:920px;margin:0 auto 20px;padding:0 16px}
+.daily-show-header{text-align:center;margin-bottom:16px}
+.daily-show-badge{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;letter-spacing:.1em;
   background:linear-gradient(135deg,#FF6B6B,#4ECDC4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
   background-clip:text;animation:shimmer 3s infinite}
+.daily-show-tagline{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--olive);margin-top:4px;letter-spacing:.05em}
 @keyframes shimmer{0%,100%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(30deg)}}
-.daily-show-date{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive)}
-.daily-show-content{background:var(--case-bg);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);
-  padding:20px;display:flex;gap:20px;flex-wrap:wrap;align-items:center}
-.daily-case{flex:1;min-width:250px}
-.daily-case-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.15em;color:var(--olive);margin-bottom:4px}
-.daily-case-title{font-family:'Oswald',sans-serif;font-size:22px;text-transform:uppercase;line-height:1.2;margin:0 0 8px;color:var(--ink)}
-.daily-case-tagline{font-family:'Archivo',sans-serif;font-size:13px;color:var(--olive);margin:0;font-style:italic}
-.daily-share{display:flex;flex-direction:column;gap:8px}
-.daily-share-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--olive)}
-.daily-share-buttons{display:flex;gap:6px}
-.daily-btn{width:40px;height:40px;border:2px solid var(--ink);cursor:pointer;font-size:16px;
-  transition:all .15s;box-shadow:2px 2px 0 var(--ink);display:flex;align-items:center;justify-content:center}
-.daily-btn:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
-.daily-btn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink)}
-.daily-btn.buffer{background:#231F20;color:#fff;font-size:12px;width:auto;padding:0 12px}
-.daily-btn.linkedin{background:#0A66C2;color:#fff;font-weight:700}
-.daily-btn.tiktok{background:#000;color:#fff}
-.daily-btn.instagram{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff}
-.daily-btn.youtube{background:#FF0000;color:#fff}
-.daily-show-admin{margin-top:10px;display:flex;gap:8px}
-.daily-admin-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 12px;border:1px dashed var(--olive);
-  background:none;color:var(--olive);cursor:pointer}
-.daily-admin-btn:hover{border-style:solid;color:var(--ink)}
+.daily-show-content{background:var(--case-bg);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);overflow:hidden}
+.daily-video-container{display:flex;flex-wrap:wrap}
+.daily-video{flex:2;min-width:280px;background:#000;aspect-ratio:9/16;max-height:480px;position:relative;display:flex;align-items:center;justify-content:center}
+.daily-video iframe{width:100%;height:100%;border:none}
+.video-placeholder{color:#666;font-family:'IBM Plex Mono',monospace;font-size:12px;text-align:center;padding:20px}
+.daily-episode-info{flex:1;min-width:200px;padding:20px;display:flex;flex-direction:column;justify-content:center}
+.episode-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--olive);margin-bottom:8px}
+.episode-case{font-family:'Oswald',sans-serif;font-size:20px;text-transform:uppercase;line-height:1.2;margin:0 0 12px;color:var(--ink)}
+.episode-link{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--stamp);text-decoration:none;cursor:pointer}
+.episode-link:hover{text-decoration:underline}
+.daily-watch-on{padding:12px 20px;border-top:2px solid var(--ink);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.watch-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--olive)}
+.watch-buttons{display:flex;gap:8px;flex-wrap:wrap}
+.watch-btn{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.05em;padding:6px 12px;
+  text-decoration:none;border:2px solid var(--ink);transition:all .15s;box-shadow:2px 2px 0 var(--ink)}
+.watch-btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)}
+.watch-btn.tiktok{background:#000;color:#fff;border-color:#000}
+.watch-btn.youtube{background:#FF0000;color:#fff;border-color:#FF0000}
+.watch-btn.instagram{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;border-color:#bc1888}
+.watch-btn.linkedin{background:#0A66C2;color:#fff;border-color:#0A66C2}
+.daily-status{text-align:center;margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--evil)}
 
 /* Slot Machine */
 .slot-machine{max-width:920px;margin:0 auto 20px;padding:0 16px}
@@ -479,30 +478,31 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
 <!-- Daily Show Section -->
 <div id="dailyShow" class="daily-show">
   <div class="daily-show-header">
-    <div class="daily-show-badge">📺 DAILY SHOW</div>
-    <div class="daily-show-date" id="showDate"></div>
+    <div class="daily-show-badge">📺 THE DAILY USE CASE</div>
+    <div class="daily-show-tagline">Filmed live every day until the robots drag him away</div>
   </div>
   <div class="daily-show-content" id="dailyShowContent">
-    <div class="daily-case">
-      <div class="daily-case-label">TODAY'S USE CASE</div>
-      <h2 class="daily-case-title" id="dailyCaseTitle">Loading...</h2>
-      <p class="daily-case-tagline" id="dailyCaseTagline"></p>
+    <div class="daily-video-container">
+      <div class="daily-video" id="dailyVideo">
+        <div class="video-placeholder">Loading latest episode...</div>
+      </div>
+      <div class="daily-episode-info">
+        <div class="episode-label">TODAY'S CASE</div>
+        <h2 class="episode-case" id="episodeCase">—</h2>
+        <a class="episode-link" id="episodeCaseLink">View in docket →</a>
+      </div>
     </div>
-    <div class="daily-share">
-      <div class="daily-share-label">Share the show:</div>
-      <div class="daily-share-buttons">
-        <button class="daily-btn buffer" data-platform="buffer" title="Add to Buffer queue">📅 Buffer</button>
-        <button class="daily-btn linkedin" data-platform="linkedin" title="Share on LinkedIn">in</button>
-        <button class="daily-btn tiktok" data-platform="tiktok" title="Share on TikTok">♪</button>
-        <button class="daily-btn instagram" data-platform="instagram" title="Share on Instagram">📷</button>
-        <button class="daily-btn youtube" data-platform="youtube" title="Share on YouTube">▶</button>
+    <div class="daily-watch-on">
+      <div class="watch-label">Watch on:</div>
+      <div class="watch-buttons">
+        <a class="watch-btn tiktok" id="watchTiktok" href="#" target="_blank">TikTok</a>
+        <a class="watch-btn youtube" id="watchYoutube" href="#" target="_blank">YouTube</a>
+        <a class="watch-btn instagram" id="watchInstagram" href="#" target="_blank">Instagram</a>
+        <a class="watch-btn linkedin" id="watchLinkedin" href="#" target="_blank">LinkedIn</a>
       </div>
     </div>
   </div>
-  <div class="daily-show-admin" id="dailyShowAdmin" style="display:none">
-    <button class="daily-admin-btn" id="pickDailyCase">🎲 Pick Random Case</button>
-    <button class="daily-admin-btn" id="editDailyShow">✏️ Edit Show</button>
-  </div>
+  <div class="daily-status" id="dailyStatus"></div>
 </div>
 
 <!-- Slot Machine -->
@@ -735,130 +735,114 @@ $('#themeToggle').onclick = () => setTheme(document.body.dataset.theme === 'dark
 setTheme(localStorage.getItem('ucar-theme') || 'light');
 
 // ═══════════════════════════════════════════════════════════════════════════
-// DAILY SHOW
+// DAILY SHOW - Pulls latest from TikTok
 // ═══════════════════════════════════════════════════════════════════════════
-let DAILY_CASE = null;
+const TIKTOK_USERNAME = 'usecasearmsrace'; // Your TikTok handle
+let DAILY_EPISODE = null;
 
 async function loadDailyShow() {
-  const today = new Date().toISOString().split('T')[0];
-  $('#showDate').textContent = new Date().toLocaleDateString('en-US', {weekday:'long', month:'short', day:'numeric'});
+  try {
+    // Fetch latest TikTok video via oEmbed
+    // Note: TikTok oEmbed requires a video URL, so we'll need to store/fetch the latest
+    // For now, check if we have episode data stored
+    const stored = localStorage.getItem('ucar-daily-episode');
+    let episode = stored ? JSON.parse(stored) : null;
 
-  // Try to load today's featured case from localStorage or pick one
-  const stored = localStorage.getItem('ucar-daily-show');
-  let daily = stored ? JSON.parse(stored) : null;
-
-  // If no stored daily or it's from a different day, pick a new one
-  if (!daily || daily.date !== today) {
-    // Pick a random interesting case (has votes, recent activity)
-    const { data } = await sb.from('cases')
-      .select('id, case_number, title_render, filing_count, good_votes, evil_votes')
-      .eq('status', 'live')
-      .gt('filing_count', 0)
-      .order('last_filed_at', { ascending: false })
-      .limit(50);
-
-    if (data && data.length > 0) {
-      const pick = data[Math.floor(Math.random() * Math.min(data.length, 20))];
-      daily = { date: today, caseId: pick.id, case: pick };
-      localStorage.setItem('ucar-daily-show', JSON.stringify(daily));
+    if (episode) {
+      DAILY_EPISODE = episode;
+      displayEpisode(episode);
+    } else {
+      // No episode yet - show placeholder
+      $('#dailyVideo').innerHTML = `
+        <div class="video-placeholder">
+          <div style="font-size:40px;margin-bottom:10px">📺</div>
+          <div>First episode coming soon...</div>
+          <div style="margin-top:8px;font-size:10px;opacity:.7">Filmed live every day until the robots drag him away</div>
+        </div>`;
+      $('#episodeCase').textContent = 'STANDBY';
+      $('#episodeCaseLink').style.display = 'none';
     }
-  }
-
-  if (daily?.case) {
-    DAILY_CASE = daily.case;
-    $('#dailyCaseTitle').textContent = daily.case.title_render;
-    $('#dailyCaseTagline').textContent = `Case #${daily.case.case_number} · ${daily.case.filing_count} article${daily.case.filing_count === 1 ? '' : 's'} filed`;
-    $('#dailyShowContent').style.cursor = 'pointer';
-    $('#dailyShowContent').onclick = () => openCase(daily.case.id);
-  } else {
-    $('#dailyCaseTitle').textContent = 'No case selected';
-    $('#dailyCaseTagline').textContent = 'Check back soon!';
-  }
-
-  // Show admin controls if admin
-  if (localStorage.getItem('ucar-admin-key')) {
-    $('#dailyShowAdmin').style.display = 'flex';
+  } catch (err) {
+    console.error('Failed to load daily show:', err);
+    $('#dailyStatus').textContent = '⚠️ Could not load latest episode';
   }
 }
 
-// Daily Show share buttons
-$$('.daily-btn').forEach(btn => {
-  btn.onclick = (e) => {
-    e.stopPropagation();
-    if (!DAILY_CASE) return;
-
-    const platform = btn.dataset.platform;
-    const caseTitle = DAILY_CASE.title_render;
-    const caseUrl = `${location.origin}?case=${DAILY_CASE.id}`;
-
-    // Funny/punchy share formats
-    const shareTexts = {
-      linkedin: `🤖 Today's AI Use Case: ${caseTitle}\n\nYes, this is real. AI is doing this now.\n\nSee more at the Use Case Arms Race docket 👇`,
-      tiktok: `AI can now ${caseTitle.toLowerCase()}. We're cooked. 🫠 #AI #tech #usecasearmsrace`,
-      instagram: `📺 DAILY USE CASE\n\n${caseTitle}\n\nThis is not a drill. AI is doing this.\n\n#AI #ArtificialIntelligence #TechNews #UseCaseArmsRace`,
-      youtube: `AI Use Case of the Day: ${caseTitle} | Use Case Arms Race`,
-      buffer: `🤖 Today's AI Use Case: ${caseTitle}\n\nTrack what AI is doing to people at usecasearmsrace.com`
-    };
-
-    const text = encodeURIComponent(shareTexts[platform] || shareTexts.buffer);
-    const url = encodeURIComponent(caseUrl);
-
-    let shareUrl;
-    switch(platform) {
-      case 'buffer':
-        // Buffer share URL
-        shareUrl = `https://buffer.com/add?text=${text}&url=${url}`;
-        break;
-      case 'linkedin':
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
-        break;
-      case 'tiktok':
-        // TikTok doesn't have direct share URL, copy to clipboard instead
-        navigator.clipboard.writeText(`${shareTexts.tiktok}\n\n${caseUrl}`);
-        btn.textContent = '✓';
-        setTimeout(() => btn.textContent = '♪', 1500);
-        return;
-      case 'instagram':
-        // Instagram doesn't have direct share, copy to clipboard
-        navigator.clipboard.writeText(`${shareTexts.instagram}\n\n${caseUrl}`);
-        btn.textContent = '✓';
-        setTimeout(() => btn.textContent = '📷', 1500);
-        return;
-      case 'youtube':
-        // Copy YouTube-formatted title
-        navigator.clipboard.writeText(shareTexts.youtube);
-        btn.textContent = '✓';
-        setTimeout(() => btn.textContent = '▶', 1500);
-        return;
+function displayEpisode(episode) {
+  // Embed TikTok video
+  if (episode.tiktokUrl) {
+    // TikTok embed
+    $('#dailyVideo').innerHTML = `
+      <blockquote class="tiktok-embed" cite="${episode.tiktokUrl}" data-video-id="${episode.tiktokVideoId}" style="max-width:100%;min-width:100%;">
+        <section></section>
+      </blockquote>`;
+    // Load TikTok embed script if not already loaded
+    if (!document.querySelector('script[src*="tiktok.com/embed.js"]')) {
+      const script = document.createElement('script');
+      script.src = 'https://www.tiktok.com/embed.js';
+      script.async = true;
+      document.body.appendChild(script);
+    } else if (window.tiktokEmbed) {
+      window.tiktokEmbed.lib.render();
     }
-
-    if (shareUrl) {
-      window.open(shareUrl, '_blank', 'width=600,height=500');
-    }
-  };
-});
-
-// Admin: Pick random case
-$('#pickDailyCase')?.addEventListener('click', async () => {
-  const { data } = await sb.from('cases')
-    .select('id, case_number, title_render, filing_count, good_votes, evil_votes')
-    .eq('status', 'live')
-    .gt('filing_count', 0)
-    .order('last_filed_at', { ascending: false })
-    .limit(100);
-
-  if (data && data.length > 0) {
-    const pick = data[Math.floor(Math.random() * data.length)];
-    const today = new Date().toISOString().split('T')[0];
-    const daily = { date: today, caseId: pick.id, case: pick };
-    localStorage.setItem('ucar-daily-show', JSON.stringify(daily));
-    DAILY_CASE = pick;
-    $('#dailyCaseTitle').textContent = pick.title_render;
-    $('#dailyCaseTagline').textContent = `Case #${pick.case_number} · ${pick.filing_count} article${pick.filing_count === 1 ? '' : 's'} filed`;
+  } else if (episode.youtubeId) {
+    // YouTube Short embed fallback
+    $('#dailyVideo').innerHTML = `
+      <iframe src="https://www.youtube.com/embed/${episode.youtubeId}"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen></iframe>`;
   }
-});
 
-// Load daily show on init
+  // Show case info
+  if (episode.caseTitle) {
+    $('#episodeCase').textContent = episode.caseTitle;
+    if (episode.caseId) {
+      $('#episodeCaseLink').style.display = 'block';
+      $('#episodeCaseLink').onclick = () => openCase(episode.caseId);
+    }
+  }
+
+  // Update watch links
+  if (episode.tiktokUrl) $('#watchTiktok').href = episode.tiktokUrl;
+  else $('#watchTiktok').style.display = 'none';
+
+  if (episode.youtubeUrl) $('#watchYoutube').href = episode.youtubeUrl;
+  else $('#watchYoutube').style.display = 'none';
+
+  if (episode.instagramUrl) $('#watchInstagram').href = episode.instagramUrl;
+  else $('#watchInstagram').style.display = 'none';
+
+  if (episode.linkedinUrl) $('#watchLinkedin').href = episode.linkedinUrl;
+  else $('#watchLinkedin').style.display = 'none';
+
+  // Check days since last episode (the dread counter)
+  if (episode.date) {
+    const lastDate = new Date(episode.date);
+    const now = new Date();
+    const daysSince = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
+
+    if (daysSince > 1) {
+      $('#dailyStatus').textContent = `⚠️ ${daysSince} days since last transmission...`;
+    } else if (daysSince === 1) {
+      $('#dailyStatus').textContent = `📡 Last episode: yesterday`;
+    }
+  }
+}
+
+// Admin function to set today's episode (call from console or admin panel)
+window.setDailyEpisode = function(episodeData) {
+  // episodeData: { tiktokUrl, tiktokVideoId, youtubeUrl, youtubeId, instagramUrl, linkedinUrl, caseId, caseTitle, date }
+  const episode = {
+    ...episodeData,
+    date: episodeData.date || new Date().toISOString().split('T')[0]
+  };
+  localStorage.setItem('ucar-daily-episode', JSON.stringify(episode));
+  DAILY_EPISODE = episode;
+  displayEpisode(episode);
+  console.log('✅ Daily episode set:', episode);
+};
+
+// Load on init
 loadDailyShow();
 
 // ═══════════════════════════════════════════════════════════════════════════
