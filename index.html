@@ -298,6 +298,8 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .caserow .num{font-family:'Oswald',sans-serif;color:var(--stamp);font-weight:700;font-size:12px;letter-spacing:.1em;transition:color .3s}
 .caserow .t{font-family:'Oswald',sans-serif;font-size:15px;text-transform:uppercase;margin:4px 0;color:var(--ink)}
 .caserow .c{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive)}
+.caserow-actions{display:flex;gap:8px;margin-top:10px}
+.caserow-actions .act-btn{font-size:11px;padding:4px 10px}
 
 /* Good/Evil case styling - clean, no background tints */
 .caserow.verdict-good{border-color:var(--good)}
@@ -659,7 +661,11 @@ async function loadTrackedCases() {
 
   container.innerHTML = (data||[]).map(c => caseCard(c)).join('') || '<div class="empty">No tracked cases found.</div>';
   container.querySelectorAll('.caserow').forEach(el =>
-    el.addEventListener('click', () => openCase(el.dataset.case)));
+    el.addEventListener('click', (e) => {
+      if(e.target.closest('.act-btn')) return; // Don't open case if clicking buttons
+      openCase(el.dataset.case);
+    }));
+  wireCaseButtons(container);
 }
 
 async function loadMoreCases() {
@@ -685,7 +691,11 @@ async function loadMoreCases() {
       const div = document.createElement('div');
       div.innerHTML = caseCard(c);
       const row = div.firstElementChild;
-      row.addEventListener('click', () => openCase(c.id));
+      row.addEventListener('click', (e) => {
+        if(e.target.closest('.act-btn')) return;
+        openCase(c.id);
+      });
+      wireCaseButtons(row);
       container.appendChild(row);
     });
   }
@@ -941,7 +951,35 @@ function caseCard(c){
     <div class="num">CASE #${c.case_number}</div>
     <div class="t">${esc(c.title_render)}</div>
     <div class="c">${c.filing_count} article${c.filing_count===1?'':'s'} · ${c.good_votes} 👍 / ${c.evil_votes} 👎</div>
+    <div class="caserow-actions">
+      <button class="act-btn" data-action="share-case" data-case="${c.id}">⛓ Share</button>
+      <button class="act-btn" data-action="chat-case" data-case="${c.id}">💬 Chat</button>
+    </div>
   </div>`;
+}
+
+function wireCaseButtons(root) {
+  root.querySelectorAll('[data-action="share-case"]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const caseId = btn.dataset.case;
+      const url = `${location.origin}?case=${caseId}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        btn.textContent = '✓ Copied';
+        setTimeout(() => btn.textContent = '⛓ Share', 2000);
+      } catch(err) {
+        prompt('Copy this link:', url);
+      }
+    });
+  });
+  root.querySelectorAll('[data-action="chat-case"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const caseId = btn.dataset.case;
+      openCase(caseId); // Opens the case panel which has chat
+    });
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
