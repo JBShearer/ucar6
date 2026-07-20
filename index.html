@@ -415,7 +415,7 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
 <!-- Casebook Section (collapsible) -->
 <div id="casebook" class="casebook-section">
   <button class="casebook-toggle" id="casebookToggle">
-    <span class="casebook-title">📁 CASEBOOK</span>
+    <span class="casebook-title">📁 CASEFILE</span>
     <span class="casebook-stats" id="casebookStats">Loading...</span>
     <span class="arrow">▼</span>
   </button>
@@ -583,7 +583,7 @@ const sb = createClient(SUPABASE_URL, ANON_KEY);
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 let USER = null, MY_VOTES = new Map(), MY_TRACKS = new Set();
-let CASEBOOK_CASES = [], CASEBOOK_OFFSET = 0, CASEBOOK_LOADING = false, CASEBOOK_SORT = 'newest';
+let CASEFILE_CASES = [], CASEFILE_OFFSET = 0, CASEFILE_LOADING = false, CASEFILE_SORT = 'newest';
 let ALL_CASES = [], TOP_SUBJECTS = [], ACTIVE_TAG = null, SORT_BY = 'newest';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -617,18 +617,18 @@ $('#casebookToggle').onclick = () => {
   if(casebook.classList.contains('open')) {
     loadCasebookStats().catch(e => console.error('loadCasebookStats error:', e));
     loadTrackedCases().catch(e => console.error('loadTrackedCases error:', e));
-    if(CASEBOOK_CASES.length === 0) loadMoreCases().catch(e => console.error('loadMoreCases error:', e));
+    if(CASEFILE_CASES.length === 0) loadMoreCases().catch(e => console.error('loadMoreCases error:', e));
   }
 };
 
 // Casebook sort buttons
 $$('[data-case-sort]').forEach(btn => {
   btn.onclick = () => {
-    CASEBOOK_SORT = btn.dataset.caseSort;
+    CASEFILE_SORT = btn.dataset.caseSort;
     $$('[data-case-sort]').forEach(b => b.classList.remove('on'));
     btn.classList.add('on');
-    CASEBOOK_CASES = [];
-    CASEBOOK_OFFSET = 0;
+    CASEFILE_CASES = [];
+    CASEFILE_OFFSET = 0;
     $('#allCasesList').innerHTML = '';
     loadMoreCases();
   };
@@ -637,7 +637,7 @@ $$('[data-case-sort]').forEach(btn => {
 // Casebook infinite scroll
 $('#casebookContent').onscroll = (e) => {
   const el = e.target;
-  if(el.scrollTop + el.clientHeight >= el.scrollHeight - 100 && !CASEBOOK_LOADING) {
+  if(el.scrollTop + el.clientHeight >= el.scrollHeight - 100 && !CASEFILE_LOADING) {
     loadMoreCases();
   }
 };
@@ -700,23 +700,23 @@ async function loadTrackedCases() {
 }
 
 async function loadMoreCases() {
-  if(CASEBOOK_LOADING) return;
-  CASEBOOK_LOADING = true;
+  if(CASEFILE_LOADING) return;
+  CASEFILE_LOADING = true;
   $('#casesLoader').style.display = 'block';
 
   let query = sb.from('cases')
     .select('id, case_number, title_render, filing_count, good_votes, evil_votes, last_filed_at')
     .eq('status', 'live');
 
-  if(CASEBOOK_SORT === 'newest') query = query.order('last_filed_at', {ascending: false});
-  else if(CASEBOOK_SORT === 'votes') query = query.order('good_votes', {ascending: false});
-  else if(CASEBOOK_SORT === 'filings') query = query.order('filing_count', {ascending: false});
+  if(CASEFILE_SORT === 'newest') query = query.order('last_filed_at', {ascending: false});
+  else if(CASEFILE_SORT === 'votes') query = query.order('good_votes', {ascending: false});
+  else if(CASEFILE_SORT === 'filings') query = query.order('filing_count', {ascending: false});
 
-  const { data } = await query.range(CASEBOOK_OFFSET, CASEBOOK_OFFSET + 19);
+  const { data } = await query.range(CASEFILE_OFFSET, CASEFILE_OFFSET + 19);
 
   if(data && data.length > 0) {
-    CASEBOOK_CASES.push(...data);
-    CASEBOOK_OFFSET += data.length;
+    CASEFILE_CASES.push(...data);
+    CASEFILE_OFFSET += data.length;
     const container = $('#allCasesList');
     data.forEach(c => {
       const div = document.createElement('div');
@@ -732,7 +732,7 @@ async function loadMoreCases() {
   }
 
   $('#casesLoader').style.display = 'none';
-  CASEBOOK_LOADING = false;
+  CASEFILE_LOADING = false;
 }
 
 // Import shared case file
