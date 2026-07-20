@@ -1022,10 +1022,15 @@ async function loadSlotData() {
   SLOT_OBJECTS = (objects || []).map(o => o.term.toUpperCase());
   SLOT_INSTRUMENTS = (instruments || []).map(i => i.term.toUpperCase());
 
-  // Initialize reels with random items
-  if (SLOT_VERBS.length) populateReel('strip1', SLOT_VERBS);
-  if (SLOT_OBJECTS.length) populateReel('strip2', SLOT_OBJECTS);
-  if (SLOT_INSTRUMENTS.length) populateReel('strip3', SLOT_INSTRUMENTS);
+  // Fallbacks if any list is empty
+  if (!SLOT_VERBS.length) SLOT_VERBS = ['ANALYZE', 'GENERATE', 'DETECT', 'PREDICT', 'MONITOR'];
+  if (!SLOT_OBJECTS.length) SLOT_OBJECTS = ['USERS', 'DOCUMENTS', 'IMAGES', 'DATA', 'PATIENTS'];
+  if (!SLOT_INSTRUMENTS.length) SLOT_INSTRUMENTS = ['NEURAL NETWORKS', 'CHATBOTS', 'COMPUTER VISION'];
+
+  // Initialize reels
+  populateReel('strip1', SLOT_VERBS);
+  populateReel('strip2', SLOT_OBJECTS);
+  populateReel('strip3', SLOT_INSTRUMENTS);
 }
 
 function populateReel(stripId, items) {
@@ -1060,13 +1065,13 @@ async function spinSlots() {
   populateReel('strip3', SLOT_INSTRUMENTS);
 
   const strips = [
-    { el: $('#strip1'), items: SLOT_VERBS, doom: DOOMSDAY_VERBS },
-    { el: $('#strip2'), items: SLOT_OBJECTS, doom: DOOMSDAY_OBJECTS },
-    { el: $('#strip3'), items: SLOT_INSTRUMENTS, doom: DOOMSDAY_INSTRUMENTS }
+    { el: $('#strip1'), doom: DOOMSDAY_VERBS },
+    { el: $('#strip2'), doom: DOOMSDAY_OBJECTS },
+    { el: $('#strip3'), doom: DOOMSDAY_INSTRUMENTS }
   ];
 
-  // Pick final results - random index into each reel
-  const finalIndices = strips.map(s => Math.floor(Math.random() * s.items.length) + 5);
+  // Pick final results - random index into each reel (reels have 60 items)
+  const finalIndices = strips.map(() => Math.floor(Math.random() * 40) + 10);
 
   // Spin animation
   for (let i = 0; i < strips.length; i++) {
@@ -1092,7 +1097,8 @@ async function spinSlots() {
   // Read actual visible results from the reels
   const results = strips.map((s, i) => {
     const items = s.el.querySelectorAll('.reel-item');
-    return items[finalIndices[i]]?.textContent?.trim() || s.items[0];
+    const text = items[finalIndices[i]]?.textContent?.trim();
+    return text || 'UNKNOWN';
   });
 
   // Show result
@@ -1129,9 +1135,13 @@ async function spinSlots() {
 }
 
 // Slots modal open/close
-$('#luckyBtn').onclick = () => {
+let slotDataLoaded = false;
+$('#luckyBtn').onclick = async () => {
   $('#slotsModal').classList.add('open');
-  if (!SLOT_VERBS.length) loadSlotData();
+  if (!slotDataLoaded) {
+    await loadSlotData();
+    slotDataLoaded = true;
+  }
 };
 $('#closeSlotsX').onclick = () => $('#slotsModal').classList.remove('open');
 $('#slotsModal').onclick = (e) => { if (e.target.id === 'slotsModal') $('#slotsModal').classList.remove('open'); };
