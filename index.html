@@ -145,7 +145,7 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .sort-btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 
 /* Casebook Section */
-.casebook-section{margin-bottom:16px}
+.casebook-section{margin-bottom:16px;max-width:920px;margin-left:auto;margin-right:auto;padding:0 16px}
 .casebook-toggle{width:100%;display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--case-bg);
   border:2px solid var(--ink);cursor:pointer;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.06em;
   box-shadow:3px 3px 0 var(--ink)}
@@ -626,12 +626,23 @@ async function loadTrackedCases() {
   const container = $('#trackedList');
   if(MY_TRACKS.size === 0) {
     container.innerHTML = '<div class="empty">Click ☆ Track on articles to build your case file.</div>';
+    $('#trackedCount').textContent = '0';
     return;
   }
   const { data } = await sb.from('cases')
     .select('id, case_number, title_render, filing_count, good_votes, evil_votes')
     .in('id', [...MY_TRACKS])
     .eq('status', 'live');
+
+  // Update tracked count to show actual live cases, not stale localStorage
+  const liveCount = (data || []).length;
+  $('#trackedCount').textContent = liveCount;
+  // Also update the stats line
+  const statsEl = $('#casebookStats');
+  if(statsEl.textContent.includes('tracked')) {
+    statsEl.textContent = statsEl.textContent.replace(/\d+ tracked/, `${liveCount} tracked`);
+  }
+
   container.innerHTML = (data||[]).map(c => caseCard(c)).join('') || '<div class="empty">No tracked cases found.</div>';
   container.querySelectorAll('.caserow').forEach(el =>
     el.addEventListener('click', () => openCase(el.dataset.case)));
