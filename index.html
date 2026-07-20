@@ -144,35 +144,33 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .sort-btn:hover{border-color:var(--ink);color:var(--ink)}
 .sort-btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 
-/* Daily Show Section */
-.daily-show{max-width:920px;margin:0 auto 20px;padding:0 16px}
-.daily-show-header{text-align:center;margin-bottom:16px}
-.daily-show-badge{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;letter-spacing:.1em;
-  background:linear-gradient(135deg,#FF6B6B,#4ECDC4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  background-clip:text;animation:shimmer 3s infinite}
-.daily-show-tagline{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--olive);margin-top:4px;letter-spacing:.05em}
-@keyframes shimmer{0%,100%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(30deg)}}
-.daily-show-content{background:var(--case-bg);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);overflow:hidden}
-.daily-video-container{display:flex;flex-wrap:wrap}
-.daily-video{flex:2;min-width:280px;background:#000;aspect-ratio:9/16;max-height:480px;position:relative;display:flex;align-items:center;justify-content:center}
-.daily-video iframe{width:100%;height:100%;border:none}
-.video-placeholder{color:#666;font-family:'IBM Plex Mono',monospace;font-size:12px;text-align:center;padding:20px}
-.daily-episode-info{flex:1;min-width:200px;padding:20px;display:flex;flex-direction:column;justify-content:center}
-.episode-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--olive);margin-bottom:8px}
-.episode-case{font-family:'Oswald',sans-serif;font-size:20px;text-transform:uppercase;line-height:1.2;margin:0 0 12px;color:var(--ink)}
-.episode-link{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--stamp);text-decoration:none;cursor:pointer}
-.episode-link:hover{text-decoration:underline}
-.daily-watch-on{padding:12px 20px;border-top:2px solid var(--ink);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.watch-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--olive)}
-.watch-buttons{display:flex;gap:8px;flex-wrap:wrap}
-.watch-btn{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.05em;padding:6px 12px;
-  text-decoration:none;border:2px solid var(--ink);transition:all .15s;box-shadow:2px 2px 0 var(--ink)}
-.watch-btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)}
-.watch-btn.tiktok{background:#000;color:#fff;border-color:#000}
-.watch-btn.youtube{background:#FF0000;color:#fff;border-color:#FF0000}
-.watch-btn.instagram{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;border-color:#bc1888}
-.watch-btn.linkedin{background:#0A66C2;color:#fff;border-color:#0A66C2}
-.daily-status{text-align:center;margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--evil)}
+/* Daily Show - Compact */
+.daily-show{max-width:920px;margin:0 auto 16px;padding:0 16px;display:flex;gap:12px;align-items:stretch}
+.daily-video{width:120px;min-width:120px;aspect-ratio:9/16;background:#000;border:2px solid var(--ink);
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+.daily-video iframe,.daily-video blockquote{width:100%!important;height:100%!important;margin:0!important}
+.video-placeholder{color:#555;font-size:32px}
+.daily-info{flex:1;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.daily-tagline{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--olive);letter-spacing:.03em}
+.daily-case{font-family:'Oswald',sans-serif;font-size:16px;text-transform:uppercase;line-height:1.2;margin:0;color:var(--ink)}
+.daily-case-link{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--stamp);text-decoration:none}
+.daily-case-link:hover{text-decoration:underline}
+.daily-links{display:flex;gap:6px;margin-top:6px}
+.dl{width:28px;height:28px;display:flex;align-items:center;justify-content:center;text-decoration:none;
+  font-size:12px;border:1px solid var(--ink);transition:all .1s}
+.dl:hover{transform:scale(1.1)}
+.dl.tiktok{background:#000;color:#fff}
+.dl.youtube{background:#FF0000;color:#fff}
+.dl.instagram{background:linear-gradient(45deg,#f09433,#dc2743,#bc1888);color:#fff}
+.dl.linkedin{background:#0A66C2;color:#fff;font-weight:700;font-size:10px}
+.daily-status{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--evil);margin-top:4px}
+
+/* Lucky Button */
+.lucky-btn{background:linear-gradient(135deg,#FFD700,#FFA500);border:2px solid var(--ink);
+  font-size:18px;padding:8px 12px;cursor:pointer;box-shadow:2px 2px 0 var(--ink);
+  transition:all .15s;animation:pulse 2s infinite}
+.lucky-btn:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 
 /* Episode Admin Popup */
 .episode-popup{position:fixed;bottom:20px;right:20px;width:320px;background:var(--paper);border:3px solid var(--ink);
@@ -193,38 +191,35 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .episode-popup-actions .secondary{background:none;border:2px solid var(--ink);color:var(--ink)}
 #epStatus{margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--olive)}
 
-/* Slot Machine */
-.slot-machine{max-width:920px;margin:0 auto 20px;padding:0 16px}
-.slot-header{text-align:center;margin-bottom:12px}
-.slot-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;letter-spacing:.08em;color:var(--ink)}
-.slot-subtitle{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--olive);margin-top:4px}
-.slot-reels{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
-.slot-reel{flex:1;max-width:200px}
-.reel-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--olive);
-  text-align:center;margin-bottom:4px}
-.reel-window{height:44px;overflow:hidden;border:3px solid var(--ink);background:var(--card);
-  box-shadow:inset 0 2px 8px rgba(0,0,0,.15);position:relative}
-.reel-window::before,.reel-window::after{content:'';position:absolute;left:0;right:0;height:12px;z-index:1;pointer-events:none}
-.reel-window::before{top:0;background:linear-gradient(var(--card),transparent)}
-.reel-window::after{bottom:0;background:linear-gradient(transparent,var(--card))}
+/* Slots Modal */
+.slots-modal{background:rgba(0,0,0,.9)}
+.slots-box{background:linear-gradient(180deg,#1a1a2e 0%,#16213e 50%,#0f0f23 100%);border:4px solid #FFD700;
+  padding:30px;max-width:500px;width:95%;position:relative;box-shadow:0 0 60px rgba(255,215,0,.3),inset 0 0 60px rgba(255,215,0,.1)}
+.slots-close{position:absolute;top:10px;right:14px;background:none;border:none;color:#FFD700;font-size:28px;cursor:pointer}
+.slots-title{font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;text-align:center;
+  color:#FFD700;text-shadow:0 0 20px rgba(255,215,0,.5);letter-spacing:.15em;margin-bottom:8px}
+.slots-subtitle{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#888;margin-bottom:20px}
+.slots-warning{color:#ff6b6b;font-size:10px}
+.slots-reels{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
+.slots-reel{flex:1;max-width:140px}
+.reel-label{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.2em;color:#FFD700;text-align:center;margin-bottom:6px}
+.reel-window{height:50px;overflow:hidden;background:#000;border:3px solid #FFD700;box-shadow:inset 0 0 20px rgba(0,0,0,.8),0 0 10px rgba(255,215,0,.3)}
 .reel-strip{transition:transform .1s linear}
 .reel-strip.spinning{transition:none}
-.reel-item{height:44px;display:flex;align-items:center;justify-content:center;
-  font-family:'Oswald',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.03em;
-  padding:0 8px;text-align:center;color:var(--ink)}
-.reel-item.doomsday{color:var(--evil);font-weight:700}
-.slot-controls{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
-.slot-spin-btn{font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:.1em;padding:12px 32px;
-  background:var(--ink);color:var(--paper);border:3px solid var(--ink);cursor:pointer;
-  box-shadow:4px 4px 0 var(--stamp);transition:all .15s}
-.slot-spin-btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--stamp)}
-.slot-spin-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--stamp)}
-.slot-spin-btn.spinning{opacity:.6;pointer-events:none}
-.slot-result{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive)}
-.slot-result a{color:var(--stamp);text-decoration:underline;cursor:pointer}
-.slot-near-miss{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;
-  color:var(--evil);margin-top:10px;min-height:18px;opacity:0;transition:opacity .3s}
-.slot-near-miss.show{opacity:1}
+.reel-item{height:50px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;
+  font-size:10px;text-transform:uppercase;color:#fff;padding:0 4px;text-align:center}
+.reel-item.doomsday{color:#ff4444;text-shadow:0 0 10px #ff0000}
+.slots-spin{display:block;margin:0 auto;font-family:'Oswald',sans-serif;font-size:18px;letter-spacing:.1em;
+  padding:14px 40px;background:linear-gradient(180deg,#ff6b6b,#ee5a5a);color:#fff;border:3px solid #FFD700;
+  cursor:pointer;box-shadow:0 4px 0 #aa3333,0 0 20px rgba(255,107,107,.4);transition:all .1s}
+.slots-spin:hover{transform:translateY(-2px);box-shadow:0 6px 0 #aa3333,0 0 30px rgba(255,107,107,.6)}
+.slots-spin:active{transform:translateY(2px);box-shadow:0 2px 0 #aa3333}
+.slots-spin.spinning{opacity:.6;pointer-events:none}
+.slots-result{text-align:center;margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4ECDC4;min-height:20px}
+.slots-result a{color:#FFD700;text-decoration:underline;cursor:pointer}
+.slots-near-miss{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#ff6b6b;
+  margin-top:12px;min-height:18px;opacity:0;transition:opacity .3s}
+.slots-near-miss.show{opacity:1}
 
 /* Casebook Section */
 .casebook-section{margin-bottom:16px;max-width:920px;margin-left:auto;margin-right:auto;padding:0 16px}
@@ -494,67 +489,23 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
   </div>
 </header>
 
-<!-- Daily Show Section -->
+<!-- Daily Show - Compact -->
 <div id="dailyShow" class="daily-show">
-  <div class="daily-show-header">
-    <div class="daily-show-badge">📺 THE DAILY USE CASE</div>
-    <div class="daily-show-tagline">Filmed live every day until the robots drag him away</div>
+  <div class="daily-video" id="dailyVideo">
+    <div class="video-placeholder">📺</div>
   </div>
-  <div class="daily-show-content" id="dailyShowContent">
-    <div class="daily-video-container">
-      <div class="daily-video" id="dailyVideo">
-        <div class="video-placeholder">Loading latest episode...</div>
-      </div>
-      <div class="daily-episode-info">
-        <div class="episode-label">TODAY'S CASE</div>
-        <h2 class="episode-case" id="episodeCase">—</h2>
-        <a class="episode-link" id="episodeCaseLink">View in docket →</a>
-      </div>
+  <div class="daily-info">
+    <div class="daily-tagline">Filmed daily until the robots drag him away</div>
+    <h2 class="daily-case" id="episodeCase">—</h2>
+    <a class="daily-case-link" id="episodeCaseLink">View case →</a>
+    <div class="daily-links">
+      <a class="dl tiktok" id="watchTiktok" href="#" target="_blank" title="TikTok">♪</a>
+      <a class="dl youtube" id="watchYoutube" href="#" target="_blank" title="YouTube">▶</a>
+      <a class="dl instagram" id="watchInstagram" href="#" target="_blank" title="Instagram">📷</a>
+      <a class="dl linkedin" id="watchLinkedin" href="#" target="_blank" title="LinkedIn">in</a>
     </div>
-    <div class="daily-watch-on">
-      <div class="watch-label">Watch on:</div>
-      <div class="watch-buttons">
-        <a class="watch-btn tiktok" id="watchTiktok" href="#" target="_blank">TikTok</a>
-        <a class="watch-btn youtube" id="watchYoutube" href="#" target="_blank">YouTube</a>
-        <a class="watch-btn instagram" id="watchInstagram" href="#" target="_blank">Instagram</a>
-        <a class="watch-btn linkedin" id="watchLinkedin" href="#" target="_blank">LinkedIn</a>
-      </div>
-    </div>
+    <div class="daily-status" id="dailyStatus"></div>
   </div>
-  <div class="daily-status" id="dailyStatus"></div>
-</div>
-
-<!-- Slot Machine -->
-<div id="slotMachine" class="slot-machine">
-  <div class="slot-header">
-    <span class="slot-title">🎰 DOOMSDAY SLOTS</span>
-    <span class="slot-subtitle">Spin to discover AI use cases (don't worry, we filter out the apocalypse)</span>
-  </div>
-  <div class="slot-reels">
-    <div class="slot-reel" id="reel1">
-      <div class="reel-label">VERB</div>
-      <div class="reel-window">
-        <div class="reel-strip" id="strip1"></div>
-      </div>
-    </div>
-    <div class="slot-reel" id="reel2">
-      <div class="reel-label">OBJECT</div>
-      <div class="reel-window">
-        <div class="reel-strip" id="strip2"></div>
-      </div>
-    </div>
-    <div class="slot-reel" id="reel3">
-      <div class="reel-label">INSTRUMENT</div>
-      <div class="reel-window">
-        <div class="reel-strip" id="strip3"></div>
-      </div>
-    </div>
-  </div>
-  <div class="slot-controls">
-    <button class="slot-spin-btn" id="spinBtn">🎲 SPIN</button>
-    <div class="slot-result" id="slotResult"></div>
-  </div>
-  <div class="slot-near-miss" id="nearMiss"></div>
 </div>
 
 <!-- Casebook Section (collapsible) -->
@@ -625,6 +576,7 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
 
   <div id="controls">
     <input id="q" type="search" placeholder="search articles…" aria-label="Search">
+    <button id="luckyBtn" class="lucky-btn" title="Feeling Lucky?">🎰</button>
   </div>
 
   <div id="feed"><div class="empty">Opening the docket…</div></div>
@@ -748,6 +700,32 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
       <button id="epPublish" class="primary">🚀 Publish</button>
     </div>
     <div id="epStatus"></div>
+  </div>
+</div>
+
+<!-- Doomsday Slots Modal -->
+<div id="slotsModal" class="modal slots-modal">
+  <div class="slots-box">
+    <button class="slots-close" id="closeSlotsX">×</button>
+    <div class="slots-title">🎰 DOOMSDAY SLOTS</div>
+    <div class="slots-subtitle">Spin to discover AI use cases<br><span class="slots-warning">⚠️ Don't worry, we filter out the apocalypse</span></div>
+    <div class="slots-reels">
+      <div class="slots-reel">
+        <div class="reel-label">VERB</div>
+        <div class="reel-window"><div class="reel-strip" id="strip1"></div></div>
+      </div>
+      <div class="slots-reel">
+        <div class="reel-label">OBJECT</div>
+        <div class="reel-window"><div class="reel-strip" id="strip2"></div></div>
+      </div>
+      <div class="slots-reel">
+        <div class="reel-label">INSTRUMENT</div>
+        <div class="reel-window"><div class="reel-strip" id="strip3"></div></div>
+      </div>
+    </div>
+    <button class="slots-spin" id="spinBtn">🎲 PULL LEVER</button>
+    <div class="slots-result" id="slotResult"></div>
+    <div class="slots-near-miss" id="nearMiss"></div>
   </div>
 </div>
 
@@ -1109,9 +1087,17 @@ async function spinSlots() {
   }
 
   $('#spinBtn').classList.remove('spinning');
-  $('#spinBtn').textContent = '🎲 SPIN';
+  $('#spinBtn').textContent = '🎲 PULL LEVER';
   SLOT_SPINNING = false;
 }
+
+// Slots modal open/close
+$('#luckyBtn').onclick = () => {
+  $('#slotsModal').classList.add('open');
+  if (!SLOT_VERBS.length) loadSlotData();
+};
+$('#closeSlotsX').onclick = () => $('#slotsModal').classList.remove('open');
+$('#slotsModal').onclick = (e) => { if (e.target.id === 'slotsModal') $('#slotsModal').classList.remove('open'); };
 
 $('#spinBtn').onclick = spinSlots;
 loadSlotData();
