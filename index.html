@@ -1059,49 +1059,60 @@ async function spinSlots() {
   $('#slotResult').textContent = '';
   $('#nearMiss').classList.remove('show');
 
-  // Repopulate reels for fresh spin
-  populateReel('strip1', SLOT_VERBS);
-  populateReel('strip2', SLOT_OBJECTS);
-  populateReel('strip3', SLOT_INSTRUMENTS);
+  // Pick final results FIRST
+  const finalVerb = SLOT_VERBS[Math.floor(Math.random() * SLOT_VERBS.length)];
+  const finalObject = SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
+  const finalInstrument = SLOT_INSTRUMENTS[Math.floor(Math.random() * SLOT_INSTRUMENTS.length)];
+  const results = [finalVerb, finalObject, finalInstrument];
 
-  const strips = [
-    { el: $('#strip1'), doom: DOOMSDAY_VERBS },
-    { el: $('#strip2'), doom: DOOMSDAY_OBJECTS },
-    { el: $('#strip3'), doom: DOOMSDAY_INSTRUMENTS }
-  ];
+  // Build reels with the final result guaranteed at a known position
+  const LAND_INDEX = 25;
+  function buildReel(items, finalItem, doomsday) {
+    const shuffled = [...items].sort(() => Math.random() - 0.5);
+    const display = [];
+    for (let i = 0; i < 60; i++) {
+      if (i === LAND_INDEX) {
+        display.push(finalItem);
+      } else {
+        const item = shuffled[i % shuffled.length];
+        display.push(item);
+      }
+    }
+    return display.map(item => {
+      const isDoom = doomsday.includes(item);
+      return `<div class="reel-item ${isDoom ? 'doomsday' : ''}">${item}</div>`;
+    }).join('');
+  }
 
-  // Pick final results - random index into each reel (reels have 60 items)
-  const finalIndices = strips.map(() => Math.floor(Math.random() * 40) + 10);
+  $('#strip1').innerHTML = buildReel(SLOT_VERBS, finalVerb, DOOMSDAY_VERBS);
+  $('#strip2').innerHTML = buildReel(SLOT_OBJECTS, finalObject, DOOMSDAY_OBJECTS);
+  $('#strip3').innerHTML = buildReel(SLOT_INSTRUMENTS, finalInstrument, DOOMSDAY_INSTRUMENTS);
+
+  const strips = [$('#strip1'), $('#strip2'), $('#strip3')];
 
   // Spin animation
   for (let i = 0; i < strips.length; i++) {
     const strip = strips[i];
-    strip.el.classList.add('spinning');
+    strip.classList.add('spinning');
+    strip.style.transform = 'translateY(0)';
 
     // Fast spin
     let pos = 0;
     const spinInterval = setInterval(() => {
       pos += 44;
-      strip.el.style.transform = `translateY(-${pos % (44 * 30)}px)`;
+      strip.style.transform = `translateY(-${pos % (44 * 30)}px)`;
     }, 50);
 
     // Stop after staggered delays
     await new Promise(r => setTimeout(r, 800 + i * 400));
     clearInterval(spinInterval);
-    strip.el.classList.remove('spinning');
+    strip.classList.remove('spinning');
 
-    // Land on the target index
-    strip.el.style.transform = `translateY(-${finalIndices[i] * 44}px)`;
+    // Land on the known position
+    strip.style.transform = `translateY(-${LAND_INDEX * 44}px)`;
   }
 
-  // Read actual visible results from the reels
-  const results = strips.map((s, i) => {
-    const items = s.el.querySelectorAll('.reel-item');
-    const text = items[finalIndices[i]]?.textContent?.trim();
-    return text || 'UNKNOWN';
-  });
-
-  // Show result
+  // Show result - we know exactly what it is
   const caseTitle = `${results[0]} ${results[1]} · WITH ${results[2]}`;
 
   // Check if this case exists
