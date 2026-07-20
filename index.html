@@ -1113,27 +1113,46 @@ async function spinSlots() {
   $('#slotResult').textContent = '';
   $('#nearMiss').classList.remove('show');
 
-  // Check if user manually selected items (doomsday items at front of list)
-  const hasManualVerb = manualReelItems[0].length && manualReelIndex[0] > 0;
-  const hasManualObject = manualReelItems[1].length && manualReelIndex[1] > 0;
-  const hasManualInstrument = manualReelItems[2].length && manualReelIndex[2] > 0;
-  const hasManualSelection = hasManualVerb || hasManualObject || hasManualInstrument;
+  // Check if user manually selected items
+  const manualVerb = manualReelItems[0].length ? manualReelItems[0][manualReelIndex[0]] : null;
+  const manualObject = manualReelItems[1].length ? manualReelItems[1][manualReelIndex[1]] : null;
+  const manualInstrument = manualReelItems[2].length ? manualReelItems[2][manualReelIndex[2]] : null;
+  const hasManualSelection = manualVerb || manualObject || manualInstrument;
 
-  // 7% chance of triggering the adventure (rare) - OR if user picked doomsday items
-  const manualVerb = hasManualVerb ? manualReelItems[0][manualReelIndex[0]] : null;
-  const manualObject = hasManualObject ? manualReelItems[1][manualReelIndex[1]] : null;
-  const manualInstrument = hasManualInstrument ? manualReelItems[2][manualReelIndex[2]] : null;
+  // Check if any manual selection is a doomsday word
+  const manualVerbIsDoom = manualVerb && DOOMSDAY_VERBS.includes(manualVerb);
+  const manualObjectIsDoom = manualObject && DOOMSDAY_OBJECTS.includes(manualObject);
+  const manualInstrumentIsDoom = manualInstrument && DOOMSDAY_INSTRUMENTS.includes(manualInstrument);
 
-  const triggerAdventure = !hasManualSelection && Math.random() < 0.07;
+  // 7% random adventure chance (only if no manual selection)
+  const randomAdventure = !hasManualSelection && Math.random() < 0.07;
 
-  // Pick a random REAL case - guaranteed to exist
-  const pickedCase = SLOT_CASES[Math.floor(Math.random() * SLOT_CASES.length)];
-  const finalVerb = manualVerb || (triggerAdventure ? DOOMSDAY_VERBS[Math.floor(Math.random() * DOOMSDAY_VERBS.length)] : pickedCase.verb);
-  const finalObject = manualObject || (triggerAdventure ? DOOMSDAY_OBJECTS[Math.floor(Math.random() * DOOMSDAY_OBJECTS.length)] : (pickedCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)]));
-  const finalInstrument = manualInstrument || (triggerAdventure ? DOOMSDAY_INSTRUMENTS[Math.floor(Math.random() * DOOMSDAY_INSTRUMENTS.length)] : pickedCase.instrument);
+  let finalVerb, finalObject, finalInstrument, useRealCase;
+
+  if (hasManualSelection) {
+    // User picked something - use their picks, fill gaps with random
+    finalVerb = manualVerb || SLOT_VERBS[Math.floor(Math.random() * SLOT_VERBS.length)];
+    finalObject = manualObject || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
+    finalInstrument = manualInstrument || SLOT_INSTRUMENTS[Math.floor(Math.random() * SLOT_INSTRUMENTS.length)];
+    useRealCase = false; // Manual picks don't guarantee real cases
+  } else if (randomAdventure) {
+    // Random adventure - use doomsday words
+    finalVerb = DOOMSDAY_VERBS[Math.floor(Math.random() * DOOMSDAY_VERBS.length)];
+    finalObject = DOOMSDAY_OBJECTS[Math.floor(Math.random() * DOOMSDAY_OBJECTS.length)];
+    finalInstrument = DOOMSDAY_INSTRUMENTS[Math.floor(Math.random() * DOOMSDAY_INSTRUMENTS.length)];
+    useRealCase = false;
+  } else {
+    // Normal spin - pick a real case
+    const pickedCase = SLOT_CASES[Math.floor(Math.random() * SLOT_CASES.length)];
+    finalVerb = pickedCase.verb;
+    finalObject = pickedCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
+    finalInstrument = pickedCase.instrument;
+    useRealCase = pickedCase;
+  }
 
   // Reset manual selections after spin
   manualReelIndex = [0, 0, 0];
+  manualReelItems = [[], [], []];
 
   // Build reels with the final result guaranteed at a known position
   const LAND_INDEX = 25;
@@ -1177,19 +1196,19 @@ async function spinSlots() {
     strip.style.transform = `translateY(-${LAND_INDEX * 54}px)`;
   }
 
-  // Check if we hit the secret doomsday combo
+  // Check if we hit doomsday combo (all three are doomsday words)
   const hitDoomsday = DOOMSDAY_VERBS.includes(finalVerb) && DOOMSDAY_OBJECTS.includes(finalObject) && DOOMSDAY_INSTRUMENTS.includes(finalInstrument);
 
-  if (triggerAdventure || hitDoomsday) {
+  if (randomAdventure || hitDoomsday) {
     // Adventure trigger!
     $('#slotResult').innerHTML = `<span style="color:#ff00ff">☠️ DOOMSDAY COMBO ☠️</span>`;
     setTimeout(() => {
       $('#slotsModal').classList.remove('open');
       startAdventure();
     }, 1500);
-  } else {
-    // Normal case result
-    $('#slotResult').innerHTML = `✨ It's real! <a onclick="openCase('${pickedCase.id}')">View Case #${pickedCase.case_number}</a>`;
+  } else if (useRealCase) {
+    // Normal case result - we have a real case
+    $('#slotResult').innerHTML = `✨ It's real! <a onclick="openCase('${useRealCase.id}')">View Case #${useRealCase.case_number}</a>`;
 
     // Random chance of "near miss" joke
     if (Math.random() < 0.4) {
@@ -1197,6 +1216,21 @@ async function spinSlots() {
         $('#nearMiss').textContent = NEAR_MISS_MESSAGES[Math.floor(Math.random() * NEAR_MISS_MESSAGES.length)];
         $('#nearMiss').classList.add('show');
       }, 500);
+    }
+  } else {
+    // Manual selection that didn't hit full doomsday - try to find matching case
+    const caseTitle = `${finalVerb} ${finalObject} · WITH ${finalInstrument}`;
+    const { data: matchingCase } = await sb.from('cases')
+      .select('id, case_number')
+      .ilike('title_render', `%${finalVerb}%${finalInstrument}%`)
+      .eq('status', 'live')
+      .limit(1);
+
+    if (matchingCase && matchingCase.length > 0) {
+      $('#slotResult').innerHTML = `✨ It's real! <a onclick="openCase('${matchingCase[0].id}')">View Case #${matchingCase[0].case_number}</a>`;
+    } else {
+      // No match - show what they picked and offer adventure
+      $('#slotResult').innerHTML = `${caseTitle} — <a onclick="startAdventure()" style="color:#ff00ff;cursor:pointer">not in docket... yet</a>`;
     }
   }
 
