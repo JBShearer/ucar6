@@ -477,55 +477,108 @@ async function fetchRSSFeed(browser, feedUrl) {
 async function fetchArticle(browser, prospect) {
   const page = await browser.newPage();
   try {
-    await page.setUserAgent('Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36');
-    await page.setRequestInterception(true);
-    page.on('request', req => {
-      if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
-        req.abort();
-      } else {
-        req.continue();
-      }
-    });
+    await page.setUserAgent('Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+    await page.setDefaultTimeout(25000);
 
-    await page.goto(prospect.url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    let targetUrl = prospect.url;
+
+    // Google News URLs need special handling - they're JS redirects
+    if (prospect.url.includes('news.google.com')) {
+      try {
+        // Navigate and wait for the redirect to complete
+        await page.goto(prospect.url, { waitUntil: 'networkidle0', timeout: 30000 });
+
+        // Wait a moment for any JS redirects
+        await new Promise(r => setTimeout(r, 2000));
+
+        // Get final URL after redirects
+        targetUrl = page.url();
+
+        // If still on Google, look for the actual article link
+        if (targetUrl.includes('news.google.com') || targetUrl.includes('google.com/read')) {
+          const extracted = await page.evaluate(() => {
+            // Try various selectors Google News uses
+            const selectors = [
+              'a[data-n-au]', // Article link
+              'article a[href^="http"]',
+              'a[href^="http"]:not([href*="google"])',
+            ];
+            for (const sel of selectors) {
+              const el = document.querySelector(sel);
+              if (el?.href && !el.href.includes('google.com')) {
+                return el.href;
+              }
+            }
+            return null;
+          });
+          if (extracted) {
+            targetUrl = extracted;
+            await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+          }
+        }
+      } catch (e) {
+        // Google News redirect failed, mark as error
+        throw new Error(`GNews redirect failed: ${e.message?.slice(0, 50)}`);
+      }
+    } else {
+      // Regular URL - just fetch it
+      await page.goto(prospect.url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    }
 
     // Get text content
     const data = await page.evaluate(() => {
       const getText = (sel) => document.querySelector(sel)?.textContent?.trim() || '';
       const getMeta = (name) => document.querySelector(`meta[property="${name}"], meta[name="${name}"]`)?.content || '';
 
-      // Remove scripts, nav, footer
-      document.querySelectorAll('script, style, nav, footer, header, aside, .ad, .advertisement').forEach(el => el.remove());
+      // Remove junk
+      document.querySelectorAll('script, style, nav, footer, header, aside, .ad, .advertisement, .sidebar, .comments').forEach(el => el.remove());
 
-      const article = document.querySelector('article') || document.querySelector('main') || document.body;
+      const article = document.querySelector('article') || document.querySelector('[role="main"]') || document.querySelector('main') || document.body;
       const text = article?.innerText || '';
 
       return {
-        title: getText('h1') || document.title,
+        title: getText('h1') || getMeta('og:title') || document.title,
         text: text.slice(0, 15000),
         og_image: getMeta('og:image'),
-        published: getMeta('article:published_time') || getMeta('datePublished'),
+        published: getMeta('article:published_time') || getMeta('datePublished') || getMeta('date'),
+        finalUrl: window.location.href,
       };
     });
 
-    // Check if AI-related
+    // Check if AI-related - expanded keywords
     const fullText = `${data.title} ${data.text}`.toLowerCase();
-    const aiKeywords = ['artificial intelligence', 'machine learning', 'ai ', ' ai,', 'neural network',
-      'deep learning', 'chatgpt', 'gpt-4', 'gpt-5', 'llm', 'large language model', 'chatbot',
-      'facial recognition', 'deepfake', 'autonomous', 'algorithm', 'robot', 'automation',
-      'openai', 'anthropic', 'google ai', 'meta ai', 'midjourney', 'stable diffusion', 'dall-e',
-      'computer vision', 'nlp', 'natural language', 'predictive', 'recommendation'];
+    const aiKeywords = [
+      'artificial intelligence', 'machine learning', ' ai ', ' ai,', ' ai.', 'ai-', '-ai',
+      'neural network', 'deep learning', 'chatgpt', 'gpt-4', 'gpt-5', 'gpt4', 'gpt5',
+      'llm', 'large language model', 'chatbot', 'chat bot',
+      'facial recognition', 'face recognition', 'deepfake', 'deep fake',
+      'autonomous', 'self-driving', 'self driving', 'driverless',
+      'algorithm', 'robot', 'robotics', 'automation', 'automated',
+      'openai', 'anthropic', 'google ai', 'meta ai', 'microsoft ai', 'amazon ai',
+      'midjourney', 'stable diffusion', 'dall-e', 'dalle', 'imagen',
+      'computer vision', 'image recognition', 'object detection',
+      'nlp', 'natural language', 'language model', 'text generation',
+      'predictive', 'recommendation', 'personalization',
+      'generative ai', 'gen ai', 'genai', 'foundation model',
+      'transformer', 'bert', 'claude', 'gemini', 'copilot', 'bard',
+      'voice assistant', 'smart speaker', 'alexa', 'siri',
+      'sentiment analysis', 'speech recognition', 'voice recognition'
+    ];
 
     const isAI = aiKeywords.some(kw => fullText.includes(kw));
+
+    // Sanitize text for JSON - remove null bytes and control characters
+    const sanitize = (s) => s ? s.replace(/[\x00-\x1F\x7F]/g, ' ').replace(/\\/g, '\\\\') : null;
 
     if (isAI && data.text.length > 500) {
       await sb(`prospects?id=eq.${prospect.id}`, {
         method: 'PATCH',
         body: JSON.stringify({
           status: 'promoted',
-          raw_text: data.text.slice(0, 50000),
-          og_image: data.og_image || null,
+          raw_text: sanitize(data.text.slice(0, 50000)),
+          og_image: sanitize(data.og_image) || null,
           published_at: data.published || null,
+          url: data.finalUrl || prospect.url,
         })
       });
       return { status: 'promoted' };
@@ -543,7 +596,7 @@ async function fetchArticle(browser, prospect) {
     });
     return { status: 'error' };
   } finally {
-    await page.close();
+    try { await page.close(); } catch {}
   }
 }
 
@@ -587,52 +640,79 @@ async function extractRelatedLinks(browser, articleUrl) {
   return discovered;
 }
 
+// === FETCH BATCH HELPER ===
+async function fetchBatch(browser, stats, time) {
+  const batch = await sb('prospects?status=eq.found&select=id,url,title&order=discovered_at&limit=25');
+  if (!batch || batch.length === 0) return;
+
+  process.stdout.write(`[${time()}] Fetching ${batch.length}: `);
+  for (const p of batch) {
+    try {
+      const result = await fetchArticle(browser, p);
+      stats.fetched++;
+      if (result.status === 'promoted') {
+        stats.promoted++;
+        process.stdout.write('✓');
+      } else if (result.status === 'rejected') {
+        process.stdout.write('-');
+      } else {
+        process.stdout.write('x');
+      }
+    } catch (e) {
+      process.stdout.write('x');
+    }
+  }
+  console.log(` | promoted: ${stats.promoted}`);
+}
+
 // === MAIN LOOP ===
 async function main() {
-  console.log('=== Jetson Browser Crawler v4 ===');
-  console.log(`Chromium: ${CHROMIUM_PATH}`);
-  console.log(`RSS Feeds: ${RSS_FEEDS.length}`);
-  console.log(`Google News Queries: ${GOOGLE_NEWS_QUERIES.length}`);
-  console.log(`Archive Sites: ${ARCHIVE_SITES.length}`);
-  console.log(`Started: ${new Date().toISOString()}\n`);
+  while (true) {
+    let browser;
+    try {
+      console.log('=== Jetson Browser Crawler v4 ===');
+      console.log(`Chromium: ${CHROMIUM_PATH}`);
+      console.log(`RSS Feeds: ${RSS_FEEDS.length}`);
+      console.log(`Google News Queries: ${GOOGLE_NEWS_QUERIES.length}`);
+      console.log(`Archive Sites: ${ARCHIVE_SITES.length}`);
+      console.log(`Started: ${new Date().toISOString()}\n`);
 
-  const browser = await puppeteer.launch({
-    executablePath: CHROMIUM_PATH,
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
-  });
-  console.log('Browser ready.\n');
+      browser = await puppeteer.launch({
+        executablePath: CHROMIUM_PATH,
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process']
+      });
+      console.log('Browser ready.\n');
 
-  let stats = { discovered: 0, fetched: 0, promoted: 0 };
-  let cycle = 0;
+      let stats = { discovered: 0, fetched: 0, promoted: 0 };
+      let cycle = 0;
 
-  try {
-    while (true) {
-      cycle++;
-      const time = () => new Date().toLocaleTimeString();
+      while (true) {
+        cycle++;
+        const time = () => new Date().toLocaleTimeString();
 
-      // === PHASE 1: API Sources (no browser needed) ===
-      console.log(`[${time()}] === Cycle ${cycle} ===`);
+        // === PHASE 1: API Sources (no browser needed) ===
+        console.log(`[${time()}] === Cycle ${cycle} ===`);
 
-      // HackerNews
-      process.stdout.write(`[${time()}] HackerNews: `);
-      const hnItems = await fetchHackerNews();
-      let hnNew = 0;
-      for (const item of hnItems) {
-        if (await insertProspect(item)) hnNew++;
-      }
-      console.log(`${hnNew} new (${hnItems.length} checked)`);
-      stats.discovered += hnNew;
+        // HackerNews
+        process.stdout.write(`[${time()}] HackerNews: `);
+        const hnItems = await fetchHackerNews();
+        let hnNew = 0;
+        for (const item of hnItems) {
+          if (await insertProspect(item)) hnNew++;
+        }
+        console.log(`${hnNew} new (${hnItems.length} checked)`);
+        stats.discovered += hnNew;
 
-      // Reddit
-      process.stdout.write(`[${time()}] Reddit: `);
-      const redditItems = await fetchReddit();
-      let redditNew = 0;
-      for (const item of redditItems) {
-        if (await insertProspect(item)) redditNew++;
-      }
-      console.log(`${redditNew} new (${redditItems.length} checked)`);
-      stats.discovered += redditNew;
+        // Reddit
+        process.stdout.write(`[${time()}] Reddit: `);
+        const redditItems = await fetchReddit();
+        let redditNew = 0;
+        for (const item of redditItems) {
+          if (await insertProspect(item)) redditNew++;
+        }
+        console.log(`${redditNew} new (${redditItems.length} checked)`);
+        stats.discovered += redditNew;
 
       // === PHASE 2: RSS Feeds ===
       process.stdout.write(`[${time()}] RSS Feeds: `);
@@ -645,13 +725,24 @@ async function main() {
       console.log(` → ${rssNew} new`);
       stats.discovered += rssNew;
 
-      // === PHASE 3: Google News (paginated) ===
+      // === FETCH BATCH after RSS ===
+      await fetchBatch(browser, stats, time);
+
+      // === PHASE 3: Google News (paginated) - fetch every 5 queries ===
       process.stdout.write(`[${time()}] Google News: `);
       let gnewsNew = 0;
-      for (const query of GOOGLE_NEWS_QUERIES) {
+      for (let i = 0; i < GOOGLE_NEWS_QUERIES.length; i++) {
+        const query = GOOGLE_NEWS_QUERIES[i];
         const found = await scrapeGoogleNewsPaginated(browser, query, 3);
         gnewsNew += found;
         process.stdout.write(found > 0 ? `[${found}]` : '.');
+
+        // Fetch every 5 queries to keep pipeline moving
+        if ((i + 1) % 5 === 0) {
+          console.log(` (${gnewsNew} so far)`);
+          await fetchBatch(browser, stats, time);
+          process.stdout.write(`[${time()}] Google News: `);
+        }
       }
       console.log(` → ${gnewsNew} new`);
       stats.discovered += gnewsNew;
@@ -665,42 +756,25 @@ async function main() {
           console.log(` ${found} new`);
           stats.discovered += found;
         }
+        // Fetch after archives
+        await fetchBatch(browser, stats, time);
       }
 
-      // === PHASE 5: Fetch & Promote Articles ===
-      const batch = await sb('prospects?status=eq.found&select=id,url,title&order=discovered_at&limit=50');
-      if (batch && batch.length > 0) {
-        process.stdout.write(`[${time()}] Fetching ${batch.length} articles: `);
-        for (const p of batch) {
-          const result = await fetchArticle(browser, p);
-          stats.fetched++;
-          if (result.status === 'promoted') {
-            stats.promoted++;
-            process.stdout.write('✓');
-
-            // Snowball: extract related links from promoted articles
-            const related = await extractRelatedLinks(browser, p.url);
-            for (const r of related) {
-              await insertProspect(r);
-            }
-          } else if (result.status === 'rejected') {
-            process.stdout.write('-');
-          } else {
-            process.stdout.write('x');
-          }
-        }
-        console.log('');
-      }
+      // === PHASE 5: Final fetch sweep ===
+      await fetchBatch(browser, stats, time);
 
       console.log(`  ═══ discovered=${stats.discovered} fetched=${stats.fetched} promoted=${stats.promoted} ═══\n`);
 
-      // Brief pause between cycles
+        // Brief pause between cycles
+        await new Promise(r => setTimeout(r, 10000));
+      }
+    } catch (e) {
+      console.log(`\n!!! Crash: ${e.message?.slice(0, 100)}`);
+      console.log('Restarting in 10 seconds...\n');
+      try { await browser?.close(); } catch {}
       await new Promise(r => setTimeout(r, 10000));
+      // Loop will restart
     }
-  } catch (e) {
-    console.log(`Fatal: ${e.stack}`);
-  } finally {
-    await browser.close();
   }
 }
 
