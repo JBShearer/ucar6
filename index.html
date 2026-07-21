@@ -1183,6 +1183,15 @@ const DOOMSDAY_VERBS = [...new Set(Object.keys(DOOMSDAY_COMBOS).map(k => k.split
 const DOOMSDAY_OBJECTS = [...new Set(Object.keys(DOOMSDAY_COMBOS).map(k => k.split('|')[1]))];
 const DOOMSDAY_INSTRUMENTS = [...new Set(Object.keys(DOOMSDAY_COMBOS).map(k => k.split('|')[2]))];
 
+// Track story visits - after 3 visits, offer alternative branches
+let STORY_VISITS = {};
+try { STORY_VISITS = JSON.parse(localStorage.getItem('ucar-story-visits') || '{}'); } catch(e) {}
+function recordStoryVisit(comboKey) {
+  STORY_VISITS[comboKey] = (STORY_VISITS[comboKey] || 0) + 1;
+  localStorage.setItem('ucar-story-visits', JSON.stringify(STORY_VISITS));
+  return STORY_VISITS[comboKey];
+}
+
 // Get valid options given partial selection (for filtering reels)
 function getValidDoomOptions(verb, object, instrument) {
   const validCombos = Object.keys(DOOMSDAY_COMBOS).filter(key => {
@@ -1287,16 +1296,17 @@ async function spinSlots() {
   $('#slotResult').textContent = '';
   $('#nearMiss').classList.remove('show');
 
-  // Check if user manually selected items
-  const manualVerb = manualReelItems[0].length ? manualReelItems[0][manualReelIndex[0]] : null;
-  const manualObject = manualReelItems[1].length ? manualReelItems[1][manualReelIndex[1]] : null;
-  const manualInstrument = manualReelItems[2].length ? manualReelItems[2][manualReelIndex[2]] : null;
+  // Check if user manually selected items (use selectedDoomWords which tracks doomsday picks)
+  const manualVerb = selectedDoomWords[0] || (manualReelItems[0].length ? manualReelItems[0][manualReelIndex[0]] : null);
+  const manualObject = selectedDoomWords[1] || (manualReelItems[1].length ? manualReelItems[1][manualReelIndex[1]] : null);
+  const manualInstrument = selectedDoomWords[2] || (manualReelItems[2].length ? manualReelItems[2][manualReelIndex[2]] : null);
   const hasManualSelection = manualVerb || manualObject || manualInstrument;
 
   // Check if any manual selection is a doomsday word
   const manualVerbIsDoom = manualVerb && DOOMSDAY_VERBS.includes(manualVerb);
   const manualObjectIsDoom = manualObject && DOOMSDAY_OBJECTS.includes(manualObject);
   const manualInstrumentIsDoom = manualInstrument && DOOMSDAY_INSTRUMENTS.includes(manualInstrument);
+  const doomCount = [manualVerbIsDoom, manualObjectIsDoom, manualInstrumentIsDoom].filter(Boolean).length;
 
   // 7% random adventure chance (only if no manual selection)
   const randomAdventure = !hasManualSelection && Math.random() < 0.07;
@@ -1305,30 +1315,41 @@ async function spinSlots() {
 
   if (hasManualSelection) {
     // User picked something - check if doomsday words create a story
-    const hasDoom = manualVerbIsDoom || manualObjectIsDoom || manualInstrumentIsDoom;
+    const hasDoom = doomCount > 0;
 
     if (hasDoom) {
-      // Find a valid story combo that includes the user's doomsday picks
-      const validCombos = Object.keys(DOOMSDAY_COMBOS).filter(key => {
-        const [v, o, i] = key.split('|');
-        if (manualVerbIsDoom && v !== manualVerb) return false;
-        if (manualObjectIsDoom && o !== manualObject) return false;
-        if (manualInstrumentIsDoom && i !== manualInstrument) return false;
-        return true;
-      });
-
-      if (validCombos.length > 0) {
-        // Pick a random valid combo and use its words
-        const pickedCombo = validCombos[Math.floor(Math.random() * validCombos.length)];
-        const [comboV, comboO, comboI] = pickedCombo.split('|');
-        finalVerb = manualVerbIsDoom ? manualVerb : comboV;
-        finalObject = manualObjectIsDoom ? manualObject : comboO;
-        finalInstrument = manualInstrumentIsDoom ? manualInstrument : comboI;
+      // If user picked ALL THREE doomsday words, use them directly
+      if (doomCount === 3) {
+        finalVerb = manualVerb;
+        finalObject = manualObject;
+        finalInstrument = manualInstrument;
       } else {
-        // No valid combo - fall through to use picks as-is
-        finalVerb = manualVerb || SLOT_VERBS[Math.floor(Math.random() * SLOT_VERBS.length)];
-        finalObject = manualObject || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
-        finalInstrument = manualInstrument || SLOT_INSTRUMENTS[Math.floor(Math.random() * SLOT_INSTRUMENTS.length)];
+        // Find a valid story combo that includes the user's doomsday picks
+        let validCombos = Object.keys(DOOMSDAY_COMBOS).filter(key => {
+          const [v, o, i] = key.split('|');
+          if (manualVerbIsDoom && v !== manualVerb) return false;
+          if (manualObjectIsDoom && o !== manualObject) return false;
+          if (manualInstrumentIsDoom && i !== manualInstrument) return false;
+          return true;
+        });
+
+        // Filter out stories user has seen 3+ times (offer alternatives)
+        const unseenCombos = validCombos.filter(combo => (STORY_VISITS[combo] || 0) < 3);
+        if (unseenCombos.length > 0) validCombos = unseenCombos;
+
+        if (validCombos.length > 0) {
+          // Pick a random valid combo and use its words
+          const pickedCombo = validCombos[Math.floor(Math.random() * validCombos.length)];
+          const [comboV, comboO, comboI] = pickedCombo.split('|');
+          finalVerb = manualVerbIsDoom ? manualVerb : comboV;
+          finalObject = manualObjectIsDoom ? manualObject : comboO;
+          finalInstrument = manualInstrumentIsDoom ? manualInstrument : comboI;
+        } else {
+          // No valid combo - use picks as-is, fill gaps randomly
+          finalVerb = manualVerb || SLOT_VERBS[Math.floor(Math.random() * SLOT_VERBS.length)];
+          finalObject = manualObject || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
+          finalInstrument = manualInstrument || SLOT_INSTRUMENTS[Math.floor(Math.random() * SLOT_INSTRUMENTS.length)];
+        }
       }
     } else {
       // Non-doomsday manual picks - use their picks, fill gaps with random
@@ -1338,10 +1359,16 @@ async function spinSlots() {
     }
     useRealCase = false; // Manual picks don't guarantee real cases
   } else if (randomAdventure) {
-    // Random adventure - use doomsday words
-    finalVerb = DOOMSDAY_VERBS[Math.floor(Math.random() * DOOMSDAY_VERBS.length)];
-    finalObject = DOOMSDAY_OBJECTS[Math.floor(Math.random() * DOOMSDAY_OBJECTS.length)];
-    finalInstrument = DOOMSDAY_INSTRUMENTS[Math.floor(Math.random() * DOOMSDAY_INSTRUMENTS.length)];
+    // Random adventure - pick unseen story combo first
+    let combos = Object.keys(DOOMSDAY_COMBOS);
+    const unseenCombos = combos.filter(combo => (STORY_VISITS[combo] || 0) < 3);
+    if (unseenCombos.length > 0) combos = unseenCombos;
+
+    const pickedCombo = combos[Math.floor(Math.random() * combos.length)];
+    const [v, o, i] = pickedCombo.split('|');
+    finalVerb = v;
+    finalObject = o;
+    finalInstrument = i;
     useRealCase = false;
   } else {
     // Normal spin - pick a real case
@@ -1401,14 +1428,19 @@ async function spinSlots() {
 
   // Check if we hit a valid doomsday story combo
   const doomStory = getDoomStory(finalVerb, finalObject, finalInstrument);
+  const comboKey = `${finalVerb}|${finalObject}|${finalInstrument}`;
 
   if (randomAdventure || doomStory) {
-    // Adventure trigger!
+    // Adventure trigger! Record the visit
+    const visitCount = recordStoryVisit(comboKey);
     const storyTitle = doomStory ? doomStory.title : 'Unknown Territory';
-    $('#slotResult').innerHTML = `<span style="color:#ff00ff">☠️ ${storyTitle.toUpperCase()} ☠️</span>`;
+
+    // After 3 visits, offer alternative branch
+    const altBranch = visitCount >= 4 ? ' (Alt)' : visitCount >= 2 ? ` ×${visitCount}` : '';
+    $('#slotResult').innerHTML = `<span style="color:#ff00ff">☠️ ${storyTitle.toUpperCase()}${altBranch} ☠️</span>`;
     setTimeout(() => {
       $('#slotsModal').classList.remove('open');
-      startAdventure(doomStory ? doomStory.key : 'start');
+      startAdventure(doomStory ? doomStory.key : 'start', visitCount);
     }, 1500);
   } else if (useRealCase) {
     // Normal case result - we have a real case
@@ -1851,9 +1883,21 @@ const ADVENTURE = {
 };
 
 let adventureNode = null;
+let adventureStoryKey = null;
+let adventureVisitCount = 1;
 
-function startAdventure() {
-  adventureNode = 'start';
+function startAdventure(storyKey = 'start', visitCount = 1) {
+  adventureStoryKey = storyKey;
+  adventureVisitCount = visitCount;
+
+  // Use alt branch if visited 4+ times
+  const branchSuffix = visitCount >= 4 ? '_alt' : '';
+  adventureNode = storyKey + branchSuffix;
+
+  // Fall back to base story if alt doesn't exist
+  if (!ADVENTURE[adventureNode]) adventureNode = storyKey;
+  if (!ADVENTURE[adventureNode]) adventureNode = 'start';
+
   $('#slotsModal').classList.remove('open');
   $('#adventureModal').classList.add('open');
   showAdventureNode();
