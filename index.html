@@ -138,18 +138,24 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .cat-dropdown .cat-item .count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.7}
 
 /* Topic Filters - VERB/OBJECT/INSTRUMENT/WHO/WHOM */
-#topicFilters{display:flex;gap:8px;flex-wrap:wrap;width:100%;margin-bottom:10px}
-.topic-filter{position:relative;flex:1;min-width:100px;max-width:200px}
-.topic-btn{width:100%;background:var(--card);border:2px solid var(--line);padding:8px 10px;cursor:pointer;
-  font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.03em;box-shadow:2px 2px 0 var(--line);
-  display:flex;align-items:center;justify-content:space-between;gap:4px;text-align:left;white-space:nowrap;overflow:hidden}
+#topicFilters{display:flex;gap:6px;flex-wrap:nowrap;width:100%;margin-bottom:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.topic-filter{position:relative;flex:1 1 0;min-width:0}
+.topic-btn{width:100%;background:var(--card);border:2px solid var(--line);padding:6px 8px;cursor:pointer;
+  font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.03em;box-shadow:2px 2px 0 var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:2px;text-align:left;white-space:nowrap;overflow:hidden}
 .topic-btn:hover{border-color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
 .topic-btn.active{background:var(--stamp);color:#fff;border-color:var(--stamp)}
-.topic-btn .label{font-size:9px;color:var(--olive);text-transform:uppercase;display:block;line-height:1}
+.topic-btn .label{font-size:8px;color:var(--olive);text-transform:uppercase;display:block;line-height:1}
 .topic-btn.active .label{color:rgba(255,255,255,.7)}
-.topic-btn .value{display:block;font-size:12px;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis}
-.topic-btn .arrow{font-size:10px;transition:transform .2s;flex-shrink:0}
+.topic-btn .value{display:none}
+.topic-btn .arrow{font-size:8px;transition:transform .2s;flex-shrink:0}
 .topic-btn.open .arrow{transform:rotate(180deg)}
+@media(min-width:600px){
+  .topic-btn{padding:8px 10px;font-size:11px}
+  .topic-btn .label{font-size:9px}
+  .topic-btn .value{display:block;font-size:11px;max-width:60px;overflow:hidden;text-overflow:ellipsis}
+  .topic-btn .arrow{font-size:10px}
+}
 .topic-dropdown{position:absolute;top:100%;left:0;right:0;min-width:180px;max-height:280px;overflow-y:auto;
   background:var(--card);border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);z-index:200;
   display:none;margin-top:4px}
@@ -162,18 +168,12 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .topic-dropdown .topic-item.clear{font-style:italic;color:var(--olive);border-bottom:2px solid var(--ink)}
 .topic-dropdown .topic-item.clear:hover{background:var(--paper);color:var(--ink)}
 @media(max-width:600px){
-  #topicFilters{gap:6px}
-  .topic-filter{min-width:calc(50% - 6px);max-width:none}
-  .topic-btn{padding:6px 8px;font-size:10px}
-  .topic-btn .label{font-size:8px}
-  .topic-btn .value{font-size:11px}
   .topic-dropdown{position:fixed;left:8px;right:8px;top:auto;bottom:60px;max-height:50vh;width:auto}
 }
-.clear-filters-btn{background:var(--stamp);color:#fff;border:2px solid var(--stamp);padding:6px 12px;
-  font-family:'Oswald',sans-serif;font-size:11px;cursor:pointer;box-shadow:2px 2px 0 var(--ink);
+.clear-filters-btn{background:var(--stamp);color:#fff;border:2px solid var(--stamp);padding:4px 8px;
+  font-family:'Oswald',sans-serif;font-size:10px;cursor:pointer;box-shadow:2px 2px 0 var(--ink);
   white-space:nowrap;flex-shrink:0}
 .clear-filters-btn:hover{background:#c94040}
-@media(max-width:600px){.clear-filters-btn{padding:4px 8px;font-size:10px}}
 
 #sortBar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-left:auto}
 .sort-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive)}
@@ -2315,28 +2315,73 @@ async function loadTopicOptions() {
     .gt('use_count', 0)
     .order('use_count', { ascending: false });
 
-  if (terms && terms.length > 0) {
-    // Map vocab kinds to filter keys
-    TOPIC_OPTIONS = {
-      verb: terms.filter(t => t.kind === 'verb').slice(0, 30),
-      object: terms.filter(t => t.kind === 'object_class').slice(0, 30),
-      instrument: terms.filter(t => t.kind === 'instrument').slice(0, 30),
-      who: terms.filter(t => t.kind === 'actor').slice(0, 30),
-      whom: terms.filter(t => t.kind === 'target').slice(0, 30)
-    };
-  } else {
-    // Fallback: use slot data derived from cases if vocab_terms is empty
-    // Wait for slot data to be loaded
-    if (SLOT_VERBS.length === 0) await loadSlotData();
+  // Start with vocab_terms data
+  TOPIC_OPTIONS = {
+    verb: (terms || []).filter(t => t.kind === 'verb').slice(0, 40),
+    object: (terms || []).filter(t => t.kind === 'object_class').slice(0, 40),
+    instrument: (terms || []).filter(t => t.kind === 'instrument').slice(0, 40),
+    who: (terms || []).filter(t => t.kind === 'actor').slice(0, 40),
+    whom: (terms || []).filter(t => t.kind === 'target').slice(0, 40)
+  };
 
-    TOPIC_OPTIONS = {
-      verb: SLOT_VERBS.map(t => ({ term: t, use_count: 1 })),
-      object: SLOT_OBJECTS.map(t => ({ term: t, use_count: 1 })),
-      instrument: SLOT_INSTRUMENTS.map(t => ({ term: t, use_count: 1 })),
-      who: [],
-      whom: []
-    };
+  // Supplement with slot data if available
+  if (SLOT_VERBS.length === 0) await loadSlotData();
+
+  // Add slot verbs/objects/instruments not already in vocab
+  const existingVerbs = new Set(TOPIC_OPTIONS.verb.map(t => t.term.toUpperCase()));
+  const existingObjects = new Set(TOPIC_OPTIONS.object.map(t => t.term.toUpperCase()));
+  const existingInstruments = new Set(TOPIC_OPTIONS.instrument.map(t => t.term.toUpperCase()));
+
+  SLOT_VERBS.forEach(v => {
+    if (!existingVerbs.has(v.toUpperCase())) {
+      TOPIC_OPTIONS.verb.push({ term: v, use_count: 1 });
+    }
+  });
+  SLOT_OBJECTS.forEach(o => {
+    if (!existingObjects.has(o.toUpperCase())) {
+      TOPIC_OPTIONS.object.push({ term: o, use_count: 1 });
+    }
+  });
+  SLOT_INSTRUMENTS.forEach(i => {
+    if (!existingInstruments.has(i.toUpperCase())) {
+      TOPIC_OPTIONS.instrument.push({ term: i, use_count: 1 });
+    }
+  });
+
+  // Add common WHO (actors) if not populated
+  if (TOPIC_OPTIONS.who.length < 5) {
+    const commonActors = [
+      'Microsoft', 'Google', 'OpenAI', 'Meta', 'Amazon', 'Apple', 'SAP', 'IBM', 'Salesforce',
+      'Tesla', 'Uber', 'Clearview AI', 'Palantir', 'ByteDance', 'TikTok', 'X/Twitter',
+      'US Government', 'China', 'EU', 'Police', 'Schools', 'Hospitals', 'Banks', 'Insurers'
+    ];
+    const existingWho = new Set(TOPIC_OPTIONS.who.map(t => t.term.toLowerCase()));
+    commonActors.forEach(a => {
+      if (!existingWho.has(a.toLowerCase())) {
+        TOPIC_OPTIONS.who.push({ term: a, use_count: 1 });
+      }
+    });
   }
+
+  // Add common WHOM (targets) if not populated
+  if (TOPIC_OPTIONS.whom.length < 5) {
+    const commonTargets = [
+      'Workers', 'Students', 'Patients', 'Consumers', 'Citizens', 'Job Applicants',
+      'Drivers', 'Renters', 'Borrowers', 'Immigrants', 'Prisoners', 'Children',
+      'Elderly', 'Disabled', 'Low-Income', 'Minorities', 'Women', 'LGBTQ+'
+    ];
+    const existingWhom = new Set(TOPIC_OPTIONS.whom.map(t => t.term.toLowerCase()));
+    commonTargets.forEach(t => {
+      if (!existingWhom.has(t.toLowerCase())) {
+        TOPIC_OPTIONS.whom.push({ term: t, use_count: 1 });
+      }
+    });
+  }
+
+  // Sort all by use_count descending
+  Object.keys(TOPIC_OPTIONS).forEach(key => {
+    TOPIC_OPTIONS[key].sort((a, b) => (b.use_count || 0) - (a.use_count || 0));
+  });
 
   // Populate dropdowns
   populateTopicDropdowns();
