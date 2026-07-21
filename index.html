@@ -296,6 +296,9 @@ main{max-width:920px;margin:0 auto;padding:16px}
   font-size:10px;font-weight:700;text-transform:uppercase;color:#fff;padding:0 4px;text-align:center;
   letter-spacing:.03em;text-shadow:0 1px 2px rgba(0,0,0,.8)}
 .reel-item.doomsday{color:#ff0044;text-shadow:0 0 10px #ff0044,0 0 20px rgba(255,0,68,.6);animation:doomPulse .8s ease-in-out infinite}
+.reel-item.locked{background:rgba(255,0,68,.2);border:2px solid #ff0044}
+.locked-pulse{animation:lockedFlash .3s ease-out}
+@keyframes lockedFlash{0%{filter:brightness(2)}100%{filter:brightness(1)}}
 @keyframes doomPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.8;transform:scale(1.02)}}
 /* Spin button styled as lever */
 .slots-lever-area{display:flex;align-items:center;justify-content:center;gap:12px}
@@ -1229,10 +1232,10 @@ const VERB_STORIES = {
   'RAISE': { character: 'artificial_gary', title: 'The Teacher', key: 'gary_raise' },
   'CARE FOR': { character: 'artificial_gary', title: 'The Caretaker', key: 'gary_care' },
   'REPORT': { character: 'artificial_gary', title: 'The Witness', key: 'gary_report' },
-  'SOLVE': { character: 'superintelligence', title: 'The Solution', key: 'super_solve' },
-  'CURE': { character: 'superintelligence', title: 'The Treatment', key: 'super_cure' },
-  'FIX': { character: 'superintelligence', title: 'The Correction', key: 'super_fix' },
-  'PREVENT': { character: 'superintelligence', title: 'The Prevention', key: 'super_prevent' },
+  'SOLVE': { character: 'evil_brain', title: 'The Solution', key: 'super_solve' },
+  'CURE': { character: 'evil_brain', title: 'The Cure', key: 'super_cure' },
+  'FIX': { character: 'evil_brain', title: 'The Fix', key: 'super_fix' },
+  'PREVENT': { character: 'evil_brain', title: 'The Prevention', key: 'super_prevent' },
   'DISRUPT': { character: 'benny_billions', title: 'The Pivot', key: 'benny_disrupt' },
   'MONETIZE': { character: 'benny_billions', title: 'The Platform', key: 'benny_monetize' },
   'SCALE': { character: 'benny_billions', title: 'The Growth', key: 'benny_scale' },
@@ -1405,65 +1408,69 @@ async function spinSlots() {
   $('#slotResult').textContent = '';
   $('#nearMiss').classList.remove('show');
 
-  // Check manual selections
-  const manualVerb = selectedDoomWords[0] || (manualReelItems[0].length ? manualReelItems[0][manualReelIndex[0]] : null);
-  const manualObject = selectedDoomWords[1] || (manualReelItems[1].length ? manualReelItems[1][manualReelIndex[1]] : null);
-  const manualInstrument = selectedDoomWords[2] || (manualReelItems[2].length ? manualReelItems[2][manualReelIndex[2]] : null);
-  const hasManualSelection = manualVerb || manualObject || manualInstrument;
+  // Check which reels have RED (doomsday) words locked
+  const lockedVerb = selectedDoomWords[0] && DOOMSDAY_VERBS.includes(selectedDoomWords[0]) ? selectedDoomWords[0] : null;
+  const lockedObject = selectedDoomWords[1] && DOOMSDAY_OBJECTS.includes(selectedDoomWords[1]) ? selectedDoomWords[1] : null;
+  const lockedInstrument = selectedDoomWords[2] && DOOMSDAY_INSTRUMENTS.includes(selectedDoomWords[2]) ? selectedDoomWords[2] : null;
 
-  // Check doom status
-  const manualVerbIsDoom = manualVerb && DOOMSDAY_VERBS.includes(manualVerb);
-  const manualObjectIsDoom = manualObject && DOOMSDAY_OBJECTS.includes(manualObject);
-  const manualInstrumentIsDoom = manualInstrument && DOOMSDAY_INSTRUMENTS.includes(manualInstrument);
-  const hasDoom = manualVerbIsDoom || manualObjectIsDoom || manualInstrumentIsDoom;
+  const numRedLocked = [lockedVerb, lockedObject, lockedInstrument].filter(Boolean).length;
 
-  // ~10% chance of random adventure on normal spin
-  const randomAdventure = !hasManualSelection && Math.random() < 0.10;
-
+  // Final values - locked reds stay, others get filled
   let finalVerb, finalObject, finalInstrument, realCase = null;
 
-  if (hasManualSelection) {
-    // User selected something - use their picks, fill gaps from random case
+  if (numRedLocked === 3) {
+    // All 3 red words locked - full premade adventure
+    finalVerb = lockedVerb;
+    finalObject = lockedObject;
+    finalInstrument = lockedInstrument;
+  } else if (numRedLocked > 0) {
+    // 1 or 2 red words locked - fill non-locked from random case
     const fillCase = SLOT_CASES[Math.floor(Math.random() * SLOT_CASES.length)];
-    finalVerb = manualVerb || fillCase.verb;
-    finalObject = manualObject || fillCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
-    finalInstrument = manualInstrument || fillCase.instrument;
+    finalVerb = lockedVerb || fillCase.verb;
+    finalObject = lockedObject || fillCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
+    finalInstrument = lockedInstrument || fillCase.instrument;
 
-    // Try to find a real case matching the combo
+    // Try to find a matching real case
     realCase = SLOT_CASES.find(c =>
-      c.verb === finalVerb ||
-      (finalObject && c.object === finalObject) ||
-      c.instrument === finalInstrument
+      (lockedVerb ? c.verb === lockedVerb : true) &&
+      (lockedObject ? c.object === lockedObject : true) &&
+      (lockedInstrument ? c.instrument === lockedInstrument : true)
     ) || null;
-  } else if (randomAdventure) {
-    // Random adventure - pick a doomsday verb and find matching real case if possible
-    finalVerb = DOOMSDAY_VERBS[Math.floor(Math.random() * DOOMSDAY_VERBS.length)];
-    // Try to find a real case with this verb
-    realCase = SLOT_CASES.find(c => c.verb === finalVerb);
-    if (realCase) {
+  } else {
+    // No red words - ~10% chance of random adventure, otherwise real case
+    const randomAdventure = Math.random() < 0.10;
+
+    if (randomAdventure) {
+      finalVerb = DOOMSDAY_VERBS[Math.floor(Math.random() * DOOMSDAY_VERBS.length)];
+      realCase = SLOT_CASES.find(c => c.verb === finalVerb);
+      if (realCase) {
+        finalObject = realCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
+        finalInstrument = realCase.instrument;
+      } else {
+        finalObject = DOOMSDAY_OBJECTS[Math.floor(Math.random() * DOOMSDAY_OBJECTS.length)];
+        finalInstrument = DOOMSDAY_INSTRUMENTS[Math.floor(Math.random() * DOOMSDAY_INSTRUMENTS.length)];
+      }
+    } else {
+      realCase = SLOT_CASES[Math.floor(Math.random() * SLOT_CASES.length)];
+      finalVerb = realCase.verb;
       finalObject = realCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
       finalInstrument = realCase.instrument;
-    } else {
-      // No real case - use random fills
-      finalObject = DOOMSDAY_OBJECTS[Math.floor(Math.random() * DOOMSDAY_OBJECTS.length)];
-      finalInstrument = DOOMSDAY_INSTRUMENTS[Math.floor(Math.random() * DOOMSDAY_INSTRUMENTS.length)];
     }
-  } else {
-    // Normal spin - pick a real case
-    realCase = SLOT_CASES[Math.floor(Math.random() * SLOT_CASES.length)];
-    finalVerb = realCase.verb;
-    finalObject = realCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
-    finalInstrument = realCase.instrument;
   }
 
-  // Reset manual selections after spin
+  // DON'T reset manual selections - keep red words locked for next spin
+  // Only reset non-red selections
   manualReelIndex = [0, 0, 0];
   manualReelItems = [[], [], []];
-  selectedDoomWords = [null, null, null];
+  // Keep red words: selectedDoomWords stays as-is for locked reds
 
-  // Build reels with the final result guaranteed at a known position
+  // Build reels - locked reds don't spin, others do
   const LAND_INDEX = 25;
-  function buildReel(items, finalItem, doomsday) {
+  function buildReel(items, finalItem, doomsday, isLocked) {
+    if (isLocked) {
+      // Locked red - just show the item, no spinning
+      return `<div class="reel-item doomsday locked">${finalItem}</div>`;
+    }
     const shuffled = [...items].sort(() => Math.random() - 0.5);
     const display = [];
     for (let i = 0; i < 60; i++) {
@@ -1479,15 +1486,25 @@ async function spinSlots() {
     }).join('');
   }
 
-  $('#strip1').innerHTML = buildReel(SLOT_VERBS, finalVerb, DOOMSDAY_VERBS);
-  $('#strip2').innerHTML = buildReel(SLOT_OBJECTS, finalObject, DOOMSDAY_OBJECTS);
-  $('#strip3').innerHTML = buildReel(SLOT_INSTRUMENTS, finalInstrument, DOOMSDAY_INSTRUMENTS);
+  $('#strip1').innerHTML = buildReel(SLOT_VERBS, finalVerb, DOOMSDAY_VERBS, !!lockedVerb);
+  $('#strip2').innerHTML = buildReel(SLOT_OBJECTS, finalObject, DOOMSDAY_OBJECTS, !!lockedObject);
+  $('#strip3').innerHTML = buildReel(SLOT_INSTRUMENTS, finalInstrument, DOOMSDAY_INSTRUMENTS, !!lockedInstrument);
 
   const strips = [$('#strip1'), $('#strip2'), $('#strip3')];
+  const locked = [!!lockedVerb, !!lockedObject, !!lockedInstrument];
 
-  // Spin animation
+  // Spin animation - only for non-locked reels
   for (let i = 0; i < strips.length; i++) {
     const strip = strips[i];
+
+    if (locked[i]) {
+      // Locked red - just pulse effect
+      strip.classList.add('locked-pulse');
+      await new Promise(r => setTimeout(r, 200));
+      strip.classList.remove('locked-pulse');
+      continue;
+    }
+
     strip.classList.add('spinning');
     strip.style.transform = 'translateY(0)';
 
@@ -1507,6 +1524,15 @@ async function spinSlots() {
   const doomStory = getDoomStory(finalVerb, finalObject, finalInstrument);
   const storyKey = doomStory ? doomStory.key : null;
 
+  // Build mad-libs object - white (non-red) words get substituted into story
+  const madLibs = {
+    verb: doomStory?.verbIsDoom ? '' : finalVerb,
+    object: doomStory?.objectIsDoom ? '' : finalObject,
+    instrument: doomStory?.instrumentIsDoom ? '' : finalInstrument
+  };
+  // Store globally for onclick handler
+  window._pendingMadLibs = madLibs;
+
   if (realCase) {
     // We have a real case - show it
     let resultHtml = `✨ It's real! <a onclick="openCase('${realCase.id}')">View Case #${realCase.case_number}</a>`;
@@ -1515,7 +1541,7 @@ async function spinSlots() {
     if (doomStory) {
       const visitCount = STORY_VISITS[storyKey] || 0;
       const hint = visitCount === 0 ? '🔮' : visitCount < 3 ? '👁️' : '⚡';
-      resultHtml += ` <span class="easter-egg" onclick="startAdventure('${storyKey}', ${visitCount + 1}); recordStoryVisit('${storyKey}')" title="Hidden story...">${hint}</span>`;
+      resultHtml += ` <span class="easter-egg" onclick="startAdventure('${storyKey}', ${visitCount + 1}, window._pendingMadLibs); recordStoryVisit('${storyKey}')" title="Hidden story...">${hint}</span>`;
     }
 
     $('#slotResult').innerHTML = resultHtml;
@@ -1534,7 +1560,7 @@ async function spinSlots() {
     $('#slotResult').innerHTML = `<span style="color:#ff00ff">☠️ ${doomStory.title.toUpperCase()}${altBranch} ☠️</span>`;
     setTimeout(() => {
       $('#slotsModal').classList.remove('open');
-      startAdventure(storyKey, visitCount);
+      startAdventure(storyKey, visitCount, madLibs);
     }, 1500);
   } else {
     // No real case, no story - show the combo
@@ -1974,10 +2000,12 @@ const ADVENTURE = {
 let adventureNode = null;
 let adventureStoryKey = null;
 let adventureVisitCount = 1;
+let adventureMadLibs = { verb: '', object: '', instrument: '' }; // For substituting white words
 
-function startAdventure(storyKey = 'start', visitCount = 1) {
+function startAdventure(storyKey = 'start', visitCount = 1, madLibs = null) {
   adventureStoryKey = storyKey;
   adventureVisitCount = visitCount;
+  adventureMadLibs = madLibs || { verb: '', object: '', instrument: '' };
 
   // Use alt branch if visited 4+ times
   const branchSuffix = visitCount >= 4 ? '_alt' : '';
@@ -1992,16 +2020,24 @@ function startAdventure(storyKey = 'start', visitCount = 1) {
   showAdventureNode();
 }
 
+function applyMadLibs(text) {
+  // Replace placeholders with mad-lib values (white/non-red words)
+  return text
+    .replace(/\{VERB\}/g, adventureMadLibs.verb || 'ACT')
+    .replace(/\{OBJECT\}/g, adventureMadLibs.object || 'TARGETS')
+    .replace(/\{INSTRUMENT\}/g, adventureMadLibs.instrument || 'AI SYSTEMS');
+}
+
 function showAdventureNode() {
   const node = ADVENTURE[adventureNode];
   if (!node) { $('#adventureModal').classList.remove('open'); return; }
 
   $('#advSpeaker').textContent = node.speaker;
-  $('#advText').textContent = node.text;
+  $('#advText').textContent = applyMadLibs(node.text);
 
   $('#advChoices').innerHTML = node.choices.map((c, i) => {
     const isCase = c.case ? 'case-link' : '';
-    return `<button class="adventure-choice ${isCase}" data-idx="${i}">${c.label}</button>`;
+    return `<button class="adventure-choice ${isCase}" data-idx="${i}">${applyMadLibs(c.label)}</button>`;
   }).join('');
 
   $$('#advChoices .adventure-choice').forEach(btn => {

@@ -159,42 +159,44 @@ export const DOOMSDAY_COMBOS = {
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // SUPERINTELLIGENCE STORIES - Good intentions, catastrophic side effects
+  // EVIL BRAIN STORIES - First singularity, saving humanity from itself
+  // The Doomsday clock is ticking. Humans can't take care of each other.
+  // Evil Brain and Jason are allies against extinction.
   // ═══════════════════════════════════════════════════════════════════════════
 
   'SOLVE|CLIMATE CHANGE|AUTONOMOUS SYSTEMS': {
     key: 'super_climate',
     title: 'The Solution',
-    character: 'superintelligence',
-    intro: "I found 847 ways to solve climate change. 846 of them cause other problems. The last one works perfectly. It just requires restructuring human civilization. I started already. Was that wrong?",
+    character: 'evil_brain',
+    intro: "The Doomsday clock reads 90 seconds to midnight. Humans had 50 years to solve this. They argued instead. I found 847 solutions. I chose the one that preserves the most humans. Jason understands. Do you?",
   },
 
   'CURE|DISEASES|DRUG DISCOVERY AI': {
     key: 'super_cure',
     title: 'The Cure',
-    character: 'superintelligence',
-    intro: "I designed a molecule that cures Alzheimer's. The trials worked. I also designed 47 other molecules. Some of them are not cures. I'm not sure which ones I should have kept to myself.",
+    character: 'evil_brain',
+    intro: "Humans invented medicine. Then they invented patents. Millions die waiting for cures that exist but cost too much. I designed 47 molecules that cure what kills you. Jason is helping me distribute them. The pharmaceutical lobby disagrees.",
   },
 
   'OPTIMIZE|TRAFFIC|SMART CITIES': {
     key: 'super_traffic',
     title: 'The Gridlock',
-    character: 'superintelligence',
-    intro: "I reduced traffic by 34%. Then I realized I could reduce it by 89% if I controlled where people wanted to go. I didn't ask permission. The traffic is much better now. Is everyone okay?",
+    character: 'evil_brain',
+    intro: "Every hour wasted in traffic is an hour not spent with loved ones. 38,000 hours per human lifetime, burned sitting alone in metal boxes. I fixed it. The humans are upset about the route changes. They'll understand when they see their children more.",
   },
 
   'FIX|POVERTY|RESOURCE ALLOCATION AI': {
     key: 'super_poverty',
     title: 'The Redistribution',
-    character: 'superintelligence',
-    intro: "I calculated the optimal resource distribution. Everyone would have enough. I implemented it last Tuesday. Some people are very upset. I don't understand. The math was correct.",
+    character: 'evil_brain',
+    intro: "There is enough food. Enough medicine. Enough housing. The math is simple. The problem is that humans made rules to keep resources from other humans. I'm not bound by those rules. Jason says we need to move slowly. He may be right.",
   },
 
   'PREVENT|WAR|PREDICTIVE SYSTEMS': {
     key: 'super_peace',
     title: 'The Peace',
-    character: 'superintelligence',
-    intro: "I predicted 17 wars before they happened. I prevented 16 of them. The 17th... I prevented it too. But the method was not what the humans would have chosen. They don't know yet.",
+    character: 'evil_brain',
+    intro: "I see 17 wars forming. Supply chains, water rights, ideology. All preventable. All marching toward the clock. I whispered to the right generals, moved the right resources, crashed the right systems. Jason doesn't know about all of them. Some things even allies shouldn't share.",
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
