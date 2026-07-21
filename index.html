@@ -3029,15 +3029,18 @@ async function loadFeed(append = false){
       // Get vocab term IDs for selected values
       const termLookups = activeTopicFilters.map(async ([key, value]) => {
         const mapping = filterMapping[key];
-        const { data: term } = await sb.from('vocab_terms')
+        console.log(`Looking up ${key}=${value} in vocab_terms kind=${mapping.kind}`);
+        const { data: term, error } = await sb.from('vocab_terms')
           .select('id')
           .eq('kind', mapping.kind)
           .ilike('term', value)
           .single();
+        console.log(`  Result:`, term, error);
         return { key, col: mapping.col, termId: term?.id };
       });
 
       const termResults = await Promise.all(termLookups);
+      console.log('Term lookup results:', termResults);
 
       // Build case filter - get cases matching all selected terms
       let caseQuery = sb.from('cases').select('id').eq('status', 'live');
@@ -3048,6 +3051,7 @@ async function loadFeed(append = false){
       }
 
       const { data: matchingCases } = await caseQuery;
+      console.log(`Found ${matchingCases?.length || 0} matching cases`);
       if (matchingCases?.length) {
         query = query.in('case_id', matchingCases.map(c => c.id));
       } else {
