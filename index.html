@@ -2308,26 +2308,26 @@ async function loadFilters(){
 }
 
 async function loadTopicOptions() {
-  // Get vocab terms by kind for dropdowns
+  // Get ALL vocab terms with use_count > 0 - the extraction process maintains this table
   const { data: terms } = await sb.from('vocab_terms')
     .select('id, term, kind, use_count')
     .in('kind', ['verb', 'object_class', 'instrument', 'actor', 'target'])
     .gt('use_count', 0)
-    .order('use_count', { ascending: false });
+    .order('use_count', { ascending: false })
+    .limit(500); // Get plenty
 
-  // Start with vocab_terms data
+  // Group by kind
   TOPIC_OPTIONS = {
-    verb: (terms || []).filter(t => t.kind === 'verb').slice(0, 40),
-    object: (terms || []).filter(t => t.kind === 'object_class').slice(0, 40),
-    instrument: (terms || []).filter(t => t.kind === 'instrument').slice(0, 40),
-    who: (terms || []).filter(t => t.kind === 'actor').slice(0, 40),
-    whom: (terms || []).filter(t => t.kind === 'target').slice(0, 40)
+    verb: (terms || []).filter(t => t.kind === 'verb'),
+    object: (terms || []).filter(t => t.kind === 'object_class'),
+    instrument: (terms || []).filter(t => t.kind === 'instrument'),
+    who: (terms || []).filter(t => t.kind === 'actor'),
+    whom: (terms || []).filter(t => t.kind === 'target')
   };
 
-  // Supplement with slot data if available
+  // Supplement with slot data for verb/object/instrument
   if (SLOT_VERBS.length === 0) await loadSlotData();
 
-  // Add slot verbs/objects/instruments not already in vocab
   const existingVerbs = new Set(TOPIC_OPTIONS.verb.map(t => t.term.toUpperCase()));
   const existingObjects = new Set(TOPIC_OPTIONS.object.map(t => t.term.toUpperCase()));
   const existingInstruments = new Set(TOPIC_OPTIONS.instrument.map(t => t.term.toUpperCase()));
@@ -2348,34 +2348,20 @@ async function loadTopicOptions() {
     }
   });
 
-  // Add common WHO (actors) if not populated
-  if (TOPIC_OPTIONS.who.length < 5) {
-    const commonActors = [
-      'Microsoft', 'Google', 'OpenAI', 'Meta', 'Amazon', 'Apple', 'SAP', 'IBM', 'Salesforce',
-      'Tesla', 'Uber', 'Clearview AI', 'Palantir', 'ByteDance', 'TikTok', 'X/Twitter',
-      'US Government', 'China', 'EU', 'Police', 'Schools', 'Hospitals', 'Banks', 'Insurers'
+  // If WHO/WHOM still empty, add seed data (extraction should populate these)
+  if (TOPIC_OPTIONS.who.length === 0) {
+    const seedActors = [
+      'Microsoft', 'Google', 'OpenAI', 'Meta', 'Amazon', 'Apple', 'SAP', 'IBM',
+      'Tesla', 'Uber', 'Clearview AI', 'Palantir', 'US Government', 'China', 'EU'
     ];
-    const existingWho = new Set(TOPIC_OPTIONS.who.map(t => t.term.toLowerCase()));
-    commonActors.forEach(a => {
-      if (!existingWho.has(a.toLowerCase())) {
-        TOPIC_OPTIONS.who.push({ term: a, use_count: 1 });
-      }
-    });
+    TOPIC_OPTIONS.who = seedActors.map(a => ({ term: a, use_count: 0 }));
   }
-
-  // Add common WHOM (targets) if not populated
-  if (TOPIC_OPTIONS.whom.length < 5) {
-    const commonTargets = [
-      'Workers', 'Students', 'Patients', 'Consumers', 'Citizens', 'Job Applicants',
-      'Drivers', 'Renters', 'Borrowers', 'Immigrants', 'Prisoners', 'Children',
-      'Elderly', 'Disabled', 'Low-Income', 'Minorities', 'Women', 'LGBTQ+'
+  if (TOPIC_OPTIONS.whom.length === 0) {
+    const seedTargets = [
+      'Workers', 'Students', 'Patients', 'Consumers', 'Job Applicants',
+      'Drivers', 'Immigrants', 'Prisoners', 'Children', 'Elderly'
     ];
-    const existingWhom = new Set(TOPIC_OPTIONS.whom.map(t => t.term.toLowerCase()));
-    commonTargets.forEach(t => {
-      if (!existingWhom.has(t.toLowerCase())) {
-        TOPIC_OPTIONS.whom.push({ term: t, use_count: 1 });
-      }
-    });
+    TOPIC_OPTIONS.whom = seedTargets.map(t => ({ term: t, use_count: 0 }));
   }
 
   // Sort all by use_count descending

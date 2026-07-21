@@ -106,10 +106,11 @@ Return JSON only:
   "article_quote": "extracted quote from article or null",
   "published_at": "YYYY-MM-DD or null",
   "verb": "specific action verb",
-  "object_class": "specific object",
+  "object_class": "specific object/target of the action",
   "instrument": "specific AI technology OR attack method if AI is the target",
   "domain": "healthcare|finance|employment|law enforcement|education|social media|government|military|retail|transportation|entertainment|research|cybersecurity|manufacturing|legal",
-  "subject": "company/org name or null",
+  "actor": "company/org deploying the AI (e.g., Microsoft, Google, OpenAI, police department, hospital)",
+  "target": "who is affected (e.g., workers, students, patients, job applicants, users)",
   "impact": 1-5
 }
 
@@ -220,6 +221,8 @@ async function processOne(prospect) {
     const verb = await getOrCreateTerm('verb', result.verb);
     const obj = await getOrCreateTerm('object_class', result.object_class);
     const inst = await getOrCreateTerm('instrument', result.instrument);
+    const actor = result.actor ? await getOrCreateTerm('actor', result.actor) : null;
+    const target = result.target ? await getOrCreateTerm('target', result.target) : null;
 
     if (!verb || !inst) {
       throw new Error('Missing verb or instrument');
@@ -237,6 +240,16 @@ async function processOne(prospect) {
 
     if (existingCase.length > 0) {
       caseId = existingCase[0].id;
+      // Update actor/target if we have them and case doesn't
+      if (actor || target) {
+        const updates = {};
+        if (actor) updates.actor_id = actor.id;
+        if (target) updates.target_id = target.id;
+        await sb(`cases?id=eq.${caseId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(updates)
+        });
+      }
     } else {
       // Generate embedding for new case
       const embedding = await getEmbedding(`${caseTitle} ${result.domain || ''}`);
@@ -247,6 +260,8 @@ async function processOne(prospect) {
           verb_id: verb.id,
           object_class_id: obj?.id || null,
           instrument_id: inst.id,
+          actor_id: actor?.id || null,
+          target_id: target?.id || null,
           title_render: caseTitle,
           domain: result.domain?.toLowerCase() || null,
           embedding: embedding,
@@ -268,7 +283,8 @@ async function processOne(prospect) {
         summary: result.summary?.slice(0, 500) || '',
         article_quote: result.article_quote?.slice(0, 500) || null,
         published_at: result.published_at || null,
-        subject: result.subject || null,
+        actor: result.actor || null,
+        target: result.target || null,
         source_url: url,
         source_domain: sourceDomain,
         domain: result.domain?.toLowerCase() || null,
