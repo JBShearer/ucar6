@@ -2329,12 +2329,16 @@ async function loadFilters(){
 }
 
 async function loadTopicOptions() {
-  // Get ALL cases - no limit
-  const { data: cases, count } = await sb.from('cases')
-    .select('title_render, actor_id, target_id', { count: 'exact' })
+  // Get ALL cases - just title_render
+  const { data: cases, error } = await sb.from('cases')
+    .select('title_render')
     .eq('status', 'live');
 
-  console.log(`Loading filters from ${count || cases?.length || 0} cases`);
+  if (error) {
+    console.error('Failed to load cases for filters:', error);
+  }
+
+  console.log(`Loading filters from ${cases?.length || 0} cases`);
 
   const verbCounts = new Map();
   const objectCounts = new Map();
@@ -2374,40 +2378,19 @@ async function loadTopicOptions() {
     whom: []
   };
 
-  // Get WHO (actors) and WHOM (targets) from vocab_terms if available
-  try {
-    const { data: actors } = await sb.from('vocab_terms')
-      .select('id, term, use_count')
-      .eq('kind', 'actor')
-      .gt('use_count', 0)
-      .order('use_count', { ascending: false })
-      .limit(100);
-    if (actors) TOPIC_OPTIONS.who = actors;
+  // WHO/WHOM - seed with common actors/targets for now
+  // (vocab_terms table may not have these populated yet)
+  TOPIC_OPTIONS.who = [
+    'Microsoft', 'Google', 'OpenAI', 'Meta', 'Amazon', 'Apple', 'SAP', 'IBM',
+    'Tesla', 'Uber', 'Clearview AI', 'Palantir', 'US Government', 'China', 'EU',
+    'Police', 'Schools', 'Hospitals', 'Banks', 'Insurance Companies'
+  ].map(t => ({ term: t, use_count: 0 }));
 
-    const { data: targets } = await sb.from('vocab_terms')
-      .select('id, term, use_count')
-      .eq('kind', 'target')
-      .gt('use_count', 0)
-      .order('use_count', { ascending: false })
-      .limit(100);
-    if (targets) TOPIC_OPTIONS.whom = targets;
-  } catch (e) {
-    console.log('vocab_terms actor/target query failed');
-  }
-
-  // Seed WHO/WHOM if empty
-  if (TOPIC_OPTIONS.who.length === 0) {
-    TOPIC_OPTIONS.who = [
-      'Microsoft', 'Google', 'OpenAI', 'Meta', 'Amazon', 'Apple', 'SAP', 'IBM',
-      'Tesla', 'Uber', 'Clearview AI', 'Palantir', 'US Government', 'China', 'EU'
-    ].map(t => ({ term: t, use_count: 0 }));
-  }
-  if (TOPIC_OPTIONS.whom.length === 0) {
-    TOPIC_OPTIONS.whom = [
-      'Workers', 'Students', 'Patients', 'Consumers', 'Job Applicants',
-      'Drivers', 'Immigrants', 'Prisoners', 'Children', 'Elderly'
-    ].map(t => ({ term: t, use_count: 0 }));
-  }
+  TOPIC_OPTIONS.whom = [
+    'Workers', 'Students', 'Patients', 'Consumers', 'Job Applicants',
+    'Drivers', 'Immigrants', 'Prisoners', 'Children', 'Elderly',
+    'Users', 'Citizens', 'Voters', 'Tenants', 'Borrowers'
+  ].map(t => ({ term: t, use_count: 0 }));
 
   // Populate dropdowns
   populateTopicDropdowns();
