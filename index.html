@@ -48,9 +48,9 @@ header{border-bottom:3px solid var(--ink);padding:14px 20px;display:flex;align-i
 header h1{font-family:'Oswald',sans-serif;font-weight:700;font-size:22px;letter-spacing:.04em;white-space:nowrap}
 @media(min-width:600px){header h1{font-size:26px}}
 header h1 span{color:var(--stamp)}
-header .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive);line-height:1.3}
-header .tag .line2{display:block}
-@media(min-width:480px){header .tag .line2{display:inline}}
+header .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive);line-height:1.3;white-space:nowrap}
+@media(max-width:480px){header .tag{font-size:9px}}
+@media(max-width:380px){header .tag{font-size:8px}}
 .hdr-btns{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap}
 .hdr-btn{background:none;border:2px solid var(--ink);color:var(--ink);padding:5px 10px;cursor:pointer;
   font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
@@ -587,7 +587,7 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
 <header>
   <div class="brand">
     <h1>USE CASE ARMS RACE<span> →</span></h1>
-    <div class="tag"><span id="tag1">Upvote the good AI use cases.</span><span id="tag2" style="display:none">Report evil AI before it reports you.</span><span id="tag3" style="display:none">Shooting live until robots drag Jason away.</span></div>
+    <div class="tag"><span id="tag1">Upvote the good AI use cases.</span><span id="tag2" style="display:none">Report evil AI before it reports you.</span><span id="tag3" style="display:none">Shooting daily until robots drag Jason away.</span></div>
   </div>
   <div class="hdr-btns">
     <button class="hdr-btn" id="aboutBtn">About</button>
