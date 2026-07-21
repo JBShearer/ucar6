@@ -175,12 +175,17 @@ main{max-width:920px;margin:0 auto;padding:16px}
   white-space:nowrap;flex-shrink:0}
 .clear-filters-btn:hover{background:#c94040}
 
-#sortBar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-left:auto}
-.sort-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive)}
-.sort-btn{background:none;border:1.5px solid var(--line);padding:4px 10px;font-family:'IBM Plex Mono',monospace;
-  font-size:11px;cursor:pointer;color:var(--olive)}
-.sort-btn:hover{border-color:var(--ink);color:var(--ink)}
-.sort-btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+#sortBar{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.sort-btn,.time-btn{background:none;border:1.5px solid var(--line);padding:3px 8px;font-family:'IBM Plex Mono',monospace;
+  font-size:10px;cursor:pointer;color:var(--olive);white-space:nowrap}
+.sort-btn:hover,.time-btn:hover{border-color:var(--ink);color:var(--ink)}
+.sort-btn.on,.time-btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.sort-sep{color:var(--line);font-size:12px;margin:0 2px}
+@media(max-width:600px){
+  #sortBar{gap:3px}
+  .sort-btn,.time-btn{padding:2px 6px;font-size:9px}
+  .sort-sep{display:none}
+}
 
 /* Daily Show - Compact */
 .daily-show{max-width:920px;margin:0 auto 16px;padding:0 16px;display:flex;gap:12px;align-items:stretch}
@@ -699,10 +704,15 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
       <span class="icon">👎</span> EVIL <span class="num" id="evilNum">0</span>
     </button>
     <div id="sortBar">
-      <span class="sort-label">Sort:</span>
       <button class="sort-btn on" data-sort="newest">Newest</button>
-      <button class="sort-btn" data-sort="votes">Most Votes</button>
+      <button class="sort-btn" data-sort="votes">Votes</button>
       <button class="sort-btn" data-sort="trending">Hot</button>
+      <span class="sort-sep">|</span>
+      <button class="time-btn on" data-time="all">All Time</button>
+      <button class="time-btn" data-time="today">Today</button>
+      <button class="time-btn" data-time="week">Week</button>
+      <button class="time-btn" data-time="month">Month</button>
+      <button class="time-btn" data-time="year">Year</button>
     </div>
   </div>
 
@@ -2520,7 +2530,7 @@ function articleCard(a, c){
   const evilVotes = c?.evil_votes || 0;
   const verdict = goodVotes > evilVotes ? 'verdict-good' : evilVotes > goodVotes ? 'verdict-evil' : '';
 
-  const thumb = a.image_url ? `<div class="article-thumb"><img src="${esc(a.image_url)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : '';
+  const thumb = a.image_url ? `<div class="article-thumb"><img src="${esc(a.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.style.display='none'"></div>` : '';
 
   return `<div class="article ${verdict}" data-article="${a.id}" data-case="${c?.id || ''}">
     <div class="article-inner">
@@ -2775,6 +2785,19 @@ async function loadFeed(append = false){
         const filterNames = activeTopicFilters.map(([k, v]) => v).join(' + ');
         feed.innerHTML = `<div class="empty">No cases matching: ${esc(filterNames)}</div>`;
         return;
+      }
+    }
+
+    // Apply time range filter
+    if (TIME_RANGE && TIME_RANGE !== 'all') {
+      const now = new Date();
+      let cutoff;
+      if (TIME_RANGE === 'today') cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      else if (TIME_RANGE === 'week') cutoff = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      else if (TIME_RANGE === 'month') cutoff = new Date(now - 30 * 24 * 60 * 60 * 1000);
+      else if (TIME_RANGE === 'year') cutoff = new Date(now - 365 * 24 * 60 * 60 * 1000);
+      if (cutoff) {
+        query = query.gte('published_at', cutoff.toISOString());
       }
     }
 
@@ -3065,7 +3088,7 @@ async function openArticle(articleId){
     </div>
     <div class="drawer-body">
       <div class="article-detail">
-        ${a.image_url ? `<div class="article-detail-img"><img src="${esc(a.image_url)}" alt="" onerror="this.parentElement.style.display='none'"></div>` : ''}
+        ${a.image_url ? `<div class="article-detail-img"><img src="${esc(a.image_url)}" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.style.display='none'"></div>` : ''}
         <div class="stamp-row">
           <div class="stamp-badge">FILED ${fmtDate(a.created_at)}</div>
           <span class="mono">${esc(a.source_domain)}</span>
@@ -3527,6 +3550,17 @@ $$('.sort-btn[data-sort]').forEach(btn => {
   btn.onclick = () => {
     SORT_BY = btn.dataset.sort;
     $$('.sort-btn[data-sort]').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    loadFeed();
+  };
+});
+
+// Time range filter
+let TIME_RANGE = 'all';
+$$('.time-btn[data-time]').forEach(btn => {
+  btn.onclick = () => {
+    TIME_RANGE = btn.dataset.time;
+    $$('.time-btn[data-time]').forEach(b => b.classList.remove('on'));
     btn.classList.add('on');
     loadFeed();
   };
