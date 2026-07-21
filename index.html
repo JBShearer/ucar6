@@ -1957,22 +1957,26 @@ async function advanceAdventure(choiceIdx) {
   const choice = node.choices[choiceIdx];
 
   if (choice.case) {
-    // Look up the case and open it
-    const { data } = await sb.from('cases').select('id').eq('case_number', choice.case).single();
+    // Look up the case and open it in background (drawer)
+    const { data, error } = await sb.from('cases').select('id').eq('case_number', choice.case).single();
     if (data) {
-      $('#adventureModal').classList.remove('open');
       openCase(data.id);
-      return;
+      // Don't close adventure modal - let user see case in drawer while story continues
+    } else {
+      console.warn('Case not found:', choice.case, error);
     }
   }
 
+  // Continue to next node (or close)
   if (choice.next === 'close') {
     $('#adventureModal').classList.remove('open');
     return;
   }
 
-  adventureNode = choice.next;
-  showAdventureNode();
+  if (choice.next) {
+    adventureNode = choice.next;
+    showAdventureNode();
+  }
 }
 
 $('#closeAdventureX').onclick = () => $('#adventureModal').classList.remove('open');
