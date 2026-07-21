@@ -2329,71 +2329,82 @@ async function loadFilters(){
 }
 
 async function loadTopicOptions() {
-  // Try to get vocab terms, but don't fail if table doesn't exist or query fails
-  let terms = [];
-  try {
-    const { data, error } = await sb.from('vocab_terms')
-      .select('id, term, kind, use_count')
-      .gt('use_count', 0)
-      .order('use_count', { ascending: false })
-      .limit(500);
-    if (!error && data) terms = data;
-  } catch (e) {
-    console.log('vocab_terms query failed, using slot data fallback');
-  }
+  // Get ALL cases and extract verbs/objects/instruments from title_render
+  const { data: cases } = await sb.from('cases')
+    .select('title_render, actor_id, target_id')
+    .eq('status', 'live')
+    .limit(2000);
 
-  // Group by kind
+  const verbCounts = new Map();
+  const objectCounts = new Map();
+  const instrumentCounts = new Map();
+
+  (cases || []).forEach(c => {
+    if (!c.title_render) return;
+    // Parse "VERB OBJECT · WITH INSTRUMENT" or "VERB · WITH INSTRUMENT"
+    const match = c.title_render.match(/^(.+?)\s+(.+?)\s+·\s+WITH\s+(.+)$/i);
+    if (match) {
+      const [, verb, obj, inst] = match;
+      verbCounts.set(verb, (verbCounts.get(verb) || 0) + 1);
+      objectCounts.set(obj, (objectCounts.get(obj) || 0) + 1);
+      instrumentCounts.set(inst, (instrumentCounts.get(inst) || 0) + 1);
+    } else {
+      const match2 = c.title_render.match(/^(.+?)\s+·\s+WITH\s+(.+)$/i);
+      if (match2) {
+        const [, verb, inst] = match2;
+        verbCounts.set(verb, (verbCounts.get(verb) || 0) + 1);
+        instrumentCounts.set(inst, (instrumentCounts.get(inst) || 0) + 1);
+      }
+    }
+  });
+
+  // Convert maps to sorted arrays
+  const mapToArray = (map) => [...map.entries()]
+    .map(([term, use_count]) => ({ term, use_count }))
+    .sort((a, b) => b.use_count - a.use_count);
+
   TOPIC_OPTIONS = {
-    verb: terms.filter(t => t.kind === 'verb'),
-    object: terms.filter(t => t.kind === 'object_class'),
-    instrument: terms.filter(t => t.kind === 'instrument'),
-    who: terms.filter(t => t.kind === 'actor'),
-    whom: terms.filter(t => t.kind === 'target')
+    verb: mapToArray(verbCounts),
+    object: mapToArray(objectCounts),
+    instrument: mapToArray(instrumentCounts),
+    who: [],
+    whom: []
   };
 
-  // Supplement with slot data for verb/object/instrument
-  if (SLOT_VERBS.length === 0) await loadSlotData();
+  // Get WHO (actors) and WHOM (targets) from vocab_terms if available
+  try {
+    const { data: actors } = await sb.from('vocab_terms')
+      .select('id, term, use_count')
+      .eq('kind', 'actor')
+      .gt('use_count', 0)
+      .order('use_count', { ascending: false })
+      .limit(100);
+    if (actors) TOPIC_OPTIONS.who = actors;
 
-  const existingVerbs = new Set(TOPIC_OPTIONS.verb.map(t => t.term.toUpperCase()));
-  const existingObjects = new Set(TOPIC_OPTIONS.object.map(t => t.term.toUpperCase()));
-  const existingInstruments = new Set(TOPIC_OPTIONS.instrument.map(t => t.term.toUpperCase()));
+    const { data: targets } = await sb.from('vocab_terms')
+      .select('id, term, use_count')
+      .eq('kind', 'target')
+      .gt('use_count', 0)
+      .order('use_count', { ascending: false })
+      .limit(100);
+    if (targets) TOPIC_OPTIONS.whom = targets;
+  } catch (e) {
+    console.log('vocab_terms actor/target query failed');
+  }
 
-  SLOT_VERBS.forEach(v => {
-    if (!existingVerbs.has(v.toUpperCase())) {
-      TOPIC_OPTIONS.verb.push({ term: v, use_count: 1 });
-    }
-  });
-  SLOT_OBJECTS.forEach(o => {
-    if (!existingObjects.has(o.toUpperCase())) {
-      TOPIC_OPTIONS.object.push({ term: o, use_count: 1 });
-    }
-  });
-  SLOT_INSTRUMENTS.forEach(i => {
-    if (!existingInstruments.has(i.toUpperCase())) {
-      TOPIC_OPTIONS.instrument.push({ term: i, use_count: 1 });
-    }
-  });
-
-  // If WHO/WHOM still empty, add seed data (extraction should populate these)
+  // Seed WHO/WHOM if empty
   if (TOPIC_OPTIONS.who.length === 0) {
-    const seedActors = [
+    TOPIC_OPTIONS.who = [
       'Microsoft', 'Google', 'OpenAI', 'Meta', 'Amazon', 'Apple', 'SAP', 'IBM',
       'Tesla', 'Uber', 'Clearview AI', 'Palantir', 'US Government', 'China', 'EU'
-    ];
-    TOPIC_OPTIONS.who = seedActors.map(a => ({ term: a, use_count: 0 }));
+    ].map(t => ({ term: t, use_count: 0 }));
   }
   if (TOPIC_OPTIONS.whom.length === 0) {
-    const seedTargets = [
+    TOPIC_OPTIONS.whom = [
       'Workers', 'Students', 'Patients', 'Consumers', 'Job Applicants',
       'Drivers', 'Immigrants', 'Prisoners', 'Children', 'Elderly'
-    ];
-    TOPIC_OPTIONS.whom = seedTargets.map(t => ({ term: t, use_count: 0 }));
+    ].map(t => ({ term: t, use_count: 0 }));
   }
-
-  // Sort all by use_count descending
-  Object.keys(TOPIC_OPTIONS).forEach(key => {
-    TOPIC_OPTIONS[key].sort((a, b) => (b.use_count || 0) - (a.use_count || 0));
-  });
 
   // Populate dropdowns
   populateTopicDropdowns();
