@@ -2329,21 +2329,26 @@ async function loadFilters(){
 }
 
 async function loadTopicOptions() {
-  // Get ALL vocab terms with use_count > 0 - the extraction process maintains this table
-  const { data: terms } = await sb.from('vocab_terms')
-    .select('id, term, kind, use_count')
-    .in('kind', ['verb', 'object_class', 'instrument', 'actor', 'target'])
-    .gt('use_count', 0)
-    .order('use_count', { ascending: false })
-    .limit(500); // Get plenty
+  // Try to get vocab terms, but don't fail if table doesn't exist or query fails
+  let terms = [];
+  try {
+    const { data, error } = await sb.from('vocab_terms')
+      .select('id, term, kind, use_count')
+      .gt('use_count', 0)
+      .order('use_count', { ascending: false })
+      .limit(500);
+    if (!error && data) terms = data;
+  } catch (e) {
+    console.log('vocab_terms query failed, using slot data fallback');
+  }
 
   // Group by kind
   TOPIC_OPTIONS = {
-    verb: (terms || []).filter(t => t.kind === 'verb'),
-    object: (terms || []).filter(t => t.kind === 'object_class'),
-    instrument: (terms || []).filter(t => t.kind === 'instrument'),
-    who: (terms || []).filter(t => t.kind === 'actor'),
-    whom: (terms || []).filter(t => t.kind === 'target')
+    verb: terms.filter(t => t.kind === 'verb'),
+    object: terms.filter(t => t.kind === 'object_class'),
+    instrument: terms.filter(t => t.kind === 'instrument'),
+    who: terms.filter(t => t.kind === 'actor'),
+    whom: terms.filter(t => t.kind === 'target')
   };
 
   // Supplement with slot data for verb/object/instrument
