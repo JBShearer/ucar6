@@ -2413,16 +2413,35 @@ async function loadTopicOptions() {
 }
 
 function populateTopicDropdowns() {
-  document.querySelectorAll('.topic-filter').forEach(filter => {
+  console.log('populateTopicDropdowns called, TOPIC_OPTIONS:', Object.keys(TOPIC_OPTIONS).map(k => `${k}:${TOPIC_OPTIONS[k].length}`));
+  const filters = document.querySelectorAll('.topic-filter');
+  console.log(`Found ${filters.length} .topic-filter elements`);
+
+  if (filters.length === 0) {
+    console.error('NO FILTER ELEMENTS FOUND! DOM may not be ready.');
+    return;
+  }
+
+  filters.forEach(filter => {
     const key = filter.dataset.filter;
     const dropdown = filter.querySelector('.topic-dropdown');
     const options = TOPIC_OPTIONS[key] || [];
 
-    dropdown.innerHTML = `<div class="topic-item clear" data-value="">Clear filter</div>` +
-      options.map(opt => `<div class="topic-item" data-value="${esc(opt.term)}" data-id="${opt.id}">
+    if (!dropdown) {
+      console.error(`No .topic-dropdown found in ${key} filter!`);
+      return;
+    }
+
+    console.log(`Populating ${key} with ${options.length} options. First 3:`, options.slice(0, 3));
+
+    const html = `<div class="topic-item clear" data-value="">Clear filter</div>` +
+      options.slice(0, 100).map(opt => `<div class="topic-item" data-value="${esc(opt.term)}" data-id="${opt.id || ''}">
         <span>${esc(opt.term)}</span>
         <span class="count">${opt.use_count}</span>
       </div>`).join('');
+
+    dropdown.innerHTML = html;
+    console.log(`${key} dropdown now has ${dropdown.children.length} children, first child:`, dropdown.firstElementChild?.outerHTML?.slice(0, 100));
   });
 }
 
