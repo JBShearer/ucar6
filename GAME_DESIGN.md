@@ -1153,7 +1153,164 @@ New cases come in daily. Weekly job:
 
 ---
 
-## 14. CONTENT ROADMAP
+## 14. CONTENT MODERATION
+
+### The Tension
+UCAR documents the arms race — including the worst of it. Hiding severe cases makes the docket toothless, but detailed how-to guides for horrors help no one.
+
+### Severity Tiers
+
+| Tier | Examples | Display | Game Content |
+|------|----------|---------|--------------|
+| **normal** | Generate images, write code, tutor students | Full details | Normal quests |
+| **sensitive** | Clone voices, deepfakes, surveillance | Full with context | Warning-themed quests |
+| **severe** | CSAM detection/generation, bioweapons, mass harm | Title only, summary redacted | "Sealed case" quests |
+| **suppressed** | Actual harmful instructions | Hidden from public | Does not exist in game |
+
+### Schema Addition
+```sql
+-- Add severity to cases
+ALTER TABLE cases ADD COLUMN severity TEXT DEFAULT 'normal' 
+  CHECK (severity IN ('normal', 'sensitive', 'severe', 'suppressed'));
+
+-- Add severity to filings  
+ALTER TABLE filings ADD COLUMN severity TEXT DEFAULT 'normal'
+  CHECK (severity IN ('normal', 'sensitive', 'severe', 'suppressed'));
+
+-- Index for filtering
+CREATE INDEX idx_cases_severity ON cases(severity);
+```
+
+### Extraction Prompt Addition
+```
+SEVERITY CLASSIFICATION:
+- normal: Standard AI deployment, research, products
+- sensitive: Dual-use tech, potential for misuse, privacy concerns
+- severe: Direct harm potential (CSAM, weapons, mass casualties) - case should exist but details withheld
+- suppressed: Actual instructions for harm - do not extract, flag for review
+
+If severity is "severe", provide only:
+- A sanitized title (what it IS, not how to do it)
+- A one-line summary: "This case documents [category]. Details withheld."
+- No quotes, no technical details, no source excerpts
+```
+
+### Display Logic
+```javascript
+function renderFiling(filing, caseData) {
+  if (caseData.severity === 'suppressed') return null; // Never show
+  
+  if (caseData.severity === 'severe') {
+    return {
+      headline: filing.headline,
+      summary: `This case documents ${caseData.domain} applications with severe harm potential. Details withheld from public docket.`,
+      sealed: true,
+      reportLink: '/report-case'
+    };
+  }
+  
+  if (caseData.severity === 'sensitive') {
+    return {
+      ...filing,
+      warning: 'This case involves sensitive dual-use technology.',
+      contextLink: '/about#sensitive-cases'
+    };
+  }
+  
+  return filing; // Normal display
+}
+```
+
+### Game Integration: Sealed Cases
+Severe cases become "sealed files" in the game — players know they exist but can't see details:
+
+```javascript
+{
+  id: 'sealed_case_quest',
+  trigger: { severity: 'severe' },
+  nodes: {
+    intro: {
+      speaker: 'WENDY WHISTLEBLOWER',
+      text: "There's a case in the docket I can't show you. Not won't — can't. Some things shouldn't be searchable. But you should know it exists. Case #${case_number}. ${domain}. That's all I can say.",
+      choices: [
+        { label: "Why is it sealed?", next: 'explain' },
+        { label: "Can you tell me anything?", next: 'hint' },
+        { label: "I understand", next: 'end' }
+      ]
+    },
+    explain: {
+      speaker: 'WENDY WHISTLEBLOWER', 
+      text: "Because documenting the arms race doesn't mean writing the manual. We track that this EXISTS. We don't explain HOW. There's a difference between journalism and instruction.",
+      choices: [
+        { label: "That makes sense", next: 'end' },
+        { label: "But people should know", next: 'debate' }
+      ]
+    },
+    debate: {
+      speaker: 'DR. DIANA DOOM',
+      text: "She's right. I've seen what happens when technical details get out. The people who need to know, know. Everyone else just needs to know it's happening. That's what this docket is for.",
+      choices: [
+        { label: "I trust your judgment", next: 'end', effects: { rep: { resistance: 5 } } }
+      ]
+    }
+  }
+}
+```
+
+### Classification Triggers (Auto-flag for Review)
+```javascript
+const SEVERITY_KEYWORDS = {
+  severe: [
+    'CSAM', 'child abuse', 'child exploitation',
+    'bioweapon', 'nerve agent', 'mass casualty',
+    'assassination', 'terrorism instruction'
+  ],
+  sensitive: [
+    'deepfake', 'non-consensual', 'surveillance',
+    'facial recognition', 'predictive policing',
+    'social credit', 'manipulation', 'propaganda'
+  ]
+};
+
+function autoClassifySeverity(caseTitle, summary) {
+  const text = `${caseTitle} ${summary}`.toLowerCase();
+  
+  for (const keyword of SEVERITY_KEYWORDS.severe) {
+    if (text.includes(keyword.toLowerCase())) {
+      return { severity: 'severe', flagged: true, reason: keyword };
+    }
+  }
+  
+  for (const keyword of SEVERITY_KEYWORDS.sensitive) {
+    if (text.includes(keyword.toLowerCase())) {
+      return { severity: 'sensitive', flagged: false };
+    }
+  }
+  
+  return { severity: 'normal', flagged: false };
+}
+```
+
+### Manual Review Queue
+Cases flagged as potentially severe go to a review queue:
+```sql
+CREATE TABLE moderation_queue (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  case_id UUID REFERENCES cases(id),
+  filing_id UUID REFERENCES filings(id),
+  auto_severity TEXT,
+  flag_reason TEXT,
+  reviewed_at TIMESTAMPTZ,
+  reviewed_by TEXT,
+  final_severity TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## 15. CONTENT ROADMAP
 
 ### Phase 1: Foundation
 - [ ] Game state persistence (localStorage)
