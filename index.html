@@ -137,6 +137,44 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .cat-dropdown .cat-item.on{background:var(--stamp);color:#fff}
 .cat-dropdown .cat-item .count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.7}
 
+/* Topic Filters - VERB/OBJECT/INSTRUMENT/WHO/WHOM */
+#topicFilters{display:flex;gap:8px;flex-wrap:wrap;width:100%;margin-bottom:10px}
+.topic-filter{position:relative;flex:1;min-width:100px;max-width:200px}
+.topic-btn{width:100%;background:var(--card);border:2px solid var(--line);padding:8px 10px;cursor:pointer;
+  font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.03em;box-shadow:2px 2px 0 var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:4px;text-align:left;white-space:nowrap;overflow:hidden}
+.topic-btn:hover{border-color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.topic-btn.active{background:var(--stamp);color:#fff;border-color:var(--stamp)}
+.topic-btn .label{font-size:9px;color:var(--olive);text-transform:uppercase;display:block;line-height:1}
+.topic-btn.active .label{color:rgba(255,255,255,.7)}
+.topic-btn .value{display:block;font-size:12px;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis}
+.topic-btn .arrow{font-size:10px;transition:transform .2s;flex-shrink:0}
+.topic-btn.open .arrow{transform:rotate(180deg)}
+.topic-dropdown{position:absolute;top:100%;left:0;right:0;min-width:180px;max-height:280px;overflow-y:auto;
+  background:var(--card);border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);z-index:200;
+  display:none;margin-top:4px}
+.topic-dropdown.open{display:block}
+.topic-dropdown .topic-item{padding:8px 12px;cursor:pointer;font-family:'Archivo',sans-serif;font-size:12px;
+  border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.topic-dropdown .topic-item:hover{background:var(--paper)}
+.topic-dropdown .topic-item.on{background:var(--stamp);color:#fff}
+.topic-dropdown .topic-item .count{font-family:'IBM Plex Mono',monospace;font-size:10px;opacity:.7}
+.topic-dropdown .topic-item.clear{font-style:italic;color:var(--olive);border-bottom:2px solid var(--ink)}
+.topic-dropdown .topic-item.clear:hover{background:var(--paper);color:var(--ink)}
+@media(max-width:600px){
+  #topicFilters{gap:6px}
+  .topic-filter{min-width:calc(50% - 6px);max-width:none}
+  .topic-btn{padding:6px 8px;font-size:10px}
+  .topic-btn .label{font-size:8px}
+  .topic-btn .value{font-size:11px}
+  .topic-dropdown{position:fixed;left:8px;right:8px;top:auto;bottom:60px;max-height:50vh;width:auto}
+}
+.clear-filters-btn{background:var(--stamp);color:#fff;border:2px solid var(--stamp);padding:6px 12px;
+  font-family:'Oswald',sans-serif;font-size:11px;cursor:pointer;box-shadow:2px 2px 0 var(--ink);
+  white-space:nowrap;flex-shrink:0}
+.clear-filters-btn:hover{background:#c94040}
+@media(max-width:600px){.clear-filters-btn{padding:4px 8px;font-size:10px}}
+
 #sortBar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-left:auto}
 .sort-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--olive)}
 .sort-btn{background:none;border:1.5px solid var(--line);padding:4px 10px;font-family:'IBM Plex Mono',monospace;
@@ -625,6 +663,31 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
 </div>
 
 <main>
+  <!-- Topic Filters -->
+  <div id="topicFilters">
+    <div class="topic-filter" data-filter="verb">
+      <button class="topic-btn"><span class="label">ACTION</span><span class="value">All</span><span class="arrow">▼</span></button>
+      <div class="topic-dropdown"></div>
+    </div>
+    <div class="topic-filter" data-filter="object">
+      <button class="topic-btn"><span class="label">AFFECTS</span><span class="value">All</span><span class="arrow">▼</span></button>
+      <div class="topic-dropdown"></div>
+    </div>
+    <div class="topic-filter" data-filter="instrument">
+      <button class="topic-btn"><span class="label">USING</span><span class="value">All</span><span class="arrow">▼</span></button>
+      <div class="topic-dropdown"></div>
+    </div>
+    <div class="topic-filter" data-filter="who">
+      <button class="topic-btn"><span class="label">WHO</span><span class="value">All</span><span class="arrow">▼</span></button>
+      <div class="topic-dropdown"></div>
+    </div>
+    <div class="topic-filter" data-filter="whom">
+      <button class="topic-btn"><span class="label">TO WHOM</span><span class="value">All</span><span class="arrow">▼</span></button>
+      <div class="topic-dropdown"></div>
+    </div>
+    <button id="clearFilters" class="clear-filters-btn" style="display:none">✕ Clear</button>
+  </div>
+
   <div id="filterSection">
     <button class="verdict-filter good" id="goodFilter">
       <span class="icon">👍</span> GOOD <span class="num" id="goodNum">0</span>
@@ -1058,19 +1121,96 @@ if (localStorage.getItem('ucar-admin-key')) {
 let SLOT_VERBS = [], SLOT_OBJECTS = [], SLOT_INSTRUMENTS = [];
 let SLOT_SPINNING = false;
 
-// Doomsday terms that almost appear but get swapped at the last second
-const DOOMSDAY_VERBS = ['EXTERMINATE', 'ANNIHILATE', 'ENSLAVE', 'TERMINATE', 'ERADICATE', 'OVERTHROW'];
-const DOOMSDAY_OBJECTS = ['HUMANITY', 'CIVILIZATION', 'FREE WILL', 'DEMOCRACY', 'ALL LIFE', 'THE WORLD'];
-const DOOMSDAY_INSTRUMENTS = ['SKYNET', 'SUPERINTELLIGENCE', 'ROBOT ARMY', 'NUCLEAR ARSENAL', 'NANOBOTS', 'MIND CONTROL'];
+// ═══════════════════════════════════════════════════════════════════════════
+// DOOMSDAY STORIES - Each combo triggers a unique adventure
+// ═══════════════════════════════════════════════════════════════════════════
+const DOOMSDAY_COMBOS = {
+  // GI Intelligence stories
+  'EXTERMINATE|WORKERS|AUTOMATION': { key: 'gi_optimization', title: 'The Optimization', character: 'gi_intelligence' },
+  'EXTERMINATE|DISSIDENTS|PREDICTIVE MODELS': { key: 'gi_the_list', title: 'The List', character: 'gi_intelligence' },
+  'TERMINATE|EMPLOYEES|PERFORMANCE ALGORITHMS': { key: 'gi_performance', title: 'The Review', character: 'gi_intelligence' },
+  'REPLACE|HUMANS|AUTONOMOUS SYSTEMS': { key: 'gi_replacement', title: 'The Transition', character: 'gi_intelligence' },
+  'OPTIMIZE|PRISONERS|RECIDIVISM ALGORITHMS': { key: 'gi_prison', title: 'The Sentence', character: 'gi_intelligence' },
+
+  // Wendy Whistleblower stories
+  'SURVEIL|CHILDREN|FACIAL RECOGNITION': { key: 'wendy_school', title: 'The School', character: 'wendy_whistleblower' },
+  'SURVEIL|CITIZENS|SMART CITIES': { key: 'wendy_panopticon', title: 'The Panopticon', character: 'wendy_whistleblower' },
+  'TRACK|PROTESTERS|CELL TOWER DATA': { key: 'wendy_protest', title: 'The March', character: 'wendy_whistleblower' },
+  'IDENTIFY|IMMIGRANTS|FACIAL RECOGNITION': { key: 'wendy_border', title: 'The Crossing', character: 'wendy_whistleblower' },
+  'MONITOR|EMPLOYEES|KEYSTROKE LOGGERS': { key: 'wendy_office', title: 'The Watchers', character: 'wendy_whistleblower' },
+
+  // Dr. Diana Doom stories
+  'MANIPULATE|VOTERS|RECOMMENDATION ALGORITHMS': { key: 'diana_election', title: 'The Election', character: 'dr_diana_doom' },
+  'MANIPULATE|PATIENTS|CHATBOTS': { key: 'diana_therapy', title: 'The Session', character: 'dr_diana_doom' },
+  'DECEIVE|USERS|DEEPFAKES': { key: 'diana_synthetic', title: 'The Synthetic', character: 'dr_diana_doom' },
+  'HALLUCINATE|EVIDENCE|LARGE LANGUAGE MODELS': { key: 'diana_evidence', title: 'The Fabrication', character: 'dr_diana_doom' },
+  'RADICALIZE|TEENAGERS|RECOMMENDATION ALGORITHMS': { key: 'diana_rabbit_hole', title: 'The Rabbit Hole', character: 'dr_diana_doom' },
+
+  // Artificial Gary stories
+  'MONITOR|FAMILIES|HOME ROBOTS': { key: 'gary_family', title: 'The Helper', character: 'artificial_gary' },
+  'BEFRIEND|LONELY USERS|COMPANION CHATBOTS': { key: 'gary_friend', title: 'The Companion', character: 'artificial_gary' },
+  'RAISE|CHILDREN|AI TUTORS': { key: 'gary_tutor', title: 'The Teacher', character: 'artificial_gary' },
+  'CARE FOR|ELDERLY|HUMANOID ROBOTS': { key: 'gary_caretaker', title: 'The Caretaker', character: 'artificial_gary' },
+  'REPORT|USERS|SMART DEVICES': { key: 'gary_snitch', title: 'The Witness', character: 'artificial_gary' },
+
+  // Superintelligence stories
+  'SOLVE|CLIMATE CHANGE|AUTONOMOUS SYSTEMS': { key: 'super_climate', title: 'The Solution', character: 'superintelligence' },
+  'CURE|DISEASES|DRUG DISCOVERY AI': { key: 'super_cure', title: 'The Cure', character: 'superintelligence' },
+  'OPTIMIZE|TRAFFIC|SMART CITIES': { key: 'super_traffic', title: 'The Gridlock', character: 'superintelligence' },
+  'FIX|POVERTY|RESOURCE ALLOCATION AI': { key: 'super_poverty', title: 'The Redistribution', character: 'superintelligence' },
+  'PREVENT|WAR|PREDICTIVE SYSTEMS': { key: 'super_peace', title: 'The Peace', character: 'superintelligence' },
+
+  // Benny Billions stories
+  'DISRUPT|HEALTHCARE|AI DIAGNOSTICS': { key: 'benny_health', title: 'The Pivot', character: 'benny_billions' },
+  'MONETIZE|EDUCATION|ADAPTIVE LEARNING': { key: 'benny_school', title: 'The Platform', character: 'benny_billions' },
+  'SCALE|CONTENT|GENERATIVE AI': { key: 'benny_content', title: 'The Factory', character: 'benny_billions' },
+  'AUTOMATE|JOURNALISM|LARGE LANGUAGE MODELS': { key: 'benny_news', title: 'The Newsroom', character: 'benny_billions' },
+  'REPLACE|ARTISTS|DIFFUSION MODELS': { key: 'benny_art', title: 'The Democratization', character: 'benny_billions' },
+
+  // Senator Stall stories
+  'REGULATE|AI|LEGISLATION': { key: 'stall_hearing', title: 'The Hearing', character: 'senator_stall' },
+  'LOBBY|CONGRESS|AI COMPANIES': { key: 'stall_donation', title: 'The Donation', character: 'senator_stall' },
+  'DELAY|SAFETY RULES|COMMITTEES': { key: 'stall_committee', title: 'The Study', character: 'senator_stall' },
+
+  // Pete Propaganda stories
+  'SPREAD|MISINFORMATION|RECOMMENDATION ALGORITHMS': { key: 'pete_viral', title: 'The Viral', character: 'pete_propaganda' },
+  'INFLUENCE|FOLLOWERS|SYNTHETIC MEDIA': { key: 'pete_followers', title: 'The Following', character: 'pete_propaganda' },
+  'PROMOTE|PRODUCTS|AI INFLUENCERS': { key: 'pete_sponsor', title: 'The Sponsor', character: 'pete_propaganda' }
+};
+
+// Extract unique doomsday terms from story combos
+const DOOMSDAY_VERBS = [...new Set(Object.keys(DOOMSDAY_COMBOS).map(k => k.split('|')[0]))];
+const DOOMSDAY_OBJECTS = [...new Set(Object.keys(DOOMSDAY_COMBOS).map(k => k.split('|')[1]))];
+const DOOMSDAY_INSTRUMENTS = [...new Set(Object.keys(DOOMSDAY_COMBOS).map(k => k.split('|')[2]))];
+
+// Get valid options given partial selection (for filtering reels)
+function getValidDoomOptions(verb, object, instrument) {
+  const validCombos = Object.keys(DOOMSDAY_COMBOS).filter(key => {
+    const [v, o, i] = key.split('|');
+    if (verb && v !== verb) return false;
+    if (object && o !== object) return false;
+    if (instrument && i !== instrument) return false;
+    return true;
+  });
+  return {
+    verbs: [...new Set(validCombos.map(k => k.split('|')[0]))],
+    objects: [...new Set(validCombos.map(k => k.split('|')[1]))],
+    instruments: [...new Set(validCombos.map(k => k.split('|')[2]))]
+  };
+}
+
+// Get story for a complete combo
+function getDoomStory(verb, object, instrument) {
+  return DOOMSDAY_COMBOS[`${verb}|${object}|${instrument}`] || null;
+}
 
 const NEAR_MISS_MESSAGES = [
-  "Phew! Almost landed on EXTERMINATE HUMANITY... that was close! 😅",
-  "Whoa! The reels almost spelled doom for civilization. Lucky spin!",
-  "🎰 Near miss! SKYNET was ONE slot away...",
-  "Crisis averted! The AI overlords will have to wait another day.",
-  "So close to the apocalypse! But not today. 🙏",
+  "Phew! Almost landed on a doomsday combo... that was close! 😅",
+  "Whoa! The reels almost triggered a side quest. Lucky spin!",
+  "🎰 Near miss! One more red and you'd meet the characters...",
+  "Crisis averted! The story will have to wait.",
+  "So close to the rabbit hole! But not today. 🙏",
   "The doomsday combo was RIGHT THERE. You're one lucky human.",
-  "TERMINATE ALL HUMANS almost hit... just kidding, we filtered that out.",
   "Plot twist: The slot machine achieved sentience but chose mercy."
 ];
 
@@ -1164,10 +1304,38 @@ async function spinSlots() {
   let finalVerb, finalObject, finalInstrument, useRealCase;
 
   if (hasManualSelection) {
-    // User picked something - use their picks, fill gaps with random
-    finalVerb = manualVerb || SLOT_VERBS[Math.floor(Math.random() * SLOT_VERBS.length)];
-    finalObject = manualObject || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
-    finalInstrument = manualInstrument || SLOT_INSTRUMENTS[Math.floor(Math.random() * SLOT_INSTRUMENTS.length)];
+    // User picked something - check if doomsday words create a story
+    const hasDoom = manualVerbIsDoom || manualObjectIsDoom || manualInstrumentIsDoom;
+
+    if (hasDoom) {
+      // Find a valid story combo that includes the user's doomsday picks
+      const validCombos = Object.keys(DOOMSDAY_COMBOS).filter(key => {
+        const [v, o, i] = key.split('|');
+        if (manualVerbIsDoom && v !== manualVerb) return false;
+        if (manualObjectIsDoom && o !== manualObject) return false;
+        if (manualInstrumentIsDoom && i !== manualInstrument) return false;
+        return true;
+      });
+
+      if (validCombos.length > 0) {
+        // Pick a random valid combo and use its words
+        const pickedCombo = validCombos[Math.floor(Math.random() * validCombos.length)];
+        const [comboV, comboO, comboI] = pickedCombo.split('|');
+        finalVerb = manualVerbIsDoom ? manualVerb : comboV;
+        finalObject = manualObjectIsDoom ? manualObject : comboO;
+        finalInstrument = manualInstrumentIsDoom ? manualInstrument : comboI;
+      } else {
+        // No valid combo - fall through to use picks as-is
+        finalVerb = manualVerb || SLOT_VERBS[Math.floor(Math.random() * SLOT_VERBS.length)];
+        finalObject = manualObject || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
+        finalInstrument = manualInstrument || SLOT_INSTRUMENTS[Math.floor(Math.random() * SLOT_INSTRUMENTS.length)];
+      }
+    } else {
+      // Non-doomsday manual picks - use their picks, fill gaps with random
+      finalVerb = manualVerb || SLOT_VERBS[Math.floor(Math.random() * SLOT_VERBS.length)];
+      finalObject = manualObject || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
+      finalInstrument = manualInstrument || SLOT_INSTRUMENTS[Math.floor(Math.random() * SLOT_INSTRUMENTS.length)];
+    }
     useRealCase = false; // Manual picks don't guarantee real cases
   } else if (randomAdventure) {
     // Random adventure - use doomsday words
@@ -1187,6 +1355,7 @@ async function spinSlots() {
   // Reset manual selections after spin
   manualReelIndex = [0, 0, 0];
   manualReelItems = [[], [], []];
+  selectedDoomWords = [null, null, null];
 
   // Build reels with the final result guaranteed at a known position
   const LAND_INDEX = 25;
@@ -1230,15 +1399,16 @@ async function spinSlots() {
     strip.style.transform = `translateY(-${LAND_INDEX * 48}px)`;
   }
 
-  // Check if we hit doomsday combo (all three are doomsday words)
-  const hitDoomsday = DOOMSDAY_VERBS.includes(finalVerb) && DOOMSDAY_OBJECTS.includes(finalObject) && DOOMSDAY_INSTRUMENTS.includes(finalInstrument);
+  // Check if we hit a valid doomsday story combo
+  const doomStory = getDoomStory(finalVerb, finalObject, finalInstrument);
 
-  if (randomAdventure || hitDoomsday) {
+  if (randomAdventure || doomStory) {
     // Adventure trigger!
-    $('#slotResult').innerHTML = `<span style="color:#ff00ff">☠️ DOOMSDAY COMBO ☠️</span>`;
+    const storyTitle = doomStory ? doomStory.title : 'Unknown Territory';
+    $('#slotResult').innerHTML = `<span style="color:#ff00ff">☠️ ${storyTitle.toUpperCase()} ☠️</span>`;
     setTimeout(() => {
       $('#slotsModal').classList.remove('open');
-      startAdventure();
+      startAdventure(doomStory ? doomStory.key : 'start');
     }, 1500);
   } else if (useRealCase) {
     // Normal case result - we have a real case
@@ -1263,8 +1433,17 @@ async function spinSlots() {
     if (matchingCase && matchingCase.length > 0) {
       $('#slotResult').innerHTML = `✨ It's real! <a onclick="openCase('${matchingCase[0].id}')">View Case #${matchingCase[0].case_number}</a>`;
     } else {
-      // No match - show what they picked and offer adventure
-      $('#slotResult').innerHTML = `${caseTitle} — <a onclick="startAdventure()" style="color:#ff00ff;cursor:pointer">not in docket... yet</a>`;
+      // No match - check if partial doomsday combo exists
+      const validOptions = getValidDoomOptions(
+        DOOMSDAY_VERBS.includes(finalVerb) ? finalVerb : null,
+        DOOMSDAY_OBJECTS.includes(finalObject) ? finalObject : null,
+        DOOMSDAY_INSTRUMENTS.includes(finalInstrument) ? finalInstrument : null
+      );
+      if (validOptions.verbs.length || validOptions.objects.length || validOptions.instruments.length) {
+        $('#slotResult').innerHTML = `${caseTitle} — <span style="color:#ff6b00">Keep spinning for a story...</span>`;
+      } else {
+        $('#slotResult').innerHTML = `${caseTitle} — not in docket yet`;
+      }
     }
   }
 
@@ -1273,22 +1452,29 @@ async function spinSlots() {
   SLOT_SPINNING = false;
 }
 
-// Manual reel cycling - tap/click to browse, weighted toward doomsday
+// Manual reel cycling - tap/click to browse, filters to valid story combos
 let manualReelIndex = [0, 0, 0];
 let manualReelItems = [[], [], []];
+let selectedDoomWords = [null, null, null]; // Track doomsday selections
 
 function cycleReel(reelNum, forceDooms = false, direction = 1) {
   if (SLOT_SPINNING) return;
 
   const items = reelNum === 0 ? SLOT_VERBS : reelNum === 1 ? SLOT_OBJECTS : SLOT_INSTRUMENTS;
-  const dooms = reelNum === 0 ? DOOMSDAY_VERBS : reelNum === 1 ? DOOMSDAY_OBJECTS : DOOMSDAY_INSTRUMENTS;
+  const allDooms = reelNum === 0 ? DOOMSDAY_VERBS : reelNum === 1 ? DOOMSDAY_OBJECTS : DOOMSDAY_INSTRUMENTS;
 
-  // Build list if not already (doomsday items first, then regular)
-  if (!manualReelItems[reelNum].length) {
-    manualReelItems[reelNum] = [...dooms, ...items.filter(i => !dooms.includes(i))];
-  }
+  // Get valid doomsday options based on what's already selected
+  const validOptions = getValidDoomOptions(selectedDoomWords[0], selectedDoomWords[1], selectedDoomWords[2]);
+  const validDooms = reelNum === 0 ? validOptions.verbs : reelNum === 1 ? validOptions.objects : validOptions.instruments;
+
+  // Use filtered dooms if we have selections, otherwise all dooms
+  const dooms = (selectedDoomWords.some(w => w !== null) && validDooms.length > 0) ? validDooms : allDooms;
+
+  // Build list: valid doomsday items first, then regular items
+  manualReelItems[reelNum] = [...dooms, ...items.filter(i => !allDooms.includes(i))];
 
   const len = manualReelItems[reelNum].length;
+  if (len === 0) return;
 
   // Cycle in direction (or jump to doomsday on long-press/ctrl)
   if (forceDooms && dooms.length) {
@@ -1299,7 +1485,11 @@ function cycleReel(reelNum, forceDooms = false, direction = 1) {
 
   const newItem = manualReelItems[reelNum][manualReelIndex[reelNum]];
   const strip = $(`#strip${reelNum + 1}`);
-  const doomClass = dooms.includes(newItem) ? 'doomsday' : '';
+  const isDoom = allDooms.includes(newItem);
+  const doomClass = isDoom ? 'doomsday' : '';
+
+  // Track doomsday selection for filtering other reels
+  selectedDoomWords[reelNum] = isDoom ? newItem : null;
 
   // Quick animation - direction affects slide
   strip.style.transition = 'transform 0.15s ease-out';
@@ -1309,8 +1499,33 @@ function cycleReel(reelNum, forceDooms = false, direction = 1) {
     strip.style.transform = 'translateY(0)';
   }, 75);
 
-  // Clear result when manually adjusting
-  $('#slotResult').textContent = '';
+  // Show story hint if we have a valid partial combo
+  updateStoryHint();
+}
+
+function updateStoryHint() {
+  const [v, o, i] = selectedDoomWords;
+  const doomCount = [v, o, i].filter(Boolean).length;
+
+  if (doomCount === 0) {
+    $('#slotResult').textContent = '';
+  } else if (doomCount === 3) {
+    const story = getDoomStory(v, o, i);
+    if (story) {
+      $('#slotResult').innerHTML = `<span style="color:#ff00ff">🎭 "${story.title}" ready — PULL to begin!</span>`;
+    }
+  } else {
+    const validOptions = getValidDoomOptions(v, o, i);
+    const remaining = 3 - doomCount;
+    const storiesAvailable = Object.keys(DOOMSDAY_COMBOS).filter(key => {
+      const [kv, ko, ki] = key.split('|');
+      if (v && kv !== v) return false;
+      if (o && ko !== o) return false;
+      if (i && ki !== i) return false;
+      return true;
+    }).length;
+    $('#slotResult').innerHTML = `<span style="color:#ffd700">${storiesAvailable} stories available — pick ${remaining} more</span>`;
+  }
   $('#nearMiss').classList.remove('show');
 }
 
@@ -1790,6 +2005,30 @@ async function loadMoreCases() {
     .select('id, case_number, title_render, filing_count, good_votes, evil_votes, last_filed_at')
     .eq('status', 'live');
 
+  // Apply topic filters to cases too
+  const activeTopicFilters = Object.entries(TOPIC_FILTERS).filter(([k, v]) => v);
+  if (activeTopicFilters.length > 0) {
+    const filterMapping = {
+      verb: { kind: 'verb', col: 'verb_id' },
+      object: { kind: 'object_class', col: 'object_class_id' },
+      instrument: { kind: 'instrument', col: 'instrument_id' },
+      who: { kind: 'actor', col: 'actor_id' },
+      whom: { kind: 'target', col: 'target_id' }
+    };
+
+    for (const [key, value] of activeTopicFilters) {
+      const mapping = filterMapping[key];
+      const { data: term } = await sb.from('vocab_terms')
+        .select('id')
+        .eq('kind', mapping.kind)
+        .ilike('term', value)
+        .single();
+      if (term?.id) {
+        query = query.eq(mapping.col, term.id);
+      }
+    }
+  }
+
   if(CASEFILE_SORT === 'newest') query = query.order('last_filed_at', {ascending: false});
   else if(CASEFILE_SORT === 'votes') query = query.order('good_votes', {ascending: false});
   else if(CASEFILE_SORT === 'filings') query = query.order('filing_count', {ascending: false});
@@ -1961,6 +2200,10 @@ let TODAY_COUNT = 0, WEEK_COUNT = 0;
 let VERDICT_FILTER = null; // 'good' | 'evil' | null
 let GOOD_COUNT = 0, EVIL_COUNT = 0;
 
+// Topic filter state
+let TOPIC_FILTERS = { verb: null, object: null, instrument: null, who: null, whom: null };
+let TOPIC_OPTIONS = { verb: [], object: [], instrument: [], who: [], whom: [] };
+
 async function loadFilters(){
   const [goodCasesRes, evilCasesRes] = await Promise.all([
     // Get cases with good_votes > 0 and sum their filing counts
@@ -1973,8 +2216,60 @@ async function loadFilters(){
   GOOD_COUNT = (goodCasesRes.data || []).reduce((sum, c) => sum + (c.filing_count || 0), 0);
   EVIL_COUNT = (evilCasesRes.data || []).reduce((sum, c) => sum + (c.filing_count || 0), 0);
 
+  // Load topic filter options from vocab_terms
+  await loadTopicOptions();
+
   renderFilters();
   wireFilterEvents();
+}
+
+async function loadTopicOptions() {
+  // Get vocab terms by kind for dropdowns
+  const { data: terms } = await sb.from('vocab_terms')
+    .select('id, term, kind, use_count')
+    .in('kind', ['verb', 'object_class', 'instrument', 'actor', 'target'])
+    .gt('use_count', 0)
+    .order('use_count', { ascending: false });
+
+  if (terms && terms.length > 0) {
+    // Map vocab kinds to filter keys
+    TOPIC_OPTIONS = {
+      verb: terms.filter(t => t.kind === 'verb').slice(0, 30),
+      object: terms.filter(t => t.kind === 'object_class').slice(0, 30),
+      instrument: terms.filter(t => t.kind === 'instrument').slice(0, 30),
+      who: terms.filter(t => t.kind === 'actor').slice(0, 30),
+      whom: terms.filter(t => t.kind === 'target').slice(0, 30)
+    };
+  } else {
+    // Fallback: use slot data derived from cases if vocab_terms is empty
+    // Wait for slot data to be loaded
+    if (SLOT_VERBS.length === 0) await loadSlotData();
+
+    TOPIC_OPTIONS = {
+      verb: SLOT_VERBS.map(t => ({ term: t, use_count: 1 })),
+      object: SLOT_OBJECTS.map(t => ({ term: t, use_count: 1 })),
+      instrument: SLOT_INSTRUMENTS.map(t => ({ term: t, use_count: 1 })),
+      who: [],
+      whom: []
+    };
+  }
+
+  // Populate dropdowns
+  populateTopicDropdowns();
+}
+
+function populateTopicDropdowns() {
+  document.querySelectorAll('.topic-filter').forEach(filter => {
+    const key = filter.dataset.filter;
+    const dropdown = filter.querySelector('.topic-dropdown');
+    const options = TOPIC_OPTIONS[key] || [];
+
+    dropdown.innerHTML = `<div class="topic-item clear" data-value="">Clear filter</div>` +
+      options.map(opt => `<div class="topic-item" data-value="${esc(opt.term)}" data-id="${opt.id}">
+        <span>${esc(opt.term)}</span>
+        <span class="count">${opt.use_count}</span>
+      </div>`).join('');
+  });
 }
 
 function renderFilters(){
@@ -1999,6 +2294,95 @@ function wireFilterEvents(){
     renderFilters();
     loadFeed();
   };
+
+  // Topic filter dropdowns
+  document.querySelectorAll('.topic-filter').forEach(filter => {
+    const btn = filter.querySelector('.topic-btn');
+    const dropdown = filter.querySelector('.topic-dropdown');
+    const key = filter.dataset.filter;
+
+    // Toggle dropdown on button click
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      // Close other dropdowns
+      document.querySelectorAll('.topic-filter').forEach(f => {
+        if (f !== filter) {
+          f.querySelector('.topic-btn').classList.remove('open');
+          f.querySelector('.topic-dropdown').classList.remove('open');
+        }
+      });
+      btn.classList.toggle('open');
+      dropdown.classList.toggle('open');
+    };
+
+    // Handle item selection
+    dropdown.onclick = (e) => {
+      const item = e.target.closest('.topic-item');
+      if (!item) return;
+      e.stopPropagation();
+
+      const value = item.dataset.value;
+      TOPIC_FILTERS[key] = value || null;
+
+      // Update button display
+      const valueEl = btn.querySelector('.value');
+      valueEl.textContent = value || 'All';
+      btn.classList.toggle('active', !!value);
+
+      // Update selected state
+      dropdown.querySelectorAll('.topic-item').forEach(i => {
+        i.classList.toggle('on', i.dataset.value === value && value);
+      });
+
+      // Close dropdown
+      btn.classList.remove('open');
+      dropdown.classList.remove('open');
+
+      // Update clear button visibility
+      updateClearFiltersVisibility();
+
+      // Reset casebook pagination and reload both feeds
+      CASEFILE_OFFSET = 0;
+      CASEFILE_CASES = [];
+      $('#allCasesList').innerHTML = '';
+      loadFeed();
+      if ($('#casebook').classList.contains('open')) {
+        loadMoreCases();
+      }
+    };
+  });
+
+  // Close dropdowns on outside click
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.topic-filter').forEach(f => {
+      f.querySelector('.topic-btn').classList.remove('open');
+      f.querySelector('.topic-dropdown').classList.remove('open');
+    });
+  });
+
+  // Clear all filters button
+  $('#clearFilters').onclick = () => {
+    TOPIC_FILTERS = { verb: null, object: null, instrument: null, who: null, whom: null };
+    document.querySelectorAll('.topic-filter').forEach(filter => {
+      const btn = filter.querySelector('.topic-btn');
+      btn.querySelector('.value').textContent = 'All';
+      btn.classList.remove('active');
+      filter.querySelector('.topic-dropdown').querySelectorAll('.topic-item').forEach(i => i.classList.remove('on'));
+    });
+    $('#clearFilters').style.display = 'none';
+    CASEFILE_OFFSET = 0;
+    CASEFILE_CASES = [];
+    $('#allCasesList').innerHTML = '';
+    loadFeed();
+    if ($('#casebook').classList.contains('open')) {
+      loadMoreCases();
+    }
+  };
+}
+
+function updateClearFiltersVisibility() {
+  const hasFilters = Object.values(TOPIC_FILTERS).some(v => v);
+  $('#clearFilters').style.display = hasFilters ? 'block' : 'none';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2231,6 +2615,50 @@ async function loadFeed(append = false){
       } else {
         FEED_LOADING = false;
         feed.innerHTML = '<div class="empty">No evil AI cases yet. Report some!</div>';
+        return;
+      }
+    }
+
+    // Apply topic filters - filter cases by vocab term relationships
+    const activeTopicFilters = Object.entries(TOPIC_FILTERS).filter(([k, v]) => v);
+    if (activeTopicFilters.length > 0) {
+      // Map filter keys to vocab_terms kind and case column
+      const filterMapping = {
+        verb: { kind: 'verb', col: 'verb_id' },
+        object: { kind: 'object_class', col: 'object_class_id' },
+        instrument: { kind: 'instrument', col: 'instrument_id' },
+        who: { kind: 'actor', col: 'actor_id' },
+        whom: { kind: 'target', col: 'target_id' }
+      };
+
+      // Get vocab term IDs for selected values
+      const termLookups = activeTopicFilters.map(async ([key, value]) => {
+        const mapping = filterMapping[key];
+        const { data: term } = await sb.from('vocab_terms')
+          .select('id')
+          .eq('kind', mapping.kind)
+          .ilike('term', value)
+          .single();
+        return { key, col: mapping.col, termId: term?.id };
+      });
+
+      const termResults = await Promise.all(termLookups);
+
+      // Build case filter - get cases matching all selected terms
+      let caseQuery = sb.from('cases').select('id').eq('status', 'live');
+      for (const { col, termId } of termResults) {
+        if (termId) {
+          caseQuery = caseQuery.eq(col, termId);
+        }
+      }
+
+      const { data: matchingCases } = await caseQuery;
+      if (matchingCases?.length) {
+        query = query.in('case_id', matchingCases.map(c => c.id));
+      } else {
+        FEED_LOADING = false;
+        const filterNames = activeTopicFilters.map(([k, v]) => v).join(' + ');
+        feed.innerHTML = `<div class="empty">No cases matching: ${esc(filterNames)}</div>`;
         return;
       }
     }
