@@ -1495,14 +1495,17 @@ function cycleReel(reelNum, forceDooms = false, direction = 1) {
   const items = reelNum === 0 ? SLOT_VERBS : reelNum === 1 ? SLOT_OBJECTS : SLOT_INSTRUMENTS;
   const allDooms = reelNum === 0 ? DOOMSDAY_VERBS : reelNum === 1 ? DOOMSDAY_OBJECTS : DOOMSDAY_INSTRUMENTS;
 
-  // Get valid doomsday options based on what's already selected
-  const validOptions = getValidDoomOptions(selectedDoomWords[0], selectedDoomWords[1], selectedDoomWords[2]);
+  // Get valid doomsday options based on what's already selected in OTHER reels
+  const otherSelections = [...selectedDoomWords];
+  otherSelections[reelNum] = null; // Don't filter by current reel's selection
+  const validOptions = getValidDoomOptions(otherSelections[0], otherSelections[1], otherSelections[2]);
   const validDooms = reelNum === 0 ? validOptions.verbs : reelNum === 1 ? validOptions.objects : validOptions.instruments;
 
-  // Use filtered dooms if we have selections, otherwise all dooms
-  const dooms = (selectedDoomWords.some(w => w !== null) && validDooms.length > 0) ? validDooms : allDooms;
+  // Use filtered dooms if we have selections in other reels, otherwise all dooms
+  const hasOtherSelections = otherSelections.some(w => w !== null);
+  const dooms = (hasOtherSelections && validDooms.length > 0) ? validDooms : allDooms;
 
-  // Build list: valid doomsday items first, then regular items
+  // Build list: valid doomsday items first, then regular items (excluding ALL dooms to avoid confusion)
   manualReelItems[reelNum] = [...dooms, ...items.filter(i => !allDooms.includes(i))];
 
   const len = manualReelItems[reelNum].length;
@@ -1517,11 +1520,40 @@ function cycleReel(reelNum, forceDooms = false, direction = 1) {
 
   const newItem = manualReelItems[reelNum][manualReelIndex[reelNum]];
   const strip = $(`#strip${reelNum + 1}`);
-  const isDoom = allDooms.includes(newItem);
-  const doomClass = isDoom ? 'doomsday' : '';
 
-  // Track doomsday selection for filtering other reels
-  selectedDoomWords[reelNum] = isDoom ? newItem : null;
+  // Check if this is a valid doomsday word given current selections
+  const isValidDoom = dooms.includes(newItem);
+  const doomClass = isValidDoom ? 'doomsday' : '';
+
+  // Track doomsday selection - but if it's incompatible, clear other selections
+  if (isValidDoom) {
+    selectedDoomWords[reelNum] = newItem;
+
+    // If this creates an impossible combo, we need to re-validate other reels
+    // Check if other selections are still valid with this new pick
+    for (let r = 0; r < 3; r++) {
+      if (r !== reelNum && selectedDoomWords[r]) {
+        const checkOptions = getValidDoomOptions(
+          r === 0 ? selectedDoomWords[0] : (reelNum === 0 ? newItem : selectedDoomWords[0]),
+          r === 1 ? selectedDoomWords[1] : (reelNum === 1 ? newItem : selectedDoomWords[1]),
+          r === 2 ? selectedDoomWords[2] : (reelNum === 2 ? newItem : selectedDoomWords[2])
+        );
+        const validForR = r === 0 ? checkOptions.verbs : r === 1 ? checkOptions.objects : checkOptions.instruments;
+        if (!validForR.includes(selectedDoomWords[r])) {
+          // This selection is now invalid - clear it
+          selectedDoomWords[r] = null;
+          // Update visual on that reel to remove doomsday styling
+          const otherStrip = $(`#strip${r + 1}`);
+          const currentText = otherStrip.querySelector('.reel-item')?.textContent;
+          if (currentText) {
+            otherStrip.innerHTML = `<div class="reel-item">${currentText}</div>`;
+          }
+        }
+      }
+    }
+  } else {
+    selectedDoomWords[reelNum] = null;
+  }
 
   // Quick animation - direction affects slide
   strip.style.transition = 'transform 0.15s ease-out';
