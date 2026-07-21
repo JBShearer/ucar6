@@ -2591,8 +2591,8 @@ function caseCard(c){
     <div class="t">${esc(c.title_render)}</div>
     <div class="c">${c.filing_count} article${c.filing_count===1?'':'s'} · ${c.good_votes} 👍 / ${c.evil_votes} 👎</div>
     <div class="caserow-actions">
+      <button class="act-btn track ${tracked?'on':''}" data-action="track" data-case="${c.id}">${tracked?'★ Tracked':'☆ Track'}</button>
       <button class="act-btn" data-action="share-case" data-case="${c.id}">⛓ Share</button>
-      <button class="act-btn" data-action="chat-case" data-case="${c.id}">💬 Chat</button>
     </div>
   </div>`;
 }
@@ -2612,11 +2612,29 @@ function wireCaseButtons(root) {
       openShareModal(caseId, title, 'case', { good_votes: goodVotes, evil_votes: evilVotes });
     });
   });
-  root.querySelectorAll('[data-action="chat-case"]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+  root.querySelectorAll('[data-action="track"]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const caseId = btn.dataset.case;
-      openCase(caseId); // Opens the case panel which has chat
+      const isTracked = MY_TRACKS.has(caseId);
+
+      if (isTracked) {
+        MY_TRACKS.delete(caseId);
+        btn.classList.remove('on');
+        btn.textContent = '☆ Track';
+      } else {
+        MY_TRACKS.add(caseId);
+        btn.classList.add('on');
+        btn.textContent = '★ Tracked';
+      }
+
+      localStorage.setItem('ucar-tracks', JSON.stringify([...MY_TRACKS]));
+      updateTrackedCount();
+
+      // Reload tracked list if casebook is open
+      if ($('#casebook').classList.contains('open')) {
+        loadTrackedCases();
+      }
     });
   });
 }
