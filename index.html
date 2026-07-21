@@ -3926,25 +3926,48 @@ let qt; $('#q').oninput = () => { clearTimeout(qt); qt=setTimeout(loadFeed, 350)
 window.openCase = openCase;
 window.startAdventure = startAdventure;
 
-// Tagline fade sequence: Good AI → Bad AI → Recording live
-function fadeTag(from, to, delay) {
-  setTimeout(() => {
-    from.style.transition = 'opacity 1s';
-    from.style.opacity = '0';
-    setTimeout(() => {
-      from.style.display = 'none';
-      to.style.display = 'inline';
-      to.style.opacity = '0';
-      to.style.transition = 'opacity 0.8s';
-      requestAnimationFrame(() => to.style.opacity = '1');
-    }, 1000);
-  }, delay);
+// Tagline fade sequence: Good AI → Bad AI → Shooting Jason (loops)
+function runTaglineSequence() {
+  const t1 = $('#tag1'), t2 = $('#tag2'), t3 = $('#tag3');
+  if (!t1 || !t2 || !t3) return;
+
+  // Reset all to initial state
+  t1.style.display = 'inline';
+  t1.style.opacity = '1';
+  t2.style.display = 'none';
+  t2.style.opacity = '0';
+  t3.style.display = 'none';
+  t3.style.opacity = '0';
+
+  function fadeTag(from, to, delay) {
+    return new Promise(resolve => {
+      setTimeout(() => {
+        from.style.transition = 'opacity 1.5s';
+        from.style.opacity = '0';
+        setTimeout(() => {
+          from.style.display = 'none';
+          to.style.display = 'inline';
+          to.style.opacity = '0';
+          to.style.transition = 'opacity 1.2s';
+          requestAnimationFrame(() => {
+            to.style.opacity = '1';
+            resolve();
+          });
+        }, 1500);
+      }, delay);
+    });
+  }
+
+  // Run sequence then loop
+  fadeTag(t1, t2, 5000)           // Good AI fades after 5s
+    .then(() => fadeTag(t2, t3, 5000))  // Bad AI fades after 5s more
+    .then(() => {
+      // After showing "Shooting Jason" for 6s, restart
+      setTimeout(runTaglineSequence, 6000);
+    });
 }
-const t1 = $('#tag1'), t2 = $('#tag2'), t3 = $('#tag3');
-if (t1 && t2 && t3) {
-  fadeTag(t1, t2, 4000);  // Good AI fades after 4s
-  fadeTag(t2, t3, 9000);  // Bad AI fades after 9s total
-}
+
+runTaglineSequence();
 
 boot().then(checkRoute);
 </script>
