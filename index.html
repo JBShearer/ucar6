@@ -609,7 +609,7 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
 <header>
   <div class="brand">
     <h1>USE CASE ARMS RACE<span> →</span></h1>
-    <div class="tag"><span id="tag1">Upvote the good AI use cases.</span><span id="tag2" style="display:none">Report evil AI before it reports you.</span><span id="tag3" style="display:none">Shooting daily until robots drag Jason away.</span></div>
+    <div class="tag"><span id="tag1">Upvote the good AI use cases.</span><span id="tag2" style="display:none">Report evil AI before it reports you.</span><span id="tag3" style="display:none">Shooting Jason daily until robots drag him away.</span></div>
   </div>
   <div class="hdr-btns">
     <button class="hdr-btn" id="aboutBtn">About</button>
@@ -624,7 +624,7 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
     <div class="video-placeholder">📺</div>
   </div>
   <div class="daily-info">
-    <div class="daily-tagline">Shooting live until robots drag him away</div>
+    <div class="daily-tagline">Shooting Jason daily until robots drag him away</div>
     <h2 class="daily-case" id="episodeCase">—</h2>
     <a class="daily-case-link" id="episodeCaseLink">View case →</a>
     <div class="daily-links">
@@ -2360,6 +2360,9 @@ async function loadFilters(){
   wireFilterEvents();
 }
 
+// Store parsed cases for cascading filters
+let ALL_PARSED_CASES = [];
+
 async function loadTopicOptions() {
   // Get ALL cases - just title_render
   const { data: cases, error } = await sb.from('cases')
@@ -2372,43 +2375,19 @@ async function loadTopicOptions() {
 
   console.log(`Loading filters from ${cases?.length || 0} cases`);
 
-  const verbCounts = new Map();
-  const objectCounts = new Map();
-  const instrumentCounts = new Map();
-
-  (cases || []).forEach(c => {
-    if (!c.title_render) return;
-    // Parse "VERB OBJECT · WITH INSTRUMENT" or "VERB · WITH INSTRUMENT"
+  // Parse all cases and store for cascading
+  ALL_PARSED_CASES = (cases || []).map(c => {
+    if (!c.title_render) return null;
     const match = c.title_render.match(/^(.+?)\s+(.+?)\s+·\s+WITH\s+(.+)$/i);
     if (match) {
-      const [, verb, obj, inst] = match;
-      verbCounts.set(verb, (verbCounts.get(verb) || 0) + 1);
-      objectCounts.set(obj, (objectCounts.get(obj) || 0) + 1);
-      instrumentCounts.set(inst, (instrumentCounts.get(inst) || 0) + 1);
-    } else {
-      const match2 = c.title_render.match(/^(.+?)\s+·\s+WITH\s+(.+)$/i);
-      if (match2) {
-        const [, verb, inst] = match2;
-        verbCounts.set(verb, (verbCounts.get(verb) || 0) + 1);
-        instrumentCounts.set(inst, (instrumentCounts.get(inst) || 0) + 1);
-      }
+      return { verb: match[1], object: match[2], instrument: match[3] };
     }
-  });
-
-  console.log(`Found ${verbCounts.size} verbs, ${objectCounts.size} objects, ${instrumentCounts.size} instruments`);
-
-  // Convert maps to sorted arrays
-  const mapToArray = (map) => [...map.entries()]
-    .map(([term, use_count]) => ({ term, use_count }))
-    .sort((a, b) => b.use_count - a.use_count);
-
-  TOPIC_OPTIONS = {
-    verb: mapToArray(verbCounts),
-    object: mapToArray(objectCounts),
-    instrument: mapToArray(instrumentCounts),
-    who: [],
-    whom: []
-  };
+    const match2 = c.title_render.match(/^(.+?)\s+·\s+WITH\s+(.+)$/i);
+    if (match2) {
+      return { verb: match2[1], object: null, instrument: match2[2] };
+    }
+    return null;
+  }).filter(Boolean);
 
   // WHO/WHOM - load from vocab_terms (populated by extraction)
   const { data: actors } = await sb.from('vocab_terms')
@@ -2423,6 +2402,7 @@ async function loadTopicOptions() {
     .order('term', { ascending: true })
     .limit(100);
 
+  // Store WHO/WHOM options separately (they don't cascade yet)
   TOPIC_OPTIONS.who = (actors || []).map(t => ({ id: t.id, term: t.term, use_count: 1 }));
   TOPIC_OPTIONS.whom = (targets || []).map(t => ({ id: t.id, term: t.term, use_count: 1 }));
 
@@ -2443,7 +2423,62 @@ async function loadTopicOptions() {
     ].map(t => ({ term: t, use_count: 0 }));
   }
 
-  // Populate dropdowns
+  // Populate with cascading filter logic
+  updateCascadingFilters();
+}
+
+function updateCascadingFilters() {
+  // Get current filter selections
+  const verbFilter = TOPIC_FILTERS.verb?.toUpperCase();
+  const objectFilter = TOPIC_FILTERS.object?.toUpperCase();
+  const instrumentFilter = TOPIC_FILTERS.instrument?.toUpperCase();
+
+  // Filter cases based on current selections
+  const filteredCases = ALL_PARSED_CASES.filter(c => {
+    if (verbFilter && c.verb?.toUpperCase() !== verbFilter) return false;
+    if (objectFilter && c.object?.toUpperCase() !== objectFilter) return false;
+    if (instrumentFilter && c.instrument?.toUpperCase() !== instrumentFilter) return false;
+    return true;
+  });
+
+  // Count options from filtered cases
+  const verbCounts = new Map();
+  const objectCounts = new Map();
+  const instrumentCounts = new Map();
+
+  filteredCases.forEach(c => {
+    if (c.verb) verbCounts.set(c.verb, (verbCounts.get(c.verb) || 0) + 1);
+    if (c.object) objectCounts.set(c.object, (objectCounts.get(c.object) || 0) + 1);
+    if (c.instrument) instrumentCounts.set(c.instrument, (instrumentCounts.get(c.instrument) || 0) + 1);
+  });
+
+  // If a filter is active, also count from ALL cases for that dimension (so we show the current selection)
+  if (verbFilter) {
+    ALL_PARSED_CASES.forEach(c => {
+      if (c.verb) verbCounts.set(c.verb, verbCounts.get(c.verb) || 0);
+    });
+  }
+  if (objectFilter) {
+    ALL_PARSED_CASES.forEach(c => {
+      if (c.object) objectCounts.set(c.object, objectCounts.get(c.object) || 0);
+    });
+  }
+  if (instrumentFilter) {
+    ALL_PARSED_CASES.forEach(c => {
+      if (c.instrument) instrumentCounts.set(c.instrument, instrumentCounts.get(c.instrument) || 0);
+    });
+  }
+
+  const mapToArray = (map) => [...map.entries()]
+    .map(([term, use_count]) => ({ term, use_count }))
+    .sort((a, b) => b.use_count - a.use_count);
+
+  TOPIC_OPTIONS.verb = mapToArray(verbCounts);
+  TOPIC_OPTIONS.object = mapToArray(objectCounts);
+  TOPIC_OPTIONS.instrument = mapToArray(instrumentCounts);
+
+  console.log(`Cascading filters: ${filteredCases.length} cases match, ${verbCounts.size} verbs, ${objectCounts.size} objects, ${instrumentCounts.size} instruments`);
+
   populateTopicDropdowns();
 }
 
@@ -2549,6 +2584,9 @@ function wireFilterEvents(){
       // Update clear button visibility
       updateClearFiltersVisibility();
 
+      // Update cascading filters (recalculate counts based on selection)
+      updateCascadingFilters();
+
       // Reset casebook pagination and reload both feeds
       CASEFILE_OFFSET = 0;
       CASEFILE_CASES = [];
@@ -2578,6 +2616,8 @@ function wireFilterEvents(){
       filter.querySelector('.topic-dropdown').querySelectorAll('.topic-item').forEach(i => i.classList.remove('on'));
     });
     $('#clearFilters').style.display = 'none';
+    // Reset cascading filters to show all options
+    updateCascadingFilters();
     CASEFILE_OFFSET = 0;
     CASEFILE_CASES = [];
     $('#allCasesList').innerHTML = '';
