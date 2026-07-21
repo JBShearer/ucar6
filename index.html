@@ -2329,11 +2329,12 @@ async function loadFilters(){
 }
 
 async function loadTopicOptions() {
-  // Get ALL cases and extract verbs/objects/instruments from title_render
-  const { data: cases } = await sb.from('cases')
-    .select('title_render, actor_id, target_id')
-    .eq('status', 'live')
-    .limit(2000);
+  // Get ALL cases - no limit
+  const { data: cases, count } = await sb.from('cases')
+    .select('title_render, actor_id, target_id', { count: 'exact' })
+    .eq('status', 'live');
+
+  console.log(`Loading filters from ${count || cases?.length || 0} cases`);
 
   const verbCounts = new Map();
   const objectCounts = new Map();
@@ -2357,6 +2358,8 @@ async function loadTopicOptions() {
       }
     }
   });
+
+  console.log(`Found ${verbCounts.size} verbs, ${objectCounts.size} objects, ${instrumentCounts.size} instruments`);
 
   // Convert maps to sorted arrays
   const mapToArray = (map) => [...map.entries()]
