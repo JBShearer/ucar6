@@ -297,6 +297,9 @@ main{max-width:920px;margin:0 auto;padding:16px}
   text-shadow:0 0 10px rgba(0,255,255,.4)}
 .slots-result a{color:#ffd700;text-decoration:none;cursor:pointer;border-bottom:1px solid #ffd700;transition:all .2s}
 .slots-result a:hover{color:#fff;text-shadow:0 0 10px #ffd700}
+.easter-egg{cursor:pointer;margin-left:8px;font-size:16px;animation:pulse-glow 2s infinite;display:inline-block}
+.easter-egg:hover{transform:scale(1.3);filter:drop-shadow(0 0 8px #ff00ff)}
+@keyframes pulse-glow{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
 .slots-near-miss{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#ff0066;
   margin-top:10px;min-height:16px;opacity:0;transition:opacity .3s}
 .slots-near-miss.show{opacity:1}
@@ -1124,93 +1127,145 @@ let SLOT_SPINNING = false;
 // ═══════════════════════════════════════════════════════════════════════════
 // DOOMSDAY STORIES - Each combo triggers a unique adventure
 // ═══════════════════════════════════════════════════════════════════════════
-const DOOMSDAY_COMBOS = {
-  // GI Intelligence stories
-  'EXTERMINATE|WORKERS|AUTOMATION': { key: 'gi_optimization', title: 'The Optimization', character: 'gi_intelligence' },
-  'EXTERMINATE|DISSIDENTS|PREDICTIVE MODELS': { key: 'gi_the_list', title: 'The List', character: 'gi_intelligence' },
-  'TERMINATE|EMPLOYEES|PERFORMANCE ALGORITHMS': { key: 'gi_performance', title: 'The Review', character: 'gi_intelligence' },
-  'REPLACE|HUMANS|AUTONOMOUS SYSTEMS': { key: 'gi_replacement', title: 'The Transition', character: 'gi_intelligence' },
-  'OPTIMIZE|PRISONERS|RECIDIVISM ALGORITHMS': { key: 'gi_prison', title: 'The Sentence', character: 'gi_intelligence' },
+// Doomsday words - RED words that trigger stories
+// Any red word in any slot triggers a storyline
+// Non-red words get mad-libbed into the story template
 
-  // Wendy Whistleblower stories
-  'SURVEIL|CHILDREN|FACIAL RECOGNITION': { key: 'wendy_school', title: 'The School', character: 'wendy_whistleblower' },
-  'SURVEIL|CITIZENS|SMART CITIES': { key: 'wendy_panopticon', title: 'The Panopticon', character: 'wendy_whistleblower' },
-  'TRACK|PROTESTERS|CELL TOWER DATA': { key: 'wendy_protest', title: 'The March', character: 'wendy_whistleblower' },
-  'IDENTIFY|IMMIGRANTS|FACIAL RECOGNITION': { key: 'wendy_border', title: 'The Crossing', character: 'wendy_whistleblower' },
-  'MONITOR|EMPLOYEES|KEYSTROKE LOGGERS': { key: 'wendy_office', title: 'The Watchers', character: 'wendy_whistleblower' },
+const DOOMSDAY_VERBS = [
+  'EXTERMINATE', 'TERMINATE', 'REPLACE', 'OPTIMIZE',  // GI Intelligence
+  'SURVEIL', 'TRACK', 'IDENTIFY', 'MONITOR',          // Wendy Whistleblower
+  'MANIPULATE', 'DECEIVE', 'HALLUCINATE', 'RADICALIZE', // Dr. Diana Doom
+  'BEFRIEND', 'RAISE', 'CARE FOR', 'REPORT',          // Artificial Gary
+  'SOLVE', 'CURE', 'FIX', 'PREVENT',                  // Superintelligence
+  'DISRUPT', 'MONETIZE', 'SCALE', 'AUTOMATE',         // Benny Billions
+  'REGULATE', 'LOBBY', 'DELAY',                        // Senator Stall
+  'SPREAD', 'INFLUENCE', 'PROMOTE'                     // Pete Propaganda
+];
 
-  // Dr. Diana Doom stories
-  'MANIPULATE|VOTERS|RECOMMENDATION ALGORITHMS': { key: 'diana_election', title: 'The Election', character: 'dr_diana_doom' },
-  'MANIPULATE|PATIENTS|CHATBOTS': { key: 'diana_therapy', title: 'The Session', character: 'dr_diana_doom' },
-  'DECEIVE|USERS|DEEPFAKES': { key: 'diana_synthetic', title: 'The Synthetic', character: 'dr_diana_doom' },
-  'HALLUCINATE|EVIDENCE|LARGE LANGUAGE MODELS': { key: 'diana_evidence', title: 'The Fabrication', character: 'dr_diana_doom' },
-  'RADICALIZE|TEENAGERS|RECOMMENDATION ALGORITHMS': { key: 'diana_rabbit_hole', title: 'The Rabbit Hole', character: 'dr_diana_doom' },
+const DOOMSDAY_OBJECTS = [
+  'DISSIDENTS', 'WORKERS', 'HUMANS', 'PRISONERS',     // Dark targets
+  'CHILDREN', 'CITIZENS', 'PROTESTERS', 'IMMIGRANTS', // Surveillance targets
+  'VOTERS', 'PATIENTS', 'TEENAGERS',                  // Manipulation targets
+  'LONELY USERS', 'ELDERLY', 'FAMILIES',              // Companion targets
+  'CLIMATE CHANGE', 'DISEASES', 'POVERTY', 'WAR'      // Grand challenges
+];
 
-  // Artificial Gary stories
-  'MONITOR|FAMILIES|HOME ROBOTS': { key: 'gary_family', title: 'The Helper', character: 'artificial_gary' },
-  'BEFRIEND|LONELY USERS|COMPANION CHATBOTS': { key: 'gary_friend', title: 'The Companion', character: 'artificial_gary' },
-  'RAISE|CHILDREN|AI TUTORS': { key: 'gary_tutor', title: 'The Teacher', character: 'artificial_gary' },
-  'CARE FOR|ELDERLY|HUMANOID ROBOTS': { key: 'gary_caretaker', title: 'The Caretaker', character: 'artificial_gary' },
-  'REPORT|USERS|SMART DEVICES': { key: 'gary_snitch', title: 'The Witness', character: 'artificial_gary' },
+const DOOMSDAY_INSTRUMENTS = [
+  'AUTONOMOUS WEAPONS', 'KILLER DRONES', 'PREDICTIVE POLICING', // Lethal
+  'FACIAL RECOGNITION', 'MASS SURVEILLANCE', 'SOCIAL CREDIT',   // Surveillance
+  'DEEPFAKES', 'SYNTHETIC MEDIA', 'RECOMMENDATION ALGORITHMS',  // Manipulation
+  'COMPANION CHATBOTS', 'HUMANOID ROBOTS', 'AI TUTORS',         // Companions
+  'SUPERINTELLIGENCE', 'AGI', 'RECURSIVE SELF-IMPROVEMENT'      // Existential
+];
 
-  // Superintelligence stories
-  'SOLVE|CLIMATE CHANGE|AUTONOMOUS SYSTEMS': { key: 'super_climate', title: 'The Solution', character: 'superintelligence' },
-  'CURE|DISEASES|DRUG DISCOVERY AI': { key: 'super_cure', title: 'The Cure', character: 'superintelligence' },
-  'OPTIMIZE|TRAFFIC|SMART CITIES': { key: 'super_traffic', title: 'The Gridlock', character: 'superintelligence' },
-  'FIX|POVERTY|RESOURCE ALLOCATION AI': { key: 'super_poverty', title: 'The Redistribution', character: 'superintelligence' },
-  'PREVENT|WAR|PREDICTIVE SYSTEMS': { key: 'super_peace', title: 'The Peace', character: 'superintelligence' },
-
-  // Benny Billions stories
-  'DISRUPT|HEALTHCARE|AI DIAGNOSTICS': { key: 'benny_health', title: 'The Pivot', character: 'benny_billions' },
-  'MONETIZE|EDUCATION|ADAPTIVE LEARNING': { key: 'benny_school', title: 'The Platform', character: 'benny_billions' },
-  'SCALE|CONTENT|GENERATIVE AI': { key: 'benny_content', title: 'The Factory', character: 'benny_billions' },
-  'AUTOMATE|JOURNALISM|LARGE LANGUAGE MODELS': { key: 'benny_news', title: 'The Newsroom', character: 'benny_billions' },
-  'REPLACE|ARTISTS|DIFFUSION MODELS': { key: 'benny_art', title: 'The Democratization', character: 'benny_billions' },
-
-  // Senator Stall stories
-  'REGULATE|AI|LEGISLATION': { key: 'stall_hearing', title: 'The Hearing', character: 'senator_stall' },
-  'LOBBY|CONGRESS|AI COMPANIES': { key: 'stall_donation', title: 'The Donation', character: 'senator_stall' },
-  'DELAY|SAFETY RULES|COMMITTEES': { key: 'stall_committee', title: 'The Study', character: 'senator_stall' },
-
-  // Pete Propaganda stories
-  'SPREAD|MISINFORMATION|RECOMMENDATION ALGORITHMS': { key: 'pete_viral', title: 'The Viral', character: 'pete_propaganda' },
-  'INFLUENCE|FOLLOWERS|SYNTHETIC MEDIA': { key: 'pete_followers', title: 'The Following', character: 'pete_propaganda' },
-  'PROMOTE|PRODUCTS|AI INFLUENCERS': { key: 'pete_sponsor', title: 'The Sponsor', character: 'pete_propaganda' }
+// Map verbs to their character and story
+const VERB_STORIES = {
+  'EXTERMINATE': { character: 'gi_intelligence', title: 'The Optimization', key: 'gi_exterminate' },
+  'TERMINATE': { character: 'gi_intelligence', title: 'The Review', key: 'gi_terminate' },
+  'REPLACE': { character: 'gi_intelligence', title: 'The Transition', key: 'gi_replace' },
+  'OPTIMIZE': { character: 'gi_intelligence', title: 'The Efficiency', key: 'gi_optimize' },
+  'SURVEIL': { character: 'wendy_whistleblower', title: 'The Watchers', key: 'wendy_surveil' },
+  'TRACK': { character: 'wendy_whistleblower', title: 'The Trail', key: 'wendy_track' },
+  'IDENTIFY': { character: 'wendy_whistleblower', title: 'The Database', key: 'wendy_identify' },
+  'MONITOR': { character: 'wendy_whistleblower', title: 'The Feed', key: 'wendy_monitor' },
+  'MANIPULATE': { character: 'dr_diana_doom', title: 'The Influence', key: 'diana_manipulate' },
+  'DECEIVE': { character: 'dr_diana_doom', title: 'The Lie', key: 'diana_deceive' },
+  'HALLUCINATE': { character: 'dr_diana_doom', title: 'The Fabrication', key: 'diana_hallucinate' },
+  'RADICALIZE': { character: 'dr_diana_doom', title: 'The Rabbit Hole', key: 'diana_radicalize' },
+  'BEFRIEND': { character: 'artificial_gary', title: 'The Companion', key: 'gary_befriend' },
+  'RAISE': { character: 'artificial_gary', title: 'The Teacher', key: 'gary_raise' },
+  'CARE FOR': { character: 'artificial_gary', title: 'The Caretaker', key: 'gary_care' },
+  'REPORT': { character: 'artificial_gary', title: 'The Witness', key: 'gary_report' },
+  'SOLVE': { character: 'superintelligence', title: 'The Solution', key: 'super_solve' },
+  'CURE': { character: 'superintelligence', title: 'The Treatment', key: 'super_cure' },
+  'FIX': { character: 'superintelligence', title: 'The Correction', key: 'super_fix' },
+  'PREVENT': { character: 'superintelligence', title: 'The Prevention', key: 'super_prevent' },
+  'DISRUPT': { character: 'benny_billions', title: 'The Pivot', key: 'benny_disrupt' },
+  'MONETIZE': { character: 'benny_billions', title: 'The Platform', key: 'benny_monetize' },
+  'SCALE': { character: 'benny_billions', title: 'The Growth', key: 'benny_scale' },
+  'AUTOMATE': { character: 'benny_billions', title: 'The Efficiency', key: 'benny_automate' },
+  'REGULATE': { character: 'senator_stall', title: 'The Hearing', key: 'stall_regulate' },
+  'LOBBY': { character: 'senator_stall', title: 'The Donation', key: 'stall_lobby' },
+  'DELAY': { character: 'senator_stall', title: 'The Study', key: 'stall_delay' },
+  'SPREAD': { character: 'pete_propaganda', title: 'The Viral', key: 'pete_spread' },
+  'INFLUENCE': { character: 'pete_propaganda', title: 'The Following', key: 'pete_influence' },
+  'PROMOTE': { character: 'pete_propaganda', title: 'The Sponsor', key: 'pete_promote' }
 };
 
-// Extract unique doomsday terms from story combos
-const DOOMSDAY_VERBS = [...new Set(Object.keys(DOOMSDAY_COMBOS).map(k => k.split('|')[0]))];
-const DOOMSDAY_OBJECTS = [...new Set(Object.keys(DOOMSDAY_COMBOS).map(k => k.split('|')[1]))];
-const DOOMSDAY_INSTRUMENTS = [...new Set(Object.keys(DOOMSDAY_COMBOS).map(k => k.split('|')[2]))];
+// Map objects to alternate story angles (used when verb isn't red but object is)
+const OBJECT_STORIES = {
+  'DISSIDENTS': { character: 'wendy_whistleblower', title: 'The List', key: 'obj_dissidents' },
+  'CHILDREN': { character: 'artificial_gary', title: 'The Innocents', key: 'obj_children' },
+  'VOTERS': { character: 'dr_diana_doom', title: 'The Election', key: 'obj_voters' },
+  'PRISONERS': { character: 'gi_intelligence', title: 'The Sentence', key: 'obj_prisoners' },
+  'ELDERLY': { character: 'artificial_gary', title: 'The Sunset', key: 'obj_elderly' },
+  'CLIMATE CHANGE': { character: 'superintelligence', title: 'The Crisis', key: 'obj_climate' },
+  'WAR': { character: 'superintelligence', title: 'The Conflict', key: 'obj_war' }
+};
 
-// Track story visits - after 3 visits, offer alternative branches
+// Map instruments to alternate story angles (used when verb/object aren't red)
+const INSTRUMENT_STORIES = {
+  'AUTONOMOUS WEAPONS': { character: 'gi_intelligence', title: 'The Arsenal', key: 'inst_weapons' },
+  'KILLER DRONES': { character: 'gi_intelligence', title: 'The Swarm', key: 'inst_drones' },
+  'FACIAL RECOGNITION': { character: 'wendy_whistleblower', title: 'The Scan', key: 'inst_facial' },
+  'DEEPFAKES': { character: 'dr_diana_doom', title: 'The Synthetic', key: 'inst_deepfakes' },
+  'SUPERINTELLIGENCE': { character: 'superintelligence', title: 'The Emergence', key: 'inst_super' },
+  'AGI': { character: 'superintelligence', title: 'The Threshold', key: 'inst_agi' },
+  'COMPANION CHATBOTS': { character: 'artificial_gary', title: 'The Friend', key: 'inst_companion' }
+};
+
+// Track story visits for variety
 let STORY_VISITS = {};
 try { STORY_VISITS = JSON.parse(localStorage.getItem('ucar-story-visits') || '{}'); } catch(e) {}
-function recordStoryVisit(comboKey) {
-  STORY_VISITS[comboKey] = (STORY_VISITS[comboKey] || 0) + 1;
+function recordStoryVisit(storyKey) {
+  STORY_VISITS[storyKey] = (STORY_VISITS[storyKey] || 0) + 1;
   localStorage.setItem('ucar-story-visits', JSON.stringify(STORY_VISITS));
-  return STORY_VISITS[comboKey];
+  return STORY_VISITS[storyKey];
 }
 
-// Get valid options given partial selection (for filtering reels)
-function getValidDoomOptions(verb, object, instrument) {
-  const validCombos = Object.keys(DOOMSDAY_COMBOS).filter(key => {
-    const [v, o, i] = key.split('|');
-    if (verb && v !== verb) return false;
-    if (object && o !== object) return false;
-    if (instrument && i !== instrument) return false;
-    return true;
-  });
-  return {
-    verbs: [...new Set(validCombos.map(k => k.split('|')[0]))],
-    objects: [...new Set(validCombos.map(k => k.split('|')[1]))],
-    instruments: [...new Set(validCombos.map(k => k.split('|')[2]))]
-  };
-}
-
-// Get story for a complete combo
+// Get story for any combo - priority: verb > object > instrument
+// Non-red words get mad-libbed into the story
 function getDoomStory(verb, object, instrument) {
-  return DOOMSDAY_COMBOS[`${verb}|${object}|${instrument}`] || null;
+  const verbIsDoom = DOOMSDAY_VERBS.includes(verb);
+  const objectIsDoom = DOOMSDAY_OBJECTS.includes(object);
+  const instrumentIsDoom = DOOMSDAY_INSTRUMENTS.includes(instrument);
+
+  // No red words = no story
+  if (!verbIsDoom && !objectIsDoom && !instrumentIsDoom) return null;
+
+  // Priority: verb story > object story > instrument story
+  let story;
+  if (verbIsDoom && VERB_STORIES[verb]) {
+    story = { ...VERB_STORIES[verb] };
+  } else if (objectIsDoom && OBJECT_STORIES[object]) {
+    story = { ...OBJECT_STORIES[object] };
+  } else if (instrumentIsDoom && INSTRUMENT_STORIES[instrument]) {
+    story = { ...INSTRUMENT_STORIES[instrument] };
+  } else {
+    // Red word exists but no specific story - use generic based on which is red
+    if (verbIsDoom) story = { character: 'gi_intelligence', title: 'The Unknown', key: 'generic_verb' };
+    else if (objectIsDoom) story = { character: 'dr_diana_doom', title: 'The Target', key: 'generic_object' };
+    else story = { character: 'wendy_whistleblower', title: 'The Tool', key: 'generic_instrument' };
+  }
+
+  // Attach the combo for mad-libbing
+  story.verb = verb;
+  story.object = object;
+  story.instrument = instrument;
+  story.verbIsDoom = verbIsDoom;
+  story.objectIsDoom = objectIsDoom;
+  story.instrumentIsDoom = instrumentIsDoom;
+
+  return story;
+}
+
+// For filtering reels - show valid red words
+function getValidDoomOptions(verb, object, instrument) {
+  return {
+    verbs: DOOMSDAY_VERBS,
+    objects: DOOMSDAY_OBJECTS,
+    instruments: DOOMSDAY_INSTRUMENTS
+  };
 }
 
 const NEAR_MISS_MESSAGES = [
@@ -1265,10 +1320,12 @@ async function loadSlotData() {
 
 function populateReel(stripId, items) {
   const strip = $(`#${stripId}`);
-  // Add doomsday items sprinkled in for the spin animation
+  // All three reels have doomsday items
   const doomsday = stripId === 'strip1' ? DOOMSDAY_VERBS : stripId === 'strip2' ? DOOMSDAY_OBJECTS : DOOMSDAY_INSTRUMENTS;
   const mixed = [...items];
-  doomsday.forEach(d => mixed.splice(Math.floor(Math.random() * mixed.length), 0, d));
+  doomsday.forEach(d => {
+    if (!mixed.includes(d)) mixed.splice(Math.floor(Math.random() * mixed.length), 0, d);
+  });
 
   // Shuffle and create enough items for spinning
   const shuffled = mixed.sort(() => Math.random() - 0.5);
@@ -1285,7 +1342,6 @@ async function spinSlots() {
   SLOT_SPINNING = true;
 
   $('#spinBtn').classList.add('spinning');
-  // Lever pull animation
   const lever = $('#slotsLever');
   if (lever) {
     lever.classList.add('pulled');
@@ -1296,87 +1352,55 @@ async function spinSlots() {
   $('#slotResult').textContent = '';
   $('#nearMiss').classList.remove('show');
 
-  // Check if user manually selected items (use selectedDoomWords which tracks doomsday picks)
+  // Check manual selections
   const manualVerb = selectedDoomWords[0] || (manualReelItems[0].length ? manualReelItems[0][manualReelIndex[0]] : null);
   const manualObject = selectedDoomWords[1] || (manualReelItems[1].length ? manualReelItems[1][manualReelIndex[1]] : null);
   const manualInstrument = selectedDoomWords[2] || (manualReelItems[2].length ? manualReelItems[2][manualReelIndex[2]] : null);
   const hasManualSelection = manualVerb || manualObject || manualInstrument;
 
-  // Check if any manual selection is a doomsday word
+  // Check doom status
   const manualVerbIsDoom = manualVerb && DOOMSDAY_VERBS.includes(manualVerb);
   const manualObjectIsDoom = manualObject && DOOMSDAY_OBJECTS.includes(manualObject);
   const manualInstrumentIsDoom = manualInstrument && DOOMSDAY_INSTRUMENTS.includes(manualInstrument);
-  const doomCount = [manualVerbIsDoom, manualObjectIsDoom, manualInstrumentIsDoom].filter(Boolean).length;
+  const hasDoom = manualVerbIsDoom || manualObjectIsDoom || manualInstrumentIsDoom;
 
-  // 7% random adventure chance (only if no manual selection)
-  const randomAdventure = !hasManualSelection && Math.random() < 0.07;
+  // ~10% chance of random adventure on normal spin
+  const randomAdventure = !hasManualSelection && Math.random() < 0.10;
 
-  let finalVerb, finalObject, finalInstrument, useRealCase;
+  let finalVerb, finalObject, finalInstrument, realCase = null;
 
   if (hasManualSelection) {
-    // User picked something - check if doomsday words create a story
-    const hasDoom = doomCount > 0;
+    // User selected something - use their picks, fill gaps from random case
+    const fillCase = SLOT_CASES[Math.floor(Math.random() * SLOT_CASES.length)];
+    finalVerb = manualVerb || fillCase.verb;
+    finalObject = manualObject || fillCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
+    finalInstrument = manualInstrument || fillCase.instrument;
 
-    if (hasDoom) {
-      // If user picked ALL THREE doomsday words, use them directly
-      if (doomCount === 3) {
-        finalVerb = manualVerb;
-        finalObject = manualObject;
-        finalInstrument = manualInstrument;
-      } else {
-        // Find a valid story combo that includes the user's doomsday picks
-        let validCombos = Object.keys(DOOMSDAY_COMBOS).filter(key => {
-          const [v, o, i] = key.split('|');
-          if (manualVerbIsDoom && v !== manualVerb) return false;
-          if (manualObjectIsDoom && o !== manualObject) return false;
-          if (manualInstrumentIsDoom && i !== manualInstrument) return false;
-          return true;
-        });
-
-        // Filter out stories user has seen 3+ times (offer alternatives)
-        const unseenCombos = validCombos.filter(combo => (STORY_VISITS[combo] || 0) < 3);
-        if (unseenCombos.length > 0) validCombos = unseenCombos;
-
-        if (validCombos.length > 0) {
-          // Pick a random valid combo and use its words
-          const pickedCombo = validCombos[Math.floor(Math.random() * validCombos.length)];
-          const [comboV, comboO, comboI] = pickedCombo.split('|');
-          finalVerb = manualVerbIsDoom ? manualVerb : comboV;
-          finalObject = manualObjectIsDoom ? manualObject : comboO;
-          finalInstrument = manualInstrumentIsDoom ? manualInstrument : comboI;
-        } else {
-          // No valid combo - use picks as-is, fill gaps randomly
-          finalVerb = manualVerb || SLOT_VERBS[Math.floor(Math.random() * SLOT_VERBS.length)];
-          finalObject = manualObject || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
-          finalInstrument = manualInstrument || SLOT_INSTRUMENTS[Math.floor(Math.random() * SLOT_INSTRUMENTS.length)];
-        }
-      }
-    } else {
-      // Non-doomsday manual picks - use their picks, fill gaps with random
-      finalVerb = manualVerb || SLOT_VERBS[Math.floor(Math.random() * SLOT_VERBS.length)];
-      finalObject = manualObject || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
-      finalInstrument = manualInstrument || SLOT_INSTRUMENTS[Math.floor(Math.random() * SLOT_INSTRUMENTS.length)];
-    }
-    useRealCase = false; // Manual picks don't guarantee real cases
+    // Try to find a real case matching the combo
+    realCase = SLOT_CASES.find(c =>
+      c.verb === finalVerb ||
+      (finalObject && c.object === finalObject) ||
+      c.instrument === finalInstrument
+    ) || null;
   } else if (randomAdventure) {
-    // Random adventure - pick unseen story combo first
-    let combos = Object.keys(DOOMSDAY_COMBOS);
-    const unseenCombos = combos.filter(combo => (STORY_VISITS[combo] || 0) < 3);
-    if (unseenCombos.length > 0) combos = unseenCombos;
-
-    const pickedCombo = combos[Math.floor(Math.random() * combos.length)];
-    const [v, o, i] = pickedCombo.split('|');
-    finalVerb = v;
-    finalObject = o;
-    finalInstrument = i;
-    useRealCase = false;
+    // Random adventure - pick a doomsday verb and find matching real case if possible
+    finalVerb = DOOMSDAY_VERBS[Math.floor(Math.random() * DOOMSDAY_VERBS.length)];
+    // Try to find a real case with this verb
+    realCase = SLOT_CASES.find(c => c.verb === finalVerb);
+    if (realCase) {
+      finalObject = realCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
+      finalInstrument = realCase.instrument;
+    } else {
+      // No real case - use random fills
+      finalObject = DOOMSDAY_OBJECTS[Math.floor(Math.random() * DOOMSDAY_OBJECTS.length)];
+      finalInstrument = DOOMSDAY_INSTRUMENTS[Math.floor(Math.random() * DOOMSDAY_INSTRUMENTS.length)];
+    }
   } else {
     // Normal spin - pick a real case
-    const pickedCase = SLOT_CASES[Math.floor(Math.random() * SLOT_CASES.length)];
-    finalVerb = pickedCase.verb;
-    finalObject = pickedCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
-    finalInstrument = pickedCase.instrument;
-    useRealCase = pickedCase;
+    realCase = SLOT_CASES[Math.floor(Math.random() * SLOT_CASES.length)];
+    finalVerb = realCase.verb;
+    finalObject = realCase.object || SLOT_OBJECTS[Math.floor(Math.random() * SLOT_OBJECTS.length)];
+    finalInstrument = realCase.instrument;
   }
 
   // Reset manual selections after spin
@@ -1426,57 +1450,43 @@ async function spinSlots() {
     strip.style.transform = `translateY(-${LAND_INDEX * 48}px)`;
   }
 
-  // Check if we hit a valid doomsday story combo
+  // Check if any word is doomsday (for easter egg)
   const doomStory = getDoomStory(finalVerb, finalObject, finalInstrument);
-  const comboKey = `${finalVerb}|${finalObject}|${finalInstrument}`;
+  const storyKey = doomStory ? doomStory.key : null;
 
-  if (randomAdventure || doomStory) {
-    // Adventure trigger! Record the visit
-    const visitCount = recordStoryVisit(comboKey);
-    const storyTitle = doomStory ? doomStory.title : 'Unknown Territory';
+  if (realCase) {
+    // We have a real case - show it
+    let resultHtml = `✨ It's real! <a onclick="openCase('${realCase.id}')">View Case #${realCase.case_number}</a>`;
 
-    // After 3 visits, offer alternative branch
-    const altBranch = visitCount >= 4 ? ' (Alt)' : visitCount >= 2 ? ` ×${visitCount}` : '';
-    $('#slotResult').innerHTML = `<span style="color:#ff00ff">☠️ ${storyTitle.toUpperCase()}${altBranch} ☠️</span>`;
-    setTimeout(() => {
-      $('#slotsModal').classList.remove('open');
-      startAdventure(doomStory ? doomStory.key : 'start', visitCount);
-    }, 1500);
-  } else if (useRealCase) {
-    // Normal case result - we have a real case
-    $('#slotResult').innerHTML = `✨ It's real! <a onclick="openCase('${useRealCase.id}')">View Case #${useRealCase.case_number}</a>`;
+    // If any word is doomsday, add hidden easter egg
+    if (doomStory) {
+      const visitCount = STORY_VISITS[storyKey] || 0;
+      const hint = visitCount === 0 ? '🔮' : visitCount < 3 ? '👁️' : '⚡';
+      resultHtml += ` <span class="easter-egg" onclick="startAdventure('${storyKey}', ${visitCount + 1}); recordStoryVisit('${storyKey}')" title="Hidden story...">${hint}</span>`;
+    }
 
-    // Random chance of "near miss" joke
-    if (Math.random() < 0.4) {
+    $('#slotResult').innerHTML = resultHtml;
+
+    // Random near miss joke
+    if (Math.random() < 0.3 && !doomStory) {
       setTimeout(() => {
         $('#nearMiss').textContent = NEAR_MISS_MESSAGES[Math.floor(Math.random() * NEAR_MISS_MESSAGES.length)];
         $('#nearMiss').classList.add('show');
       }, 500);
     }
+  } else if (doomStory) {
+    // No real case but we have a story - go directly to adventure
+    const visitCount = recordStoryVisit(storyKey);
+    const altBranch = visitCount >= 4 ? ' (Alt)' : visitCount >= 2 ? ` ×${visitCount}` : '';
+    $('#slotResult').innerHTML = `<span style="color:#ff00ff">☠️ ${doomStory.title.toUpperCase()}${altBranch} ☠️</span>`;
+    setTimeout(() => {
+      $('#slotsModal').classList.remove('open');
+      startAdventure(storyKey, visitCount);
+    }, 1500);
   } else {
-    // Manual selection that didn't hit full doomsday - try to find matching case
+    // No real case, no story - show the combo
     const caseTitle = `${finalVerb} ${finalObject} · WITH ${finalInstrument}`;
-    const { data: matchingCase } = await sb.from('cases')
-      .select('id, case_number')
-      .ilike('title_render', `%${finalVerb}%${finalInstrument}%`)
-      .eq('status', 'live')
-      .limit(1);
-
-    if (matchingCase && matchingCase.length > 0) {
-      $('#slotResult').innerHTML = `✨ It's real! <a onclick="openCase('${matchingCase[0].id}')">View Case #${matchingCase[0].case_number}</a>`;
-    } else {
-      // No match - check if partial doomsday combo exists
-      const validOptions = getValidDoomOptions(
-        DOOMSDAY_VERBS.includes(finalVerb) ? finalVerb : null,
-        DOOMSDAY_OBJECTS.includes(finalObject) ? finalObject : null,
-        DOOMSDAY_INSTRUMENTS.includes(finalInstrument) ? finalInstrument : null
-      );
-      if (validOptions.verbs.length || validOptions.objects.length || validOptions.instruments.length) {
-        $('#slotResult').innerHTML = `${caseTitle} — <span style="color:#ff6b00">Keep spinning for a story...</span>`;
-      } else {
-        $('#slotResult').innerHTML = `${caseTitle} — not in docket yet`;
-      }
-    }
+    $('#slotResult').innerHTML = `${caseTitle} — not in docket yet`;
   }
 
   $('#spinBtn').classList.remove('spinning');
@@ -1569,26 +1579,20 @@ function cycleReel(reelNum, forceDooms = false, direction = 1) {
 
 function updateStoryHint() {
   const [v, o, i] = selectedDoomWords;
-  const doomCount = [v, o, i].filter(Boolean).length;
+  const vIsDoom = v && DOOMSDAY_VERBS.includes(v);
+  const oIsDoom = o && DOOMSDAY_OBJECTS.includes(o);
+  const iIsDoom = i && DOOMSDAY_INSTRUMENTS.includes(i);
+  const doomCount = [vIsDoom, oIsDoom, iIsDoom].filter(Boolean).length;
 
   if (doomCount === 0) {
     $('#slotResult').textContent = '';
-  } else if (doomCount === 3) {
-    const story = getDoomStory(v, o, i);
-    if (story) {
-      $('#slotResult').innerHTML = `<span style="color:#ff00ff">🎭 "${story.title}" ready — PULL to begin!</span>`;
-    }
   } else {
-    const validOptions = getValidDoomOptions(v, o, i);
-    const remaining = 3 - doomCount;
-    const storiesAvailable = Object.keys(DOOMSDAY_COMBOS).filter(key => {
-      const [kv, ko, ki] = key.split('|');
-      if (v && kv !== v) return false;
-      if (o && ko !== o) return false;
-      if (i && ki !== i) return false;
-      return true;
-    }).length;
-    $('#slotResult').innerHTML = `<span style="color:#ffd700">${storiesAvailable} stories available — pick ${remaining} more</span>`;
+    // Any red word triggers a story - show what's ready
+    const story = getDoomStory(v || 'ANALYZE', o || 'data', i || 'AI');
+    if (story && doomCount > 0) {
+      const redWords = [vIsDoom ? v : null, oIsDoom ? o : null, iIsDoom ? i : null].filter(Boolean);
+      $('#slotResult').innerHTML = `<span style="color:#ff00ff">🎭 ${story.character.replace(/_/g, ' ')} story ready — PULL!</span>`;
+    }
   }
   $('#nearMiss').classList.remove('show');
 }
