@@ -792,14 +792,25 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
 
 <!-- Share Modal -->
 <div id="shareModal" class="modal">
-  <div class="submit-box" style="max-width:400px;position:relative">
+  <div class="submit-box" style="max-width:500px;position:relative">
     <button class="close-btn" id="closeShareX" style="position:absolute;top:10px;right:14px;background:none;border:none;font-size:24px;cursor:pointer;color:var(--ink)">×</button>
     <h3>📤 SHARE</h3>
-    <p id="shareTitle" style="font-family:'Oswald',sans-serif;font-size:14px;margin-bottom:16px;color:var(--olive)"></p>
+    <p id="shareTitle" style="font-family:'Oswald',sans-serif;font-size:14px;margin-bottom:12px;color:var(--olive)"></p>
+
+    <!-- Share Card Preview -->
+    <div id="shareCardPreview" style="margin-bottom:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <canvas id="shareCardVertical" width="540" height="960" style="width:135px;height:240px;border:2px solid var(--ink);cursor:pointer" title="Click to download vertical"></canvas>
+      <canvas id="shareCardSquare" width="600" height="600" style="width:150px;height:150px;border:2px solid var(--ink);cursor:pointer" title="Click to download square"></canvas>
+    </div>
+    <div style="text-align:center;margin-bottom:12px">
+      <button class="secondary" id="downloadVertical" style="font-size:10px;padding:4px 8px">⬇ Vertical (9:16)</button>
+      <button class="secondary" id="downloadSquare" style="font-size:10px;padding:4px 8px">⬇ Square (1:1)</button>
+    </div>
+
     <div class="share-buttons">
       <button class="share-social twitter" data-platform="twitter">𝕏 Twitter</button>
       <button class="share-social linkedin" data-platform="linkedin">in LinkedIn</button>
-      <button class="share-social facebook" data-platform="facebook">f Facebook</button>
+      <button class="share-social tiktok" data-platform="tiktok">♪ TikTok</button>
       <button class="share-social bluesky" data-platform="bluesky">🦋 Bluesky</button>
     </div>
     <div style="margin-top:16px;padding-top:16px;border-top:1px dashed var(--line)">
@@ -2591,9 +2602,14 @@ function wireCaseButtons(root) {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const caseId = btn.dataset.case;
-      const caseRow = btn.closest('.caserow');
-      const title = caseRow?.querySelector('.t')?.textContent || 'AI Use Case';
-      openShareModal(caseId, title, 'case');
+      const caseRow = btn.closest('.caserow') || btn.closest('.case-card') || btn.closest('.article');
+      const title = caseRow?.querySelector('.t')?.textContent || caseRow?.querySelector('h2')?.textContent || 'AI Use Case';
+      // Get vote data from buttons if available
+      const goodBtn = caseRow?.querySelector('[data-vote="good"]');
+      const evilBtn = caseRow?.querySelector('[data-vote="evil"]');
+      const goodVotes = parseInt(goodBtn?.textContent.match(/\d+/)?.[0] || '0');
+      const evilVotes = parseInt(evilBtn?.textContent.match(/\d+/)?.[0] || '0');
+      openShareModal(caseId, title, 'case', { good_votes: goodVotes, evil_votes: evilVotes });
     });
   });
   root.querySelectorAll('[data-action="chat-case"]').forEach(btn => {
@@ -2606,20 +2622,216 @@ function wireCaseButtons(root) {
 }
 
 // Share Modal
-let SHARE_DATA = { url: '', title: '', type: '' };
+let SHARE_DATA = { url: '', title: '', type: '', caseTitle: '', votes: { good: 0, evil: 0 } };
 
-function openShareModal(id, title, type) {
+function openShareModal(id, title, type, caseData = null) {
   const baseUrl = location.origin;
   const url = type === 'case' ? `${baseUrl}?case=${id}` : `${baseUrl}?a=${id}`;
   const shareText = type === 'case'
     ? `🤖 AI Use Case: ${title} - tracked on the Use Case Arms Race docket`
     : `${title} - from the Use Case Arms Race`;
 
-  SHARE_DATA = { url, title: shareText, type };
+  SHARE_DATA = {
+    url, title: shareText, type,
+    caseTitle: title,
+    votes: caseData ? { good: caseData.good_votes || 0, evil: caseData.evil_votes || 0 } : { good: 0, evil: 0 }
+  };
 
   $('#shareTitle').textContent = title;
   $('#shareUrlInput').value = url;
   $('#shareModal').classList.add('open');
+
+  // Generate share cards
+  generateShareCards();
+}
+
+function generateShareCards() {
+  const title = SHARE_DATA.caseTitle || 'AI USE CASE';
+  const parts = title.match(/^(.+?)\s+(.+?)\s+·\s+WITH\s+(.+)$/i) || [null, title.split(' ')[0], '', title];
+  const verb = parts[1] || 'AI';
+  const object = parts[2] || '';
+  const instrument = parts[3] || 'TECHNOLOGY';
+  const { good, evil } = SHARE_DATA.votes;
+  const verdict = evil > good ? 'EVIL' : good > evil ? 'GOOD' : 'UNDECIDED';
+  const verdictColor = evil > good ? '#dc3545' : good > evil ? '#28a745' : '#ffc107';
+
+  // Vertical card (540x960 = 9:16)
+  const vCanvas = $('#shareCardVertical');
+  const vCtx = vCanvas.getContext('2d');
+  drawShareCard(vCtx, 540, 960, verb, object, instrument, verdict, verdictColor, evil + good);
+
+  // Square card (600x600 = 1:1)
+  const sCanvas = $('#shareCardSquare');
+  const sCtx = sCanvas.getContext('2d');
+  drawShareCardSquare(sCtx, 600, 600, verb, object, instrument, verdict, verdictColor, evil + good);
+}
+
+function drawShareCard(ctx, w, h, verb, object, instrument, verdict, verdictColor, totalVotes) {
+  // Background gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, '#1a1a2e');
+  grad.addColorStop(1, '#0f0f1a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Border
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 8;
+  ctx.strokeRect(20, 20, w - 40, h - 40);
+
+  // Header
+  ctx.fillStyle = '#ffd700';
+  ctx.font = 'bold 36px Oswald, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🎰 EVIL BRAIN CASINO', w/2, 100);
+
+  ctx.font = '18px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#888';
+  ctx.fillText('USE CASE ARMS RACE', w/2, 135);
+
+  // Case card
+  ctx.fillStyle = '#2a2a3e';
+  ctx.fillRect(40, 180, w - 80, 400);
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(40, 180, w - 80, 400);
+
+  // Verb
+  ctx.fillStyle = '#ff4444';
+  ctx.font = 'bold 52px Oswald, sans-serif';
+  ctx.fillText(verb.toUpperCase(), w/2, 270);
+
+  // Object
+  if (object) {
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 42px Oswald, sans-serif';
+    ctx.fillText(object.toUpperCase(), w/2, 340);
+  }
+
+  // WITH
+  ctx.fillStyle = '#666';
+  ctx.font = '24px "IBM Plex Mono", monospace';
+  ctx.fillText('· WITH ·', w/2, 400);
+
+  // Instrument
+  ctx.fillStyle = '#ff4444';
+  ctx.font = 'bold 36px Oswald, sans-serif';
+  const instLines = wrapText(ctx, instrument.toUpperCase(), w - 120);
+  instLines.forEach((line, i) => ctx.fillText(line, w/2, 460 + i * 44));
+
+  // Verdict badge
+  ctx.fillStyle = verdictColor;
+  ctx.fillRect(w/2 - 100, 620, 200, 60);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 32px Oswald, sans-serif';
+  ctx.fillText(verdict, w/2, 660);
+
+  // Vote count
+  ctx.fillStyle = '#888';
+  ctx.font = '20px "IBM Plex Mono", monospace';
+  ctx.fillText(`${totalVotes} votes`, w/2, 720);
+
+  // CTA
+  ctx.fillStyle = '#ffd700';
+  ctx.font = 'bold 28px Oswald, sans-serif';
+  ctx.fillText('SPIN THE SLOTPOCALYPSE', w/2, 820);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = '22px "IBM Plex Mono", monospace';
+  ctx.fillText('evilbrain.casino', w/2, 870);
+
+  // Corner decorations
+  ctx.fillStyle = '#ffd700';
+  ctx.font = '40px sans-serif';
+  ctx.fillText('🎰', 50, 930);
+  ctx.fillText('🤖', w - 50, 930);
+}
+
+function drawShareCardSquare(ctx, w, h, verb, object, instrument, verdict, verdictColor, totalVotes) {
+  // Background
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, '#1a1a2e');
+  grad.addColorStop(1, '#0f0f1a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Border
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(15, 15, w - 30, h - 30);
+
+  // Header
+  ctx.fillStyle = '#ffd700';
+  ctx.font = 'bold 32px Oswald, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🎰 EVIL BRAIN CASINO', w/2, 60);
+
+  // Case content
+  ctx.fillStyle = '#ff4444';
+  ctx.font = 'bold 48px Oswald, sans-serif';
+  ctx.fillText(verb.toUpperCase(), w/2, 150);
+
+  if (object) {
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 36px Oswald, sans-serif';
+    ctx.fillText(object.toUpperCase(), w/2, 210);
+  }
+
+  ctx.fillStyle = '#666';
+  ctx.font = '20px "IBM Plex Mono", monospace';
+  ctx.fillText('· WITH ·', w/2, 260);
+
+  ctx.fillStyle = '#ff4444';
+  ctx.font = 'bold 28px Oswald, sans-serif';
+  const instLines = wrapText(ctx, instrument.toUpperCase(), w - 80);
+  instLines.forEach((line, i) => ctx.fillText(line, w/2, 310 + i * 36));
+
+  // Verdict
+  ctx.fillStyle = verdictColor;
+  ctx.fillRect(w/2 - 80, 400, 160, 50);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 28px Oswald, sans-serif';
+  ctx.fillText(verdict, w/2, 435);
+
+  // Footer
+  ctx.fillStyle = '#ffd700';
+  ctx.font = 'bold 24px Oswald, sans-serif';
+  ctx.fillText('SPIN THE SLOTPOCALYPSE', w/2, 520);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '18px "IBM Plex Mono", monospace';
+  ctx.fillText('evilbrain.casino', w/2, 560);
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const test = line + word + ' ';
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line.trim());
+      line = word + ' ';
+    } else {
+      line = test;
+    }
+  }
+  if (line.trim()) lines.push(line.trim());
+  return lines.slice(0, 2); // Max 2 lines
+}
+
+// Download handlers
+$('#downloadVertical').onclick = () => downloadCanvas('shareCardVertical', 'evil-brain-case-vertical.png');
+$('#downloadSquare').onclick = () => downloadCanvas('shareCardSquare', 'evil-brain-case-square.png');
+$('#shareCardVertical').onclick = () => downloadCanvas('shareCardVertical', 'evil-brain-case-vertical.png');
+$('#shareCardSquare').onclick = () => downloadCanvas('shareCardSquare', 'evil-brain-case-square.png');
+
+function downloadCanvas(canvasId, filename) {
+  const canvas = $(`#${canvasId}`);
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
 }
 
 $('#closeShareX').onclick = () => $('#shareModal').classList.remove('open');
@@ -2649,9 +2861,12 @@ $$('.share-social').forEach(btn => {
       case 'linkedin':
         shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
         break;
-      case 'facebook':
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
-        break;
+      case 'tiktok':
+        // TikTok doesn't have web share - download image and copy link
+        downloadCanvas('shareCardVertical', 'evil-brain-case.png');
+        navigator.clipboard.writeText(SHARE_DATA.url);
+        alert('Image downloaded + link copied! Open TikTok and paste.');
+        return;
       case 'bluesky':
         shareUrl = `https://bsky.app/intent/compose?text=${text}%20${url}`;
         break;
