@@ -2394,19 +2394,38 @@ async function loadTopicOptions() {
     whom: []
   };
 
-  // WHO/WHOM - seed with common actors/targets for now
-  // (vocab_terms table may not have these populated yet)
-  TOPIC_OPTIONS.who = [
-    'Microsoft', 'Google', 'OpenAI', 'Meta', 'Amazon', 'Apple', 'SAP', 'IBM',
-    'Tesla', 'Uber', 'Clearview AI', 'Palantir', 'US Government', 'China', 'EU',
-    'Police', 'Schools', 'Hospitals', 'Banks', 'Insurance Companies'
-  ].map(t => ({ term: t, use_count: 0 }));
+  // WHO/WHOM - load from vocab_terms (populated by extraction)
+  const { data: actors } = await sb.from('vocab_terms')
+    .select('id, term')
+    .eq('kind', 'actor')
+    .order('term', { ascending: true })
+    .limit(100);
 
-  TOPIC_OPTIONS.whom = [
-    'Workers', 'Students', 'Patients', 'Consumers', 'Job Applicants',
-    'Drivers', 'Immigrants', 'Prisoners', 'Children', 'Elderly',
-    'Users', 'Citizens', 'Voters', 'Tenants', 'Borrowers'
-  ].map(t => ({ term: t, use_count: 0 }));
+  const { data: targets } = await sb.from('vocab_terms')
+    .select('id, term')
+    .eq('kind', 'target')
+    .order('term', { ascending: true })
+    .limit(100);
+
+  TOPIC_OPTIONS.who = (actors || []).map(t => ({ id: t.id, term: t.term, use_count: 1 }));
+  TOPIC_OPTIONS.whom = (targets || []).map(t => ({ id: t.id, term: t.term, use_count: 1 }));
+
+  // Fall back to seed data if database is empty
+  if (TOPIC_OPTIONS.who.length === 0) {
+    TOPIC_OPTIONS.who = [
+      'Microsoft', 'Google', 'OpenAI', 'Meta', 'Amazon', 'Apple', 'SAP', 'IBM',
+      'Tesla', 'Uber', 'Clearview AI', 'Palantir', 'US Government', 'China', 'EU',
+      'Police', 'Schools', 'Hospitals', 'Banks', 'Insurance Companies'
+    ].map(t => ({ term: t, use_count: 0 }));
+  }
+
+  if (TOPIC_OPTIONS.whom.length === 0) {
+    TOPIC_OPTIONS.whom = [
+      'Workers', 'Students', 'Patients', 'Consumers', 'Job Applicants',
+      'Drivers', 'Immigrants', 'Prisoners', 'Children', 'Elderly',
+      'Users', 'Citizens', 'Voters', 'Tenants', 'Borrowers'
+    ].map(t => ({ term: t, use_count: 0 }));
+  }
 
   // Populate dropdowns
   populateTopicDropdowns();
