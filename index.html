@@ -3926,16 +3926,16 @@ let qt; $('#q').oninput = () => { clearTimeout(qt); qt=setTimeout(loadFeed, 350)
 window.openCase = openCase;
 window.startAdventure = startAdventure;
 
-// Tagline fade sequence: Good AI → Bad AI → Shooting Jason (loops)
+// Tagline fade sequence: Report evil → Upvote good → Shooting Jason (loops)
 function runTaglineSequence() {
   const t1 = $('#tag1'), t2 = $('#tag2'), t3 = $('#tag3');
   if (!t1 || !t2 || !t3) return;
 
-  // Reset all to initial state
-  t1.style.display = 'inline';
-  t1.style.opacity = '1';
-  t2.style.display = 'none';
-  t2.style.opacity = '0';
+  // Reset all - start with "Report evil AI" (t2)
+  t1.style.display = 'none';
+  t1.style.opacity = '0';
+  t2.style.display = 'inline';
+  t2.style.opacity = '1';
   t3.style.display = 'none';
   t3.style.opacity = '0';
 
@@ -3958,12 +3958,16 @@ function runTaglineSequence() {
     });
   }
 
-  // Run sequence then loop
-  fadeTag(t1, t2, 5000)           // Good AI fades after 5s
-    .then(() => fadeTag(t2, t3, 5000))  // Bad AI fades after 5s more
+  // Run sequence: Report evil → Upvote good → Shooting Jason → fade out → loop
+  fadeTag(t2, t1, 5000)           // Report evil fades after 5s, show Upvote good
+    .then(() => fadeTag(t1, t3, 5000))  // Upvote good fades after 5s, show Shooting Jason
     .then(() => {
-      // After showing "Shooting Jason" for 6s, restart
-      setTimeout(runTaglineSequence, 6000);
+      // After showing "Shooting Jason" for 5s, fade it out then restart
+      setTimeout(() => {
+        t3.style.transition = 'opacity 1.5s';
+        t3.style.opacity = '0';
+        setTimeout(runTaglineSequence, 1500);
+      }, 5000);
     });
 }
 
