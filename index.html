@@ -5,7 +5,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Use Case Arms Race · Vote for Good AI. Report Evil AI.</title>
-<meta name="description" content="A public docket of AI deployments. Every use case is a case. Every news article is evidence.">
+<meta name="description" content="The AI Arms Race is here. Track what AI does to people before it's normalized. Cases = VERB + OBJECT + INSTRUMENT.">
+
+<!-- Open Graph / LinkedIn / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://usecasearmsrace.com/">
+<meta property="og:title" content="Use Case Arms Race · Evil Brain Casino">
+<meta property="og:description" content="The AI Arms Race is here. Every week, new AI systems surveil, score, manipulate, and decide. This is the public docket—tracking what AI does to people.">
+<meta property="og:image" content="https://usecasearmsrace.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Use Case Arms Race · Evil Brain Casino">
+<meta name="twitter:description" content="The AI Arms Race is here. Track what AI does to people before it's normalized.">
+<meta name="twitter:image" content="https://usecasearmsrace.com/og-image.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Archivo:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -3323,7 +3339,7 @@ async function openArticle(articleId){
     </div>
     <div class="drawer-body">
       <div class="article-detail">
-        ${a.image_url ? `<div class="article-detail-img"><img src="${esc(a.image_url)}" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.style.display='none'"></div>` : ''}
+        ${a.image_url ? `<div class="article-detail-img"><img src="${esc(a.image_url)}" alt="" referrerpolicy="no-referrer" crossorigin="anonymous" onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22200%22><rect fill=%22%231a1a2e%22 width=%22400%22 height=%22200%22/><text x=%2250%%22 y=%2250%%22 fill=%22%23ffd700%22 font-family=%22sans-serif%22 font-size=%2220%22 text-anchor=%22middle%22>🎰 Evil Brain Casino</text></svg>'"></div>` : ''}
         <div class="stamp-row">
           <div class="stamp-badge">FILED ${fmtDate(a.created_at)}</div>
           <span class="mono">${esc(a.source_domain)}</span>
