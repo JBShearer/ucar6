@@ -4050,17 +4050,13 @@ async function loadFeed(append = false){
       const filterMapping = {
         verb: { kind: 'verb', col: 'verb_id' },
         object: { kind: 'object_class', col: 'object_class_id' },
-        instrument: { kind: 'instrument', col: 'instrument_id' }
-        // WHO and WHOM handled separately below (no FK columns yet)
+        instrument: { kind: 'instrument', col: 'instrument_id' },
+        who: { kind: 'actor', col: 'actor_id' },
+        whom: { kind: 'target', col: 'target_id' }
       };
 
-      // Separate standard filters from WHO/WHOM
-      const standardFilters = activeTopicFilters.filter(([k]) => filterMapping[k]);
-      const whoFilter = TOPIC_FILTERS.who;
-      const whomFilter = TOPIC_FILTERS.whom;
-
-      // Get vocab term IDs for standard filters (verb, object, instrument)
-      const termLookups = standardFilters.map(async ([key, value]) => {
+      // Get vocab term IDs for selected values
+      const termLookups = activeTopicFilters.map(async ([key, value]) => {
         const mapping = filterMapping[key];
         console.log(`Looking up ${key}=${value} in vocab_terms kind=${mapping.kind}`);
         const { data: term, error } = await sb.from('vocab_terms')
@@ -4076,19 +4072,11 @@ async function loadFeed(append = false){
       console.log('Term lookup results:', termResults);
 
       // Build case filter - get cases matching all selected terms
-      let caseQuery = sb.from('cases').select('id, title_render').eq('status', 'live');
+      let caseQuery = sb.from('cases').select('id').eq('status', 'live');
       for (const { col, termId } of termResults) {
         if (termId) {
           caseQuery = caseQuery.eq(col, termId);
         }
-      }
-
-      // For WHO/WHOM, filter by title_render containing the term (until we have FK columns)
-      if (whoFilter) {
-        caseQuery = caseQuery.ilike('title_render', `%${whoFilter}%`);
-      }
-      if (whomFilter) {
-        caseQuery = caseQuery.ilike('title_render', `%${whomFilter}%`);
       }
 
       const { data: matchingCases } = await caseQuery;
