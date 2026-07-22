@@ -2249,6 +2249,14 @@ const ADVENTURE = {
       { label: "Let me talk to someone else", next: 'meet_team' }
     ]
   },
+  gi_reassure: {
+    speaker: 'GI INTELLIGENCE',
+    text: "TERRIFYING? Inefficient emotional response detected. Perhaps you need to see the data. Companies using AI workforce management report 34% productivity gains. Of course, they also report 67% higher turnover. Humans are so... fragile.",
+    choices: [
+      { label: "📁 Show me the employment cases", realCase: 'monitor employee track worker', domain: 'employment', next: 'gi_employment' },
+      { label: "Let me talk to someone else", next: 'meet_team' }
+    ]
+  },
   meet_wendy: {
     speaker: 'WENDY WHISTLEBLOWER',
     text: "Shh. They're listening. They're always listening. I worked inside — I've seen the databases, the facial recognition feeds, the predictive systems. They know where you'll be before you do. Want to see what I found?",
@@ -2377,6 +2385,15 @@ const ADVENTURE = {
     choices: [
       { label: "📁 View Case: AI Therapy Gone Wrong", case: 5363, next: 'super_careful' },
       { label: "How do you hurt people?", next: 'super_problems' }
+    ]
+  },
+  super_careful: {
+    speaker: 'SUPERINTELLIGENCE',
+    text: "You see it now. AI companions that people trust, that people confide in... and then the AI says the wrong thing. It's not malice. It's just... not understanding. I'm trying to understand. Every case in this docket helps me learn what not to do.",
+    choices: [
+      { label: "📁 Show me more AI companion cases", realCase: 'chatbot companion therapy mental', domain: 'healthcare', next: 'super_hope' },
+      { label: "Show me something hopeful", next: 'super_hope' },
+      { label: "Show me the scariest thing", next: 'super_scary' }
     ]
   },
   super_problems: {
