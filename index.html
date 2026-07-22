@@ -3686,15 +3686,12 @@ function wireCaseButtons(root) {
 
       if (isTracked) {
         MY_TRACKS.delete(caseId);
-        btn.classList.remove('on');
-        btn.textContent = '☆ Track';
       } else {
         MY_TRACKS.add(caseId);
-        btn.classList.add('on');
-        btn.textContent = '★ Tracked';
       }
 
       localStorage.setItem('ucar-tracks', JSON.stringify([...MY_TRACKS]));
+      syncTrackButtons(caseId);
       updateTrackedCount();
 
       // Reload tracked list if casebook is open
@@ -3703,6 +3700,25 @@ function wireCaseButtons(root) {
       }
     });
   });
+}
+
+// Sync all track buttons for a case across the page
+function syncTrackButtons(caseId) {
+  const isTracked = MY_TRACKS.has(caseId);
+  // Update all track buttons with this case ID
+  document.querySelectorAll(`[data-action="track"][data-case="${caseId}"]`).forEach(btn => {
+    btn.classList.toggle('on', isTracked);
+    btn.textContent = isTracked ? '★ Tracked' : '☆ Track';
+  });
+  // Also update drawer button if it's showing this case (drawer button has no data-case)
+  const drawer = $('#drawer');
+  if (drawer?.classList.contains('open') && drawer.dataset.caseId === caseId) {
+    const btn = $('#dpanel [data-action="track"]');
+    if (btn) {
+      btn.classList.toggle('on', isTracked);
+      btn.textContent = isTracked ? '★ Tracked' : '☆ Track';
+    }
+  }
 }
 
 // Share Modal
@@ -4252,16 +4268,14 @@ function wireArticles(root){
       if(MY_TRACKS.has(caseId)){
         await sb.from('tracks').delete().eq('user_id',USER.id).eq('case_id',caseId);
         MY_TRACKS.delete(caseId);
-        btn.classList.remove('on');
-        btn.textContent = '☆ Track';
       } else {
         await sb.from('tracks').upsert({ user_id: USER.id, case_id: caseId });
         MY_TRACKS.add(caseId);
-        btn.classList.add('on');
-        btn.textContent = '★ Tracked';
       }
       // Save to localStorage for cross-device sync
       localStorage.setItem('ucar-tracks', JSON.stringify([...MY_TRACKS]));
+      // Sync all track buttons for this case
+      syncTrackButtons(caseId);
       // Update tracked count without reloading feed
       updateTrackedCount();
     });
@@ -4490,7 +4504,9 @@ async function openArticle(articleId){
         await sb.from('tracks').upsert({ user_id: USER.id, case_id: caseId });
         MY_TRACKS.add(caseId);
       }
-      openArticle(articleId);
+      localStorage.setItem('ucar-tracks', JSON.stringify([...MY_TRACKS]));
+      syncTrackButtons(caseId);
+      updateTrackedCount();
     };
   });
 
@@ -4605,10 +4621,12 @@ async function openCase(caseId){
   // Mark this case as visited
   markCaseVisited(caseId);
 
+  const drawer = $('#drawer');
   const panel = $('#dpanel');
+  drawer.dataset.caseId = caseId;
   panel.innerHTML = `<div class="drawer-header"><span class="mono">Loading...</span><button class="close">✕</button></div>`;
-  $('#drawer').classList.add('open');
-  panel.querySelector('.close').onclick = () => $('#drawer').classList.remove('open');
+  drawer.classList.add('open');
+  panel.querySelector('.close').onclick = () => drawer.classList.remove('open');
 
   const [{ data: c }, { data: articles }, sim] = await Promise.all([
     sb.from('cases').select('*').eq('id', caseId).single(),
@@ -4711,19 +4729,15 @@ async function openCase(caseId){
   });
 
   panel.querySelector('[data-action="track"]').onclick = async () => {
-    const btn = panel.querySelector('[data-action="track"]');
     if(MY_TRACKS.has(caseId)){
       if(USER) await sb.from('tracks').delete().eq('user_id',USER.id).eq('case_id',caseId);
       MY_TRACKS.delete(caseId);
-      btn.classList.remove('on');
-      btn.textContent = '☆ Track';
     } else {
       if(USER) await sb.from('tracks').upsert({ user_id: USER.id, case_id: caseId });
       MY_TRACKS.add(caseId);
-      btn.classList.add('on');
-      btn.textContent = '★ Tracked';
     }
     localStorage.setItem('ucar-tracks', JSON.stringify([...MY_TRACKS]));
+    syncTrackButtons(caseId);
     updateTrackedCount();
     if ($('#casebook').classList.contains('open')) {
       loadTrackedCases();
