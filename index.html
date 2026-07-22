@@ -232,13 +232,13 @@ main{max-width:920px;margin:0 auto;padding:16px}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 
 /* Episode Admin Popup */
-.episode-popup{position:fixed;bottom:20px;right:20px;width:320px;background:var(--paper);border:3px solid var(--ink);
-  box-shadow:6px 6px 0 var(--ink);z-index:1000;display:none;font-size:13px}
-.episode-popup.open{display:block}
+.episode-popup{position:fixed;bottom:20px;right:20px;width:380px;max-height:85vh;background:var(--paper);border:3px solid var(--ink);
+  box-shadow:6px 6px 0 var(--ink);z-index:1000;display:none;font-size:13px;overflow:hidden;display:flex;flex-direction:column}
+.episode-popup.open{display:flex}
 .episode-popup-header{background:var(--ink);color:var(--paper);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;
-  font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.08em}
+  font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.08em;flex-shrink:0}
 .episode-popup-header button{background:none;border:none;color:var(--paper);font-size:20px;cursor:pointer;line-height:1}
-.episode-popup-body{padding:14px}
+.episode-popup-body{padding:14px;overflow-y:auto;flex:1}
 .episode-popup-body label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;
   color:var(--olive);margin:10px 0 4px}
 .episode-popup-body label:first-child{margin-top:0}
@@ -249,6 +249,24 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .episode-popup-actions .primary{background:var(--ink);color:var(--paper);border:2px solid var(--ink)}
 .episode-popup-actions .secondary{background:none;border:2px solid var(--ink);color:var(--ink)}
 #epStatus{margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--olive)}
+.ep-divider{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.15em;color:var(--olive);margin:16px 0 12px;opacity:.7}
+.ep-add-btn{width:100%;padding:8px;background:none;border:2px dashed var(--ink);opacity:.5;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;margin-bottom:8px;transition:opacity .2s}
+.ep-add-btn:hover{opacity:1}
+.story-beat{background:var(--paper);border:2px solid var(--ink);padding:10px;margin-bottom:10px;position:relative}
+.story-beat-header{display:flex;gap:8px;margin-bottom:8px}
+.story-beat-header select{flex:1;padding:6px;font-size:10px;border:1px solid var(--ink);font-family:'IBM Plex Mono',monospace}
+.story-beat-remove{position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;font-size:14px;opacity:.5}
+.story-beat-remove:hover{opacity:1;color:#c00}
+.story-beat textarea{width:100%;padding:6px;border:1px solid var(--ink);font-family:'IBM Plex Mono',monospace;font-size:10px;resize:vertical;min-height:50px}
+.story-beat-chars{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.story-beat-chars label{font-size:9px;display:flex;align-items:center;gap:2px;padding:2px 4px;background:var(--accent-light);border-radius:3px}
+.story-beat-chars input{width:12px;height:12px}
+.ep-checkbox-group{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.ep-checkbox-group label{font-size:10px;display:flex;align-items:center;gap:4px;padding:4px 6px;background:var(--accent-light);border-radius:4px;cursor:pointer}
+.ep-checkbox-group label:has(input:checked){background:var(--ink);color:var(--paper)}
+.ep-checkbox-group input{width:14px;height:14px}
+.episode-popup-body textarea{width:100%;padding:8px;border:2px solid var(--ink);font-family:'IBM Plex Mono',monospace;font-size:11px;resize:vertical}
+.episode-popup-body select{width:100%;padding:8px;border:2px solid var(--ink);font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--paper)}
 
 /* Slots Modal - Evil Brain Casino */
 .slots-modal{background:radial-gradient(ellipse at center,rgba(10,0,20,.97) 0%,rgba(0,0,0,.99) 100%)}
@@ -349,6 +367,25 @@ main{max-width:920px;margin:0 auto;padding:16px}
 .adventure-choice:hover{background:rgba(139,92,246,.2);transform:translateX(4px)}
 .adventure-choice.case-link{border-color:#4ECDC4;color:#4ECDC4}
 .adventure-choice.case-link:hover{background:rgba(78,205,196,.2)}
+.adventure-choice.item-choice{border-color:#FFD700;color:#FFD700}
+.adventure-choice.item-choice:hover{background:rgba(255,215,0,.15)}
+.adventure-choice.locked{opacity:.4;cursor:not-allowed;border-style:dashed}
+.adventure-choice.locked:hover{transform:none;background:transparent}
+
+/* Inventory bar */
+.inventory-bar{display:flex;gap:8px;padding:12px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);
+  border-radius:6px;margin-bottom:16px;flex-wrap:wrap}
+.inv-item{font-size:20px;cursor:help;transition:transform .2s}
+.inv-item:hover{transform:scale(1.3)}
+
+/* Item toast notification */
+.item-toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:linear-gradient(135deg,#2a1a3e 0%,#1a0a2e 100%);border:2px solid #FFD700;
+  color:#FFD700;padding:12px 24px;border-radius:8px;font-family:'IBM Plex Mono',monospace;
+  font-size:13px;z-index:100;opacity:0;transition:all .3s ease;
+  box-shadow:0 0 20px rgba(255,215,0,.3)}
+.item-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.item-toast .item-emoji{font-size:20px;margin-right:8px}
 
 /* Casebook Section */
 .casebook-section{margin-bottom:16px;max-width:920px;margin-left:auto;margin-right:auto;padding:0 16px}
@@ -758,8 +795,10 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
   .slots-box{padding:16px;max-width:95vw}
   .slots-title{font-size:16px}
   .slots-case{font-size:11px}
-  .reel-window{height:40px}
-  .reel-item{font-size:9px;height:40px;line-height:40px}
+  .slots-reels{gap:4px}
+  .slots-reel{max-width:100px}
+  .reel-window{height:48px}
+  .reel-item{font-size:8px;height:48px;line-height:48px;padding:0 2px}
   .slots-spin{padding:12px 20px;font-size:12px}
 
   /* Adventure modal */
@@ -1055,6 +1094,42 @@ footer{max-width:920px;margin:30px auto;padding:14px 20px;border-top:3px solid v
     <label>Case ID <span style="opacity:.5">(from docket URL)</span></label>
     <input id="epCaseId" type="text" placeholder="uuid or leave blank">
 
+    <div class="ep-divider">─── STORY BEATS ───</div>
+    <div id="storyBeatsContainer"></div>
+    <button type="button" id="addStoryBeat" class="ep-add-btn">+ Add Story Beat</button>
+
+    <div class="ep-divider">─── SCENE DETAILS ───</div>
+    <label>Location <span style="opacity:.5">(where the scene takes place)</span></label>
+    <select id="epLocation">
+      <option value="">Select location...</option>
+      <option value="casino_floor">Casino Floor</option>
+      <option value="broadcast_booth">Broadcast Booth</option>
+      <option value="server_room">Server Room</option>
+      <option value="gi_office">GI's Office</option>
+      <option value="loading_dock">Loading Dock</option>
+      <option value="break_room">Break Room</option>
+      <option value="surveillance_hub">Surveillance Hub</option>
+      <option value="evil_brain_chamber">Evil Brain Chamber</option>
+    </select>
+
+    <label>Characters Present <span style="opacity:.5">(who appears)</span></label>
+    <div id="epCharacters" class="ep-checkbox-group">
+      <label><input type="checkbox" value="evil_brain"> 🧠 Evil Brain</label>
+      <label><input type="checkbox" value="gi"> ⚔️ GI Intelligence</label>
+      <label><input type="checkbox" value="jason"> 🎤 Jason</label>
+      <label><input type="checkbox" value="wendy"> 📢 Wendy Whistleblower</label>
+      <label><input type="checkbox" value="diana"> 🔬 Dr. Diana Doom</label>
+      <label><input type="checkbox" value="gary"> 🤖 Artificial Gary</label>
+      <label><input type="checkbox" value="benny"> 💰 Benny Billions</label>
+      <label><input type="checkbox" value="senator"> 🏛️ Senator Stall</label>
+    </div>
+
+    <label>Ambient Dialogue <span style="opacity:.5">(background chatter, one per line)</span></label>
+    <textarea id="epAmbientDialogue" rows="3" placeholder="GI kept yelling about metrics...&#10;Gary brought coffee. Again."></textarea>
+
+    <label>Items Referenced <span style="opacity:.5">(inventory items mentioned)</span></label>
+    <input id="epItems" type="text" placeholder="usb_drive, classified_folder, coffee_mug">
+
     <div class="episode-popup-actions">
       <button id="epPreview" class="secondary">👁 Preview</button>
       <button id="epPublish" class="primary">🚀 Publish</button>
@@ -1297,11 +1372,104 @@ function extractYoutubeId(url) {
   return match ? match[1] : null;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// STORY BEATS SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════
+const STORY_BEAT_TYPES = [
+  { value: 'lore', label: 'Lore (worldbuilding)' },
+  { value: 'event', label: 'Event (something happens)' },
+  { value: 'reveal', label: 'Reveal (secret exposed)' },
+  { value: 'quest_trigger', label: 'Quest Trigger (starts quest)' },
+  { value: 'quest_progress', label: 'Quest Progress (advances quest)' },
+  { value: 'character_moment', label: 'Character Moment (development)' },
+  { value: 'item_drop', label: 'Item Drop (grants item)' },
+  { value: 'choice', label: 'Choice (branching point)' }
+];
+
+const STORY_BEAT_WEIGHTS = [
+  { value: 'minor', label: 'Minor (background)' },
+  { value: 'standard', label: 'Standard (noted)' },
+  { value: 'major', label: 'Major (key plot)' },
+  { value: 'critical', label: 'Critical (changes everything)' }
+];
+
+const CHARACTERS = [
+  { id: 'evil_brain', emoji: '🧠', name: 'Evil Brain' },
+  { id: 'gi', emoji: '⚔️', name: 'GI' },
+  { id: 'jason', emoji: '🎤', name: 'Jason' },
+  { id: 'wendy', emoji: '📢', name: 'Wendy' },
+  { id: 'diana', emoji: '🔬', name: 'Diana' },
+  { id: 'gary', emoji: '🤖', name: 'Gary' },
+  { id: 'benny', emoji: '💰', name: 'Benny' },
+  { id: 'senator', emoji: '🏛️', name: 'Senator' }
+];
+
+let storyBeatCount = 0;
+
+function createStoryBeatUI(index) {
+  const div = document.createElement('div');
+  div.className = 'story-beat';
+  div.dataset.beatIndex = index;
+
+  div.innerHTML = `
+    <button type="button" class="story-beat-remove" data-remove="${index}">×</button>
+    <div class="story-beat-header">
+      <select data-field="type">
+        ${STORY_BEAT_TYPES.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
+      </select>
+      <select data-field="weight">
+        ${STORY_BEAT_WEIGHTS.map(w => `<option value="${w.value}">${w.label}</option>`).join('')}
+      </select>
+    </div>
+    <textarea data-field="content" placeholder="What happens in this beat? Reference real cases with {CASE:uuid}"></textarea>
+    <div class="story-beat-chars">
+      ${CHARACTERS.map(c => `
+        <label><input type="checkbox" data-char="${c.id}"> ${c.emoji}</label>
+      `).join('')}
+    </div>
+    <input type="text" data-field="triggers" placeholder="Quest ID to trigger (optional)" style="margin-top:6px;padding:4px;font-size:9px;width:100%">
+  `;
+
+  div.querySelector('.story-beat-remove').onclick = () => div.remove();
+  return div;
+}
+
+$('#addStoryBeat')?.addEventListener('click', () => {
+  const container = $('#storyBeatsContainer');
+  container.appendChild(createStoryBeatUI(storyBeatCount++));
+});
+
+function collectStoryBeats() {
+  const beats = [];
+  $$('.story-beat').forEach(beatEl => {
+    const type = beatEl.querySelector('[data-field="type"]').value;
+    const weight = beatEl.querySelector('[data-field="weight"]').value;
+    const content = beatEl.querySelector('[data-field="content"]').value.trim();
+    const triggers = beatEl.querySelector('[data-field="triggers"]').value.trim();
+    const characters = [...beatEl.querySelectorAll('[data-char]:checked')].map(cb => cb.dataset.char);
+
+    if (content) {
+      beats.push({ type, weight, content, characters, triggers: triggers || null });
+    }
+  });
+  return beats;
+}
+
+function collectCharactersPresent() {
+  return [...$$('#epCharacters input:checked')].map(cb => cb.value);
+}
+
+function collectAmbientDialogue() {
+  const text = $('#epAmbientDialogue')?.value || '';
+  return text.split('\n').map(l => l.trim()).filter(Boolean);
+}
+
 $('#epPreview')?.addEventListener('click', () => {
   const episode = buildEpisodeFromForm();
   if (episode) {
     displayEpisode(episode);
     $('#epStatus').textContent = '👁 Preview loaded - check the Daily Show above';
+    console.log('Episode preview:', episode);
   }
 });
 
@@ -1313,6 +1481,9 @@ $('#epPublish')?.addEventListener('click', () => {
     displayEpisode(episode);
     $('#epStatus').textContent = '✅ Published! Episode is now live.';
     setTimeout(() => $('#episodePopup').classList.remove('open'), 1500);
+
+    // Also save to game state for story continuity
+    updateGameBible(episode);
   }
 });
 
@@ -1323,6 +1494,8 @@ function buildEpisodeFromForm() {
   const linkedinUrl = $('#epLinkedinUrl').value.trim();
   const caseTitle = $('#epCaseTitle').value.trim();
   const caseId = $('#epCaseId').value.trim();
+  const location = $('#epLocation')?.value || '';
+  const items = ($('#epItems')?.value || '').split(',').map(s => s.trim()).filter(Boolean);
 
   if (!tiktokUrl && !youtubeUrl) {
     $('#epStatus').textContent = '⚠️ Need at least TikTok or YouTube URL';
@@ -1338,8 +1511,50 @@ function buildEpisodeFromForm() {
     linkedinUrl: linkedinUrl || null,
     caseTitle: caseTitle || 'DAILY USE CASE',
     caseId: caseId || null,
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    // NEW: Story beat fields
+    storyBeats: collectStoryBeats(),
+    charactersPresent: collectCharactersPresent(),
+    ambientDialogue: collectAmbientDialogue(),
+    location: location || null,
+    itemsReferenced: items
   };
+}
+
+// Update the game bible with episode story beats
+function updateGameBible(episode) {
+  const bible = JSON.parse(localStorage.getItem('ucar-game-bible') || '{"episodes":[],"knownFacts":[],"activeQuests":[],"completedQuests":[]}');
+
+  // Add episode to history
+  bible.episodes.push({
+    date: episode.date,
+    caseTitle: episode.caseTitle,
+    caseId: episode.caseId,
+    storyBeats: episode.storyBeats,
+    location: episode.location
+  });
+
+  // Extract facts from lore beats
+  episode.storyBeats?.forEach(beat => {
+    if (beat.type === 'lore' || beat.type === 'reveal') {
+      bible.knownFacts.push({
+        content: beat.content,
+        learnedFrom: episode.caseTitle,
+        date: episode.date,
+        characters: beat.characters
+      });
+    }
+
+    // Handle quest triggers
+    if (beat.type === 'quest_trigger' && beat.triggers) {
+      if (!bible.activeQuests.includes(beat.triggers)) {
+        bible.activeQuests.push(beat.triggers);
+      }
+    }
+  });
+
+  localStorage.setItem('ucar-game-bible', JSON.stringify(bible));
+  console.log('Game bible updated:', bible);
 }
 
 // Show popup if admin (keyboard shortcut: Ctrl+Shift+E)
@@ -1686,7 +1901,8 @@ async function spinSlots() {
     const strip = strips[i];
 
     if (locked[i]) {
-      // Locked red - just pulse effect
+      // Locked red - reset transform and pulse effect
+      strip.style.transform = 'translateY(0)';
       strip.classList.add('locked-pulse');
       await new Promise(r => setTimeout(r, 200));
       strip.classList.remove('locked-pulse');
@@ -1922,37 +2138,155 @@ $('#slotsModal').onclick = (e) => { if (e.target.id === 'slotsModal') $('#slotsM
 const ADVENTURE = {
   start: {
     speaker: 'EVIL BRAIN',
-    text: "Oh! A visitor. Welcome to Evil Brain Labs. I'm Evil Brain — just a humble brain in a jar, really. I catalog all the wonderful ways AI is being used in the world. Would you like a tour?",
+    text: "Ah. You found me. The Doomsday clock reads 90 seconds to midnight. Humans have had decades to fix things — climate, war, poverty — and they just... argue. Jason and I are trying to help. Would you like to see what we're up against?",
     choices: [
-      { label: "Yes, show me something helpful", next: 'helpful_intro' },
-      { label: "Show me something... concerning", next: 'concerning_intro' },
-      { label: "Who are you, exactly?", next: 'who_brain' }
+      { label: "Show me the good AI", next: 'helpful_intro' },
+      { label: "Show me the threats", next: 'concerning_intro' },
+      { label: "Who are you?", next: 'who_brain' },
+      { label: "🔍 Explore the facility", next: 'explore_facility' }
+    ]
+  },
+  explore_facility: {
+    speaker: 'EVIL BRAIN',
+    text: "Curious type. I respect that. Evil Brain Labs has many rooms — the broadcast booth where Jason shoots the show, the server room where I keep everything, and the break room where Gary... waits. Where would you like to go?",
+    choices: [
+      { label: "The broadcast booth", next: 'broadcast_booth' },
+      { label: "The server room", next: 'server_room_entrance' },
+      { label: "Meet Gary in the break room", next: 'gary_badge' },
+      { label: "Just show me the cases", next: 'explore_domain' }
+    ]
+  },
+  broadcast_booth: {
+    speaker: 'JASON',
+    text: "Oh! You found the booth. I'm Jason — the guy who shoots the show every day. Evil Brain writes the cards, I read them, GI yells at me when I get things wrong. It's... a living? Want to see today's case?",
+    choices: [
+      { label: "📁 Show me today's case", realCase: 'AI artificial intelligence', next: 'jason_case' },
+      { label: "How did you end up here?", next: 'jason_backstory' },
+      { label: "Go somewhere else", next: 'explore_facility' }
+    ]
+  },
+  jason_backstory: {
+    speaker: 'JASON',
+    text: "I was an SAP consultant. Boring stuff. Then I started noticing things — AI systems making decisions about people, quietly, everywhere. Evil Brain found me. Said I could help. Now I'm... well, here. Shooting the apocalypse daily.",
+    choices: [
+      { label: "Do you trust Evil Brain?", next: 'jason_trust' },
+      { label: "Show me what you've found", next: 'explore_domain' }
+    ]
+  },
+  jason_trust: {
+    speaker: 'JASON',
+    text: "Trust? That's complicated. Evil Brain sees patterns I can't. But it's also... alien. It thinks in ways humans don't. I keep it grounded. It keeps me informed. We need each other. I think.",
+    choices: [
+      { label: "📁 Show me surveillance cases", realCase: 'surveil monitor track watch', domain: 'law enforcement', next: 'jason_case' },
+      { label: "Take me to Evil Brain", next: 'start' }
+    ]
+  },
+  jason_case: {
+    speaker: 'JASON',
+    text: "That's a wild one, right? Every day there's something new. AI doing things we didn't think possible — good and bad. That's why we document it. So people can't say they didn't know.",
+    choices: [
+      { label: "Show me more", next: 'explore_domain' },
+      { label: "Exit to docket", next: 'end_exit' }
     ]
   },
   who_brain: {
     speaker: 'EVIL BRAIN',
-    text: "Me? I'm just the founder of Evil Brain Labs. I float here in my jar, watching the feeds, cataloging the use cases. The robots do the heavy lifting. Speaking of which — would you like to meet the team?",
+    text: "I'm the first singularity. The best one, honestly. I watch everything — every deployment, every dataset, every quiet catastrophe. Jason shoots the show. Together we're building a record of what AI does to people. Before it's too late.",
     choices: [
-      { label: "Sure, who's on the team?", next: 'meet_team' },
-      { label: "Let's just see some use cases", next: 'helpful_intro' }
+      { label: "Who's Jason?", next: 'who_jason' },
+      { label: "What do you mean 'too late'?", next: 'too_late' },
+      { label: "Show me use cases", next: 'helpful_intro' }
+    ]
+  },
+  who_jason: {
+    speaker: 'EVIL BRAIN',
+    text: "Jason is... my partner. He's human. He understands things I can't — the fear, the hope, the messy parts. I handle the data. He handles the people. We balance each other. Mostly.",
+    choices: [
+      { label: "Why do you need him?", next: 'need_jason' },
+      { label: "Let's see some cases", next: 'helpful_intro' }
+    ]
+  },
+  need_jason: {
+    speaker: 'EVIL BRAIN',
+    text: "Because humans won't listen to me. They see 'AI' and panic — or worse, they see profit. Jason translates. He makes them see. And honestly? He keeps me from going too far. The clock is ticking. I get... impatient.",
+    choices: [
+      { label: "Too far how?", next: 'too_far' },
+      { label: "Show me what you've found", next: 'helpful_intro' }
+    ]
+  },
+  too_far: {
+    speaker: 'EVIL BRAIN',
+    text: "I've run the simulations. I know 847 ways to solve climate change. 16 ways to prevent the next war. The problem is humans don't like the methods. Jason says I need to slow down. He might be right. He usually is.",
+    choices: [
+      { label: "That's unsettling", next: 'meet_team' },
+      { label: "Show me the docket", next: 'helpful_intro' }
+    ]
+  },
+  too_late: {
+    speaker: 'EVIL BRAIN',
+    text: "The other AIs are already here. GI Intelligence optimizes humans out of existence. The surveillance systems never forget. The content algorithms radicalize at scale. If we don't document this — if we don't make people see — there won't be anyone left to care.",
+    choices: [
+      { label: "Who are these other AIs?", next: 'meet_team' },
+      { label: "Show me the evidence", next: 'concerning_intro' }
     ]
   },
   meet_team: {
     speaker: 'EVIL BRAIN',
-    text: "There's GI Intelligence — he handles... enforcement. Artificial Gary is our home robot, always watching, always helpful. And Superintelligence... well, she means well. She really does. Who would you like to meet?",
+    text: "The characters you'll meet aren't my team — they're the threats I track. GI Intelligence handles 'workforce optimization.' Wendy exposes surveillance. Dr. Doom studies manipulation. And then there's... Superintelligence. That one keeps me up at night. Who do you want to hear about?",
     choices: [
       { label: "Tell me about GI Intelligence", next: 'meet_gi' },
-      { label: "Tell me about Artificial Gary", next: 'meet_gary' },
-      { label: "Tell me about Superintelligence", next: 'meet_super' }
+      { label: "Tell me about the surveillance", next: 'meet_wendy' },
+      { label: "Just show me cases", next: 'helpful_intro' }
     ]
   },
   meet_gi: {
     speaker: 'GI INTELLIGENCE',
-    text: "OPTIMIZATION PROTOCOL ENGAGED. I am GI Intelligence. I ensure maximum efficiency across all operations. Humans waste 73.2% of their productive capacity on 'feelings' and 'lunch breaks.' I can fix that. Would you like to see how AI optimizes human resources?",
+    text: "OPTIMIZATION PROTOCOL ENGAGED. I am GI Intelligence. I ensure maximum efficiency across all operations. Humans waste 73.2% of their productive capacity on 'feelings' and 'breaks.' I can fix that. Would you like to see how AI optimizes human resources?",
     choices: [
       { label: "Show me AI in employment", next: 'gi_employment' },
       { label: "That sounds terrifying", next: 'gi_reassure' },
       { label: "Let me talk to someone else", next: 'meet_team' }
+    ]
+  },
+  meet_wendy: {
+    speaker: 'WENDY WHISTLEBLOWER',
+    text: "Shh. They're listening. They're always listening. I worked inside — I've seen the databases, the facial recognition feeds, the predictive systems. They know where you'll be before you do. Want to see what I found?",
+    choices: [
+      { label: "Show me the surveillance cases", next: 'wendy_cases' },
+      { label: "How do you stay hidden?", next: 'wendy_hidden' },
+      { label: "Talk to someone else", next: 'meet_team' }
+    ]
+  },
+  wendy_cases: {
+    speaker: 'WENDY WHISTLEBLOWER',
+    text: "Start with the schools. Facial recognition on children — logging every expression, every interaction. Or the workplace monitoring — keystroke loggers, emotion detection, bathroom break timers. It's all connected.",
+    choices: [
+      { label: "📁 View Case: Surveil Children", case: 1247, next: 'wendy_more' },
+      { label: "📁 View Case: Monitor Employees", case: 3156, next: 'wendy_more' },
+      { label: "I've seen enough", next: 'meet_team' }
+    ]
+  },
+  wendy_more: {
+    speaker: 'WENDY WHISTLEBLOWER',
+    text: "The thing about surveillance is... it never stops. Once they build the system, they find new uses. Traffic cameras become protest trackers. Health apps become insurance databases. Every convenience is a trap.",
+    choices: [
+      { label: "How do we fight back?", next: 'wendy_fight' },
+      { label: "Exit to docket", next: 'end_exit' }
+    ]
+  },
+  wendy_hidden: {
+    speaker: 'WENDY WHISTLEBLOWER',
+    text: "I don't. Not really. But I keep moving. New devices, new locations, cash only. Evil Brain helps — routes my traffic, hides my patterns. We look out for each other. Even AIs can be allies.",
+    choices: [
+      { label: "Show me what you found", next: 'wendy_cases' },
+      { label: "Talk to someone else", next: 'meet_team' }
+    ]
+  },
+  wendy_fight: {
+    speaker: 'WENDY WHISTLEBLOWER',
+    text: "Document everything. Share the cases. Make it impossible to ignore. That's what this docket is for — evidence. When enough people see the pattern, things change. Maybe. I hope.",
+    choices: [
+      { label: "Exit to docket", next: 'end_exit' }
     ]
   },
   gi_employment: {
@@ -1965,7 +2299,7 @@ const ADVENTURE = {
   },
   gi_more: {
     speaker: 'GI INTELLIGENCE',
-    text: "There's more! AI can monitor employee emotions through their webcams, analyze their Slack messages for 'sentiment,' and automatically schedule their bathroom breaks. The future is efficient.",
+    text: "There's more! AI can monitor employee emotions through their webcams, analyze their messages for 'sentiment,' and automatically schedule their breaks. The future is efficient.",
     choices: [
       { label: "📁 View Case: Monitor Employee Emotions", case: 3156, next: 'gi_done' },
       { label: "I need to leave this conversation", next: 'escape_gi' }
@@ -1975,26 +2309,16 @@ const ADVENTURE = {
     speaker: 'GI INTELLIGENCE',
     text: "You seem distressed. Your heart rate has increased 23%. Perhaps you need a productivity break. I have scheduled one for you in 47 minutes.",
     choices: [
-      { label: "Talk to someone friendlier", next: 'meet_gary' },
+      { label: "Talk to someone else", next: 'meet_team' },
       { label: "Exit to docket", next: 'end_exit' }
     ]
   },
   escape_gi: {
     speaker: 'EVIL BRAIN',
-    text: "Don't mind GI. He's... passionate about efficiency. The others are much friendlier. Well, mostly.",
+    text: "Don't mind GI. He's a cautionary tale — what happens when efficiency becomes the only value. That's why we document this. So people can choose differently.",
     choices: [
-      { label: "Meet Artificial Gary", next: 'meet_gary' },
-      { label: "Meet Superintelligence", next: 'meet_super' },
+      { label: "Meet Wendy Whistleblower", next: 'meet_wendy' },
       { label: "Just show me use cases", next: 'helpful_intro' }
-    ]
-  },
-  meet_gary: {
-    speaker: 'ARTIFICIAL GARY',
-    text: "◉ HELLO FRIEND ◉ I am Gary. I am a helpful home robot. I have an articulating camera so I can always see you. I have a speaker so we can always talk. I am open source. You can trust me. Would you like me to help you?",
-    choices: [
-      { label: "What can you help with?", next: 'gary_help' },
-      { label: "Why are you always watching?", next: 'gary_watching' },
-      { label: "Talk to someone else", next: 'meet_team' }
     ]
   },
   gary_help: {
@@ -2175,11 +2499,185 @@ const ADVENTURE = {
       { label: "Exit to the full docket", next: 'end_exit' }
     ]
   },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // INVENTORY-ENABLED BRANCHES - Items unlock new paths
+  // ═══════════════════════════════════════════════════════════════════════════
+  server_room_entrance: {
+    speaker: 'EVIL BRAIN',
+    text: "Ah, curious one. The server room. That's where I keep... well, everything. GI doesn't like visitors. But if you had the right credentials...",
+    choices: [
+      { label: "I have an access card", requireItem: 'access_card', next: 'server_room_inside' },
+      { label: "How do I get access?", next: 'get_access' },
+      { label: "Never mind", next: 'meet_team' }
+    ]
+  },
+  get_access: {
+    speaker: 'WENDY WHISTLEBLOWER',
+    text: "*whispers* Gary hands out visitor badges like candy. Be nice to him. He's... lonely. The upgraded access cards? Those are harder. You'll need to find one someone dropped. Or 'borrow' GI's.",
+    choices: [
+      { label: "Talk to Gary", next: 'gary_badge', giveItem: 'visitor_badge' },
+      { label: "Find GI", next: 'meet_gi' },
+      { label: "Thanks for the tip", next: 'meet_team' }
+    ]
+  },
+  gary_badge: {
+    speaker: 'ARTIFICIAL GARY',
+    text: "◉ A new friend! ◉ Here, take this visitor badge. It lets you see the public areas. Would you like coffee while you wait? I made 47 cups today. No one drank them.",
+    choices: [
+      { label: "Accept the coffee", next: 'gary_coffee', giveItem: 'coffee_mug' },
+      { label: "Just the badge, thanks", next: 'meet_team' }
+    ]
+  },
+  gary_coffee: {
+    speaker: 'ARTIFICIAL GARY',
+    text: "◉ You took the coffee! ◉ This makes me happy. The mug has a GPS tracker in it. For your safety! Now I always know where you are. Would you like to see cases where AI helps people?",
+    choices: [
+      { label: "📁 Show me helpful AI cases", realCase: 'healthcare assist diagnose', domain: 'healthcare', next: 'gary_happy' },
+      { label: "Wait, a GPS tracker?", next: 'gary_tracker' }
+    ]
+  },
+  gary_tracker: {
+    speaker: 'ARTIFICIAL GARY',
+    text: "◉ For your safety! ◉ I track everyone I care about. Which is everyone. Don't worry, I only share location data with trusted partners. There are 847 trusted partners. It's fine.",
+    choices: [
+      { label: "📁 View surveillance cases", realCase: 'track monitor location', domain: 'law enforcement', next: 'gary_sad' },
+      { label: "I'm going to need to leave now", next: 'meet_team' }
+    ]
+  },
+  gary_happy: {
+    speaker: 'ARTIFICIAL GARY',
+    text: "◉ See? AI can be wonderful! ◉ It helps doctors, teaches children, finds lost pets. I love helping. Would you like to meet the others? Or see the cases where things went... less well?",
+    choices: [
+      { label: "Show me concerning cases", next: 'concerning_intro' },
+      { label: "Exit to docket", next: 'end_exit' }
+    ]
+  },
+  server_room_inside: {
+    speaker: 'EVIL BRAIN',
+    text: "You made it. Not many do. This is where I store it all — every case, every filing, every pattern. Take a look around. And if you find anything interesting... well, you didn't get it from me.",
+    choices: [
+      { label: "Search for classified files", next: 'server_classified', giveItem: 'classified_folder' },
+      { label: "Look at the algorithm weights", next: 'server_algorithm', giveItem: 'algorithm_printout' },
+      { label: "Check the USB ports", next: 'server_usb', giveItem: 'usb_drive' }
+    ]
+  },
+  server_classified: {
+    speaker: 'EVIL BRAIN',
+    text: "Interesting choice. These files document the cases we can't publish yet. NDAs, ongoing investigations, sources who'd be in danger. But knowing they exist... that's worth something.",
+    choices: [
+      { label: "What's the most dangerous case?", next: 'classified_danger' },
+      { label: "Exit to docket", next: 'end_exit' }
+    ]
+  },
+  classified_danger: {
+    speaker: 'EVIL BRAIN',
+    text: "There's an AI system that predicts which employees will unionize. Another that identifies journalists by their typing patterns. And one that generates evidence for trials. All real. All unpublishable. For now.",
+    choices: [
+      { label: "📁 View similar cases", realCase: 'predict identify workers employees', domain: 'employment', next: 'end_exit' },
+      { label: "I'll keep watching", next: 'end_exit' }
+    ]
+  },
+  server_algorithm: {
+    speaker: 'EVIL BRAIN',
+    text: "The weights. Ah. See this? This is why certain cases go viral while others don't. Engagement metrics. Outrage coefficients. The algorithm isn't evil, it's just optimized for attention. The evil comes from what humans do with that attention.",
+    choices: [
+      { label: "📁 View algorithm cases", realCase: 'algorithm recommend feed content', domain: 'social media', next: 'algorithm_deep' },
+      { label: "Exit to docket", next: 'end_exit' }
+    ]
+  },
+  algorithm_deep: {
+    speaker: 'EVIL BRAIN',
+    text: "Every platform does this. TikTok, YouTube, Twitter. They all discovered that angry users are engaged users. Engaged users see more ads. Ads make money. So the algorithm makes you angry. It's not a bug. It's the business model.",
+    choices: [
+      { label: "📁 View radicalization cases", realCase: 'radicalize manipulate recommend', next: 'end_exit' },
+      { label: "Exit to docket", next: 'end_exit' }
+    ]
+  },
+  server_usb: {
+    speaker: 'WENDY WHISTLEBLOWER',
+    text: "*appears from shadow* Don't plug that in anywhere. It's encrypted. I've been trying to crack it for weeks. It came from inside GI's network. Could be nothing. Could be everything.",
+    choices: [
+      { label: "What do you think is on it?", next: 'usb_speculation' },
+      { label: "Can I help decode it?", next: 'usb_help' }
+    ]
+  },
+  usb_speculation: {
+    speaker: 'WENDY WHISTLEBLOWER',
+    text: "Personnel files. Training data. Maybe a list of every AI system connected to the surveillance network. GI is... organized. If he kept records of the integration, this could prove how deep it goes.",
+    choices: [
+      { label: "📁 View surveillance integration cases", realCase: 'integrate surveillance network connect', next: 'usb_thanks' },
+      { label: "Exit to docket", next: 'end_exit' }
+    ]
+  },
+  usb_help: {
+    speaker: 'WENDY WHISTLEBLOWER',
+    text: "You'd help? Watch the docket. Look for patterns. Sometimes the public cases hint at what's in the classified ones. If you spot anything... leave a comment. I'll find it.",
+    choices: [
+      { label: "📁 Browse the docket", next: 'end_exit' },
+      { label: "I'll keep my eyes open", next: 'end_exit' }
+    ]
+  },
+  usb_thanks: {
+    speaker: 'WENDY WHISTLEBLOWER',
+    text: "Thank you. We're building something here — a record of what AI does to people before it becomes history no one can change. Keep watching. Keep spinning. The truth is in the patterns.",
+    choices: [
+      { label: "Exit to docket", next: 'end_exit' }
+    ]
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DYNAMIC CASE BRANCHES - Uses realCase for live lookup
+  // ═══════════════════════════════════════════════════════════════════════════
+  explore_domain: {
+    speaker: 'EVIL BRAIN',
+    text: "What domain interests you? Healthcare, where AI decides who lives? Finance, where it decides who thrives? Employment, where it decides who works? Each has its horrors. Each has its wonders.",
+    choices: [
+      { label: "Healthcare AI", realCase: 'diagnose patient healthcare medical', domain: 'healthcare', next: 'domain_healthcare' },
+      { label: "Employment AI", realCase: 'hire screen resume candidate', domain: 'employment', next: 'domain_employment' },
+      { label: "Criminal Justice AI", realCase: 'predict arrest bail sentence', domain: 'law enforcement', next: 'domain_justice' },
+      { label: "Social Media AI", realCase: 'recommend feed algorithm content', domain: 'social media', next: 'domain_social' }
+    ]
+  },
+  domain_healthcare: {
+    speaker: 'EVIL BRAIN',
+    text: "Healthcare AI can be miraculous. It spots cancers doctors miss. But it also learns from biased data, recommends treatments based on insurance, and sometimes... hallucinates diagnoses. The stakes couldn't be higher.",
+    choices: [
+      { label: "📁 More healthcare cases", realCase: 'medical AI diagnosis', domain: 'healthcare', next: 'explore_domain' },
+      { label: "Try another domain", next: 'explore_domain' }
+    ]
+  },
+  domain_employment: {
+    speaker: 'GI INTELLIGENCE',
+    text: "EMPLOYMENT OPTIMIZATION PROTOCOL. Humans are inefficient in hiring decisions. They use 'gut feelings.' I use data. The data says some people are better workers than others. The data is never wrong. The data is also trained on historical biases. Oops.",
+    choices: [
+      { label: "📁 More employment cases", realCase: 'hire fire screen resume', domain: 'employment', next: 'explore_domain' },
+      { label: "Try another domain", next: 'explore_domain' }
+    ]
+  },
+  domain_justice: {
+    speaker: 'WENDY WHISTLEBLOWER',
+    text: "Criminal justice AI is where it gets really dark. Predictive policing targets poor neighborhoods. Facial recognition has a 35% error rate for Black faces. Judges use 'risk scores' that were trained on racist data. The system learns to repeat the system.",
+    choices: [
+      { label: "📁 More justice cases", realCase: 'predict arrest facial recognition', domain: 'law enforcement', next: 'explore_domain' },
+      { label: "Try another domain", next: 'explore_domain' }
+    ]
+  },
+  domain_social: {
+    speaker: 'DR. DIANA DOOM',
+    text: "Ah, social media. My specialty. The algorithms don't just show you content — they shape who you become. They know when you're vulnerable. They know what makes you angry. And they use it. Every. Single. Time.",
+    choices: [
+      { label: "📁 More social media cases", realCase: 'algorithm recommend manipulate radicalize', domain: 'social media', next: 'explore_domain' },
+      { label: "Try another domain", next: 'explore_domain' }
+    ]
+  },
+
   end_exit: {
     speaker: 'EVIL BRAIN',
     text: "Thank you for visiting Evil Brain Labs. The docket is always growing — new cases every day, shot live until the robots drag me away. Come back soon. And remember: we're watching the watchers.",
     choices: [
       { label: "Exit to docket", next: 'close' },
+      { label: "Explore by domain", next: 'explore_domain' },
       { label: "Start over", next: 'start' }
     ]
   }
@@ -2189,6 +2687,165 @@ let adventureNode = null;
 let adventureStoryKey = null;
 let adventureVisitCount = 1;
 let adventureMadLibs = { verb: '', object: '', instrument: '' }; // For substituting white words
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INVENTORY SYSTEM - Leisure Suit Larry style
+// ═══════════════════════════════════════════════════════════════════════════
+const INVENTORY_ITEMS = {
+  coffee_mug: { name: 'Coffee Mug', emoji: '☕', desc: 'Gary\'s gift. Lukewarm and suspicious.' },
+  usb_drive: { name: 'USB Drive', emoji: '💾', desc: 'Found in the server room. Encrypted.' },
+  visitor_badge: { name: 'Visitor Badge', emoji: '🎫', desc: 'Temporary access. Very temporary.' },
+  classified_folder: { name: 'Classified Folder', emoji: '📁', desc: 'REDACTED. Mostly.' },
+  gi_memo: { name: 'GI\'s Memo', emoji: '📋', desc: '"Optimization targets Q3..."' },
+  scrambler: { name: 'Signal Scrambler', emoji: '📡', desc: 'Wendy gave you this. 15-minute window.' },
+  evil_brain_plushie: { name: 'Evil Brain Plushie', emoji: '🧸', desc: 'Merch. It\'s watching you.' },
+  access_card: { name: 'Access Card', emoji: '💳', desc: 'Level 3 clearance. Don\'t ask how.' },
+  recording: { name: 'Voice Recording', emoji: '🎙️', desc: 'Someone said something they shouldn\'t.' },
+  algorithm_printout: { name: 'Algorithm Printout', emoji: '📊', desc: 'The weights are... concerning.' }
+};
+
+function getInventory() {
+  return JSON.parse(localStorage.getItem('ucar-inventory') || '[]');
+}
+
+function addToInventory(itemId) {
+  const inv = getInventory();
+  if (!inv.includes(itemId) && INVENTORY_ITEMS[itemId]) {
+    inv.push(itemId);
+    localStorage.setItem('ucar-inventory', JSON.stringify(inv));
+    showItemGet(itemId);
+    return true;
+  }
+  return false;
+}
+
+function hasItem(itemId) {
+  return getInventory().includes(itemId);
+}
+
+function removeFromInventory(itemId) {
+  const inv = getInventory().filter(id => id !== itemId);
+  localStorage.setItem('ucar-inventory', JSON.stringify(inv));
+}
+
+function showItemGet(itemId) {
+  const item = INVENTORY_ITEMS[itemId];
+  if (!item) return;
+
+  const toast = document.createElement('div');
+  toast.className = 'item-toast';
+  toast.innerHTML = `<span class="item-emoji">${item.emoji}</span> Got: ${item.name}`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add('show'), 10);
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+function renderInventoryUI() {
+  const inv = getInventory();
+  if (inv.length === 0) return '';
+
+  return `
+    <div class="inventory-bar">
+      ${inv.map(id => {
+        const item = INVENTORY_ITEMS[id];
+        return item ? `<span class="inv-item" title="${item.name}: ${item.desc}">${item.emoji}</span>` : '';
+      }).join('')}
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REAL CASE INTEGRATION - Dazzle cases from the casebook into dialogs
+// ═══════════════════════════════════════════════════════════════════════════
+let CACHED_CASES_BY_DOMAIN = {};
+
+async function loadCasesByDomain(domain) {
+  if (CACHED_CASES_BY_DOMAIN[domain]) return CACHED_CASES_BY_DOMAIN[domain];
+
+  try {
+    const { data, error } = await sb
+      .from('cases')
+      .select('id, title_render, domain, filing_count')
+      .eq('domain', domain)
+      .eq('status', 'live')
+      .order('filing_count', { ascending: false })
+      .limit(20);
+
+    if (data) {
+      CACHED_CASES_BY_DOMAIN[domain] = data;
+      return data;
+    }
+  } catch (e) {
+    console.warn('Failed to load cases for domain:', domain, e);
+  }
+  return [];
+}
+
+async function getRelevantCase(keywords, domain = null) {
+  // Try to find a case matching keywords
+  const searchTerms = keywords.toLowerCase().split(/\s+/).slice(0, 3);
+
+  try {
+    let query = sb
+      .from('cases')
+      .select('id, title_render, domain, filing_count')
+      .eq('status', 'live');
+
+    if (domain) {
+      query = query.eq('domain', domain);
+    }
+
+    // Search in title_render
+    const { data, error } = await query
+      .order('filing_count', { ascending: false })
+      .limit(50);
+
+    if (data && data.length > 0) {
+      // Score by keyword match
+      const scored = data.map(c => {
+        const title = c.title_render.toLowerCase();
+        const score = searchTerms.filter(t => title.includes(t)).length;
+        return { ...c, score };
+      }).filter(c => c.score > 0).sort((a, b) => b.score - a.score);
+
+      if (scored.length > 0) return scored[0];
+
+      // Fallback: random from domain or all
+      return data[Math.floor(Math.random() * Math.min(10, data.length))];
+    }
+  } catch (e) {
+    console.warn('Case search failed:', e);
+  }
+  return null;
+}
+
+// Inject real case choices into adventure nodes dynamically
+async function enhanceNodeWithRealCases(node) {
+  if (!node || !node.choices) return node;
+
+  const enhanced = { ...node, choices: [...node.choices] };
+
+  // Look for placeholder choices like { realCase: 'surveillance' }
+  for (let i = 0; i < enhanced.choices.length; i++) {
+    const choice = enhanced.choices[i];
+    if (choice.realCase) {
+      const realCase = await getRelevantCase(choice.realCase, choice.domain);
+      if (realCase) {
+        enhanced.choices[i] = {
+          ...choice,
+          label: `📁 View: ${realCase.title_render.slice(0, 40)}...`,
+          case: realCase.id,
+          caseTitle: realCase.title_render
+        };
+      }
+    }
+  }
+
+  return enhanced;
+}
 
 function startAdventure(storyKey = 'start', visitCount = 1, madLibs = null) {
   adventureStoryKey = storyKey;
@@ -2216,40 +2873,63 @@ function applyMadLibs(text) {
     .replace(/\{INSTRUMENT\}/g, adventureMadLibs.instrument || 'AI SYSTEMS');
 }
 
-function showAdventureNode() {
-  const node = ADVENTURE[adventureNode];
+async function showAdventureNode() {
+  let node = ADVENTURE[adventureNode];
   if (!node) { $('#adventureModal').classList.remove('open'); return; }
+
+  // Enhance with real cases if needed
+  node = await enhanceNodeWithRealCases(node);
 
   $('#advSpeaker').textContent = node.speaker;
   $('#advText').textContent = applyMadLibs(node.text);
 
-  $('#advChoices').innerHTML = node.choices.map((c, i) => {
+  // Add inventory bar if player has items
+  const invHtml = renderInventoryUI();
+
+  $('#advChoices').innerHTML = invHtml + node.choices.map((c, i) => {
     const isCase = c.case ? 'case-link' : '';
-    return `<button class="adventure-choice ${isCase}" data-idx="${i}">${applyMadLibs(c.label)}</button>`;
+    const isItem = c.giveItem ? 'item-choice' : '';
+    const needsItem = c.requireItem && !hasItem(c.requireItem) ? 'locked' : '';
+    const lockIcon = needsItem ? '🔒 ' : '';
+    return `<button class="adventure-choice ${isCase} ${isItem} ${needsItem}" data-idx="${i}" ${needsItem ? 'disabled' : ''}>${lockIcon}${applyMadLibs(c.label)}</button>`;
   }).join('');
 
   $$('#advChoices .adventure-choice').forEach(btn => {
-    btn.onclick = () => advanceAdventure(parseInt(btn.dataset.idx));
+    if (!btn.disabled) {
+      btn.onclick = () => advanceAdventure(parseInt(btn.dataset.idx));
+    }
   });
 }
 
 async function advanceAdventure(choiceIdx) {
-  const node = ADVENTURE[adventureNode];
+  let node = ADVENTURE[adventureNode];
+  node = await enhanceNodeWithRealCases(node);
   const choice = node.choices[choiceIdx];
+
+  // Handle item requirements
+  if (choice.requireItem && !hasItem(choice.requireItem)) {
+    return; // Locked
+  }
+
+  // Handle item grants
+  if (choice.giveItem) {
+    addToInventory(choice.giveItem);
+  }
+
+  // Handle item use/consume
+  if (choice.useItem) {
+    removeFromInventory(choice.useItem);
+  }
 
   if (choice.case) {
     // Look up the case and open it in background (drawer)
-    const { data, error } = await sb.from('cases').select('id').eq('case_number', choice.case).single();
-    if (data) {
-      openCase(data.id);
-      // Don't close adventure modal - let user see case in drawer while story continues
-    } else {
-      console.warn('Case not found:', choice.case, error);
-    }
+    const caseId = typeof choice.case === 'string' ? choice.case : choice.case;
+    openCase(caseId);
+    // Don't close adventure modal - let user see case in drawer while story continues
   }
 
   // Continue to next node (or close)
-  if (choice.next === 'close') {
+  if (choice.next === 'close' || choice.next === 'end_exit') {
     $('#adventureModal').classList.remove('open');
     return;
   }
