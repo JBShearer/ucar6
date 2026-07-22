@@ -373,10 +373,10 @@ main{max-width:1100px;margin:0 auto;padding:16px}
 .adventure-choice.locked{opacity:.4;cursor:not-allowed;border-style:dashed}
 .adventure-choice.locked:hover{transform:none;background:transparent}
 
-/* Inventory bar */
-.inventory-bar{display:flex;gap:8px;padding:12px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);
-  border-radius:6px;margin-bottom:16px;flex-wrap:wrap}
-.inv-item{font-size:20px;cursor:help;transition:transform .2s}
+/* Inventory - compact corner display */
+.inventory-bar{position:absolute;top:10px;right:50px;display:flex;gap:4px;padding:4px 8px;
+  background:rgba(0,0,0,.6);border:1px solid rgba(139,92,246,.5);border-radius:4px}
+.inv-item{font-size:16px;cursor:help;transition:transform .2s;filter:drop-shadow(0 0 4px rgba(255,215,0,.5))}
 .inv-item:hover{transform:scale(1.3)}
 
 /* Item toast notification */
@@ -2884,10 +2884,21 @@ async function showAdventureNode() {
   $('#advSpeaker').textContent = node.speaker;
   $('#advText').textContent = applyMadLibs(node.text);
 
-  // Add inventory bar if player has items
-  const invHtml = renderInventoryUI();
+  // Add inventory to adventure box (positioned absolutely in corner)
+  const existingInv = document.querySelector('.adventure-box .inventory-bar');
+  if (existingInv) existingInv.remove();
+  const inv = getInventory();
+  if (inv.length > 0) {
+    const invEl = document.createElement('div');
+    invEl.className = 'inventory-bar';
+    invEl.innerHTML = inv.map(id => {
+      const item = INVENTORY_ITEMS[id];
+      return item ? `<span class="inv-item" title="${item.name}: ${item.desc}">${item.emoji}</span>` : '';
+    }).join('');
+    document.querySelector('.adventure-box')?.appendChild(invEl);
+  }
 
-  $('#advChoices').innerHTML = invHtml + node.choices.map((c, i) => {
+  $('#advChoices').innerHTML = node.choices.map((c, i) => {
     const isCase = c.case ? 'case-link' : '';
     const isItem = c.giveItem ? 'item-choice' : '';
     const needsItem = c.requireItem && !hasItem(c.requireItem) ? 'locked' : '';
