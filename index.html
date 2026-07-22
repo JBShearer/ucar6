@@ -3685,8 +3685,10 @@ function wireCaseButtons(root) {
       const isTracked = MY_TRACKS.has(caseId);
 
       if (isTracked) {
+        if(USER) await sb.from('tracks').delete().eq('user_id',USER.id).eq('case_id',caseId);
         MY_TRACKS.delete(caseId);
       } else {
+        if(USER) await sb.from('tracks').upsert({ user_id: USER.id, case_id: caseId });
         MY_TRACKS.add(caseId);
       }
 
