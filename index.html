@@ -4711,15 +4711,23 @@ async function openCase(caseId){
   });
 
   panel.querySelector('[data-action="track"]').onclick = async () => {
-    if(!USER) return;
+    const btn = panel.querySelector('[data-action="track"]');
     if(MY_TRACKS.has(caseId)){
-      await sb.from('tracks').delete().eq('user_id',USER.id).eq('case_id',caseId);
+      if(USER) await sb.from('tracks').delete().eq('user_id',USER.id).eq('case_id',caseId);
       MY_TRACKS.delete(caseId);
+      btn.classList.remove('on');
+      btn.textContent = '☆ Track';
     } else {
-      await sb.from('tracks').upsert({ user_id: USER.id, case_id: caseId });
+      if(USER) await sb.from('tracks').upsert({ user_id: USER.id, case_id: caseId });
       MY_TRACKS.add(caseId);
+      btn.classList.add('on');
+      btn.textContent = '★ Tracked';
     }
-    openCase(caseId);
+    localStorage.setItem('ucar-tracks', JSON.stringify([...MY_TRACKS]));
+    updateTrackedCount();
+    if ($('#casebook').classList.contains('open')) {
+      loadTrackedCases();
+    }
   };
 
   panel.querySelector('[data-action="share"]').onclick = async () => {
