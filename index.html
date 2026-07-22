@@ -3338,25 +3338,43 @@ async function loadTopicOptions() {
     .order('term', { ascending: true })
     .limit(200);
 
-  // For now, estimate counts by term frequency in case titles
-  // This is a workaround until filings.actor/target are populated
-  const allTitles = (cases || []).map(c => c.title_render?.toLowerCase() || '').join(' ');
+  // Count cases linked to each actor/target via actor_id/target_id
+  const { data: casesWithActors } = await sb.from('cases')
+    .select('actor_id')
+    .eq('status', 'live')
+    .not('actor_id', 'is', null);
 
-  TOPIC_OPTIONS.who = (actors || []).map(t => {
-    // Count approximate occurrences in titles
-    const regex = new RegExp(t.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-    const matches = allTitles.match(regex);
-    return { id: t.id, term: t.term, use_count: matches ? matches.length : 0 };
-  }).filter(t => t.use_count > 0).sort((a, b) => b.use_count - a.use_count);
+  const { data: casesWithTargets } = await sb.from('cases')
+    .select('target_id')
+    .eq('status', 'live')
+    .not('target_id', 'is', null);
 
-  TOPIC_OPTIONS.whom = (targets || []).map(t => {
-    const regex = new RegExp(t.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-    const matches = allTitles.match(regex);
-    return { id: t.id, term: t.term, use_count: matches ? matches.length : 0 };
-  }).filter(t => t.use_count > 0).sort((a, b) => b.use_count - a.use_count);
+  // Count occurrences of each actor_id
+  const actorCounts = {};
+  (casesWithActors || []).forEach(c => {
+    actorCounts[c.actor_id] = (actorCounts[c.actor_id] || 0) + 1;
+  });
 
-  console.log(`WHO filter: ${TOPIC_OPTIONS.who.length} actors with matches`);
-  console.log(`WHOM filter: ${TOPIC_OPTIONS.whom.length} targets with matches`);
+  // Count occurrences of each target_id
+  const targetCounts = {};
+  (casesWithTargets || []).forEach(c => {
+    targetCounts[c.target_id] = (targetCounts[c.target_id] || 0) + 1;
+  });
+
+  TOPIC_OPTIONS.who = (actors || []).map(t => ({
+    id: t.id,
+    term: t.term,
+    use_count: actorCounts[t.id] || 0
+  })).filter(t => t.use_count > 0).sort((a, b) => b.use_count - a.use_count);
+
+  TOPIC_OPTIONS.whom = (targets || []).map(t => ({
+    id: t.id,
+    term: t.term,
+    use_count: targetCounts[t.id] || 0
+  })).filter(t => t.use_count > 0).sort((a, b) => b.use_count - a.use_count);
+
+  console.log(`WHO filter: ${TOPIC_OPTIONS.who.length} actors with linked cases`);
+  console.log(`WHOM filter: ${TOPIC_OPTIONS.whom.length} targets with linked cases`);
 
   // Fall back to seed data if database is empty
   if (TOPIC_OPTIONS.who.length === 0) {

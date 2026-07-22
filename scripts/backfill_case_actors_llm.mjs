@@ -1,4 +1,4 @@
-// Backfill actor_id and target_id on cases using LLM extraction
+// Backfill actor_id and target_id on cases using LLM extraction FROM FILINGS
 // Run with: node scripts/backfill_case_actors_llm.mjs
 
 const HYPERSPACE_URL = 'http://localhost:6655/anthropic/v1/messages';
@@ -8,17 +8,17 @@ const MODEL = 'claude-sonnet-4-20250514';
 const SUPABASE_URL = 'https://znhsnishdqrmumxbgobq.supabase.co';
 const SERVICE_KEY = '__PURGED_SUPABASE_KEY__';
 
-const PROMPT = `Extract WHO and WHOM from this AI use case title.
+const PROMPT = `Extract WHO (company/org deploying AI) and WHOM (people affected) from these news articles about an AI use case.
 
-WHO = the company/organization deploying or creating the AI (e.g., Microsoft, Google, OpenAI, Meta, Amazon, Apple, Police, Hospital, Government, Researchers)
-WHOM = who is affected/targeted by the AI (e.g., Workers, Students, Patients, Job Applicants, Users, Citizens, Drivers, Children, Employees)
+PRIORITIZE SPECIFIC COMPANIES over generic terms:
+- If Microsoft, Google, Meta, Amazon, Apple, OpenAI, SAP, IBM, Oracle, Adobe, Tesla, Uber, etc. are mentioned → use that name
+- Only use generic terms (Researchers, Developers, Employers) if NO specific company is named
 
-Be specific but normalize to common terms. If the title doesn't clearly indicate a WHO or WHOM, return null for that field.
-
-CASE TITLE: {title}
+HEADLINES & SUMMARIES:
+{articles}
 
 Return JSON only:
-{"actor": "Company/Org Name or null", "target": "Affected Group or null"}`;
+{"actor": "Specific Company or Generic Term", "target": "Affected Group"}`;
 
 async function sb(path, options = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -48,7 +48,7 @@ async function callLLM(prompt) {
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 200,
+      max_tokens: 100,
       messages: [{ role: 'user', content: prompt }]
     })
   });
@@ -64,17 +64,15 @@ async function callLLM(prompt) {
 }
 
 async function getOrCreateTerm(kind, term) {
-  if (!term || term === 'null') return null;
+  if (!term || term === 'Unknown' || term === 'null' || term === null) return null;
   const norm = term.toLowerCase().trim();
   if (!norm) return null;
 
-  // Try exact match first
   const existing = await sb(`vocab_terms?kind=eq.${kind}&term=eq.${encodeURIComponent(norm)}&limit=1`);
   if (existing.length > 0) {
     return existing[0].id;
   }
 
-  // Create new term
   const created = await sb('vocab_terms', {
     method: 'POST',
     body: JSON.stringify({ kind, term: norm, status: 'active' })
@@ -83,28 +81,41 @@ async function getOrCreateTerm(kind, term) {
 }
 
 async function main() {
-  console.log('=== Backfill Case Actor/Target via LLM ===\n');
+  console.log('=== Backfill Case Actor/Target FROM FILINGS ===\n');
 
-  let offset = 0;
   let total = 0;
   let updated = 0;
   let errors = 0;
+  const processed = new Set();
 
   while (true) {
-    // Get cases without actor_id or target_id
+    // Get cases missing actor_id or target_id, with their filings
     const cases = await sb(
-      `cases?select=id,title_render,actor_id,target_id&status=eq.live&or=(actor_id.is.null,target_id.is.null)&order=created_at.desc&offset=${offset}&limit=50`
+      `cases?select=id,title_render,actor_id,target_id,filings(headline,summary)&status=eq.live&or=(actor_id.is.null,target_id.is.null)&limit=50`
     );
 
-    if (cases.length === 0) break;
+    const fresh = cases.filter(c => !processed.has(c.id));
+    if (fresh.length === 0) break;
 
-    console.log(`\nProcessing batch at offset ${offset} (${cases.length} cases)...`);
+    console.log(`\nProcessing batch (${fresh.length} cases)...`);
 
-    for (const c of cases) {
-      process.stdout.write(`  ${c.title_render?.slice(0, 50)}... `);
+    for (const c of fresh) {
+      processed.add(c.id);
+
+      // Skip if no filings
+      if (!c.filings || c.filings.length === 0) {
+        continue;
+      }
+
+      // Build article text from filings (up to 5)
+      const articles = c.filings.slice(0, 5).map(f =>
+        `HEADLINE: ${f.headline}\nSUMMARY: ${f.summary}`
+      ).join('\n\n');
+
+      process.stdout.write(`  ${c.title_render?.slice(0, 45)}... `);
 
       try {
-        const prompt = PROMPT.replace('{title}', c.title_render || '');
+        const prompt = PROMPT.replace('{articles}', articles);
         const result = await callLLM(prompt);
 
         const updates = {};
@@ -127,7 +138,7 @@ async function main() {
           console.log(`✓ ${result.actor || '-'} → ${result.target || '-'}`);
           updated++;
         } else {
-          console.log('- no actor/target found');
+          console.log(`- no updates`);
         }
       } catch (err) {
         console.log(`✗ ${err.message.slice(0, 40)}`);
@@ -135,20 +146,10 @@ async function main() {
       }
 
       total++;
-
-      // Rate limit
-      await new Promise(r => setTimeout(r, 100));
+      await new Promise(r => setTimeout(r, 80));
     }
 
-    offset += cases.length;
-
-    console.log(`\n--- Progress: ${total} processed, ${updated} updated, ${errors} errors ---`);
-
-    // Safety limit
-    if (total >= 500) {
-      console.log('\nReached batch limit (500). Run again to continue.');
-      break;
-    }
+    console.log(`\n[${total} processed, ${updated} updated, ${errors} errors]\n`);
   }
 
   console.log(`\n=== Done ===`);
