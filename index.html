@@ -3323,21 +3323,40 @@ async function loadTopicOptions() {
   }).filter(Boolean);
 
   // WHO/WHOM - load from vocab_terms (populated by extraction)
+  // Note: These don't have use_count yet - would need to count from filings
   const { data: actors } = await sb.from('vocab_terms')
     .select('id, term')
     .eq('kind', 'actor')
+    .eq('status', 'active')
     .order('term', { ascending: true })
-    .limit(100);
+    .limit(200);
 
   const { data: targets } = await sb.from('vocab_terms')
     .select('id, term')
     .eq('kind', 'target')
+    .eq('status', 'active')
     .order('term', { ascending: true })
-    .limit(100);
+    .limit(200);
 
-  // Store WHO/WHOM options separately (they don't cascade yet)
-  TOPIC_OPTIONS.who = (actors || []).map(t => ({ id: t.id, term: t.term, use_count: 1 }));
-  TOPIC_OPTIONS.whom = (targets || []).map(t => ({ id: t.id, term: t.term, use_count: 1 }));
+  // For now, estimate counts by term frequency in case titles
+  // This is a workaround until filings.actor/target are populated
+  const allTitles = (cases || []).map(c => c.title_render?.toLowerCase() || '').join(' ');
+
+  TOPIC_OPTIONS.who = (actors || []).map(t => {
+    // Count approximate occurrences in titles
+    const regex = new RegExp(t.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    const matches = allTitles.match(regex);
+    return { id: t.id, term: t.term, use_count: matches ? matches.length : 0 };
+  }).filter(t => t.use_count > 0).sort((a, b) => b.use_count - a.use_count);
+
+  TOPIC_OPTIONS.whom = (targets || []).map(t => {
+    const regex = new RegExp(t.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    const matches = allTitles.match(regex);
+    return { id: t.id, term: t.term, use_count: matches ? matches.length : 0 };
+  }).filter(t => t.use_count > 0).sort((a, b) => b.use_count - a.use_count);
+
+  console.log(`WHO filter: ${TOPIC_OPTIONS.who.length} actors with matches`);
+  console.log(`WHOM filter: ${TOPIC_OPTIONS.whom.length} targets with matches`);
 
   // Fall back to seed data if database is empty
   if (TOPIC_OPTIONS.who.length === 0) {
