@@ -10,6 +10,53 @@ const EMBED_MODEL = 'text-embedding-3-small';
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://znhsnishdqrmumxbgobq.supabase.co';
 const SERVICE_KEY = '__PURGED_SUPABASE_KEY__';
 
+// Stub URL patterns - these are placeholders, not real articles
+const STUB_URL_PATTERNS = [
+  /\/sounds\/play\//i,
+  /\/iplayer\//i,
+  /\/live:/i,
+  /\/podcasts\//i,
+  /\/radio\//i
+];
+
+function isStubUrl(url) {
+  return STUB_URL_PATTERNS.some(pattern => pattern.test(url));
+}
+
+async function findRealArticleUrl(headline, domain) {
+  // Search for the real article using the headline
+  const searchQuery = `${headline} site:${domain}`;
+  try {
+    const res = await fetch(HYPERSPACE_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${HYPERSPACE_TOKEN}`,
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        messages: [{
+          role: 'user',
+          content: `Find the real news article URL for this headline. Search ${domain} for: "${headline}"
+
+Return ONLY the URL, nothing else. If you can't find it, return "NOT_FOUND".`
+        }]
+      })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const url = data.content?.[0]?.text?.trim();
+    if (url && url !== 'NOT_FOUND' && url.startsWith('http')) {
+      return url;
+    }
+  } catch (e) {
+    console.log(`  Could not find real URL: ${e.message}`);
+  }
+  return null;
+}
+
 const PROMPT = `Extract for UCAR docket. The output becomes a case title: "[VERB] [OBJECT] · WITH [INSTRUMENT]"
 
 EXTRACT LIBERALLY! If an article describes what AI CAN do, IS doing, COULD do, or WILL do — that's a use case. Include:
@@ -203,8 +250,22 @@ async function getOrCreateTerm(kind, term) {
 
 async function processOne(prospect) {
   const { id, url, title, raw_text, og_image } = prospect;
+  let finalUrl = url;
 
   try {
+    // Check for stub URLs and try to find real article
+    if (isStubUrl(url)) {
+      console.log(`  Stub URL detected, searching for real article...`);
+      const domain = new URL(url).hostname.replace(/^www\./, '');
+      const realUrl = await findRealArticleUrl(title, domain);
+      if (realUrl) {
+        console.log(`  Found real URL: ${realUrl}`);
+        finalUrl = realUrl;
+      } else {
+        console.log(`  Could not find real article, using original URL`);
+      }
+    }
+
     // Call Opus
     const result = await callOpus(raw_text);
 
@@ -272,7 +333,7 @@ async function processOne(prospect) {
     }
 
     // Create filing (upsert to handle duplicates)
-    const sourceDomain = new URL(url).hostname.replace(/^www\./, '');
+    const sourceDomain = new URL(finalUrl).hostname.replace(/^www\./, '');
 
     const filingResult = await sb('filings', {
       method: 'POST',
@@ -285,7 +346,7 @@ async function processOne(prospect) {
         published_at: result.published_at || null,
         actor: result.actor || null,
         target: result.target || null,
-        source_url: url,
+        source_url: finalUrl,
         source_domain: sourceDomain,
         domain: result.domain?.toLowerCase() || null,
         impact: result.impact || 3,
