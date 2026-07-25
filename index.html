@@ -4059,7 +4059,7 @@ async function loadFeed(append = false){
   if(q){
     const r = await fetch(`${SUPABASE_URL}/functions/v1/api?action=search`, {
       method:'POST',
-      headers:{ 'content-type':'application/json', 'authorization':`Bearer ${ANON_KEY}`, 'apikey': ANON_KEY },
+      headers:{ 'content-type':'application/json', 'authorization':`Bearer ${PUBLISHABLE_KEY}`, 'apikey': PUBLISHABLE_KEY },
       body: JSON.stringify({ q })
     }).then(r=>r.json()).catch(()=>({results:[]}));
     feed.innerHTML = (r.results?.length)
@@ -4441,7 +4441,7 @@ async function openArticle(articleId){
   // Get similar cases
   const sim = c ? await fetch(`${SUPABASE_URL}/functions/v1/api?action=similar`, {
     method:'POST',
-    headers:{ 'content-type':'application/json', 'authorization':`Bearer ${ANON_KEY}`, 'apikey': ANON_KEY },
+    headers:{ 'content-type':'application/json', 'authorization':`Bearer ${PUBLISHABLE_KEY}`, 'apikey': PUBLISHABLE_KEY },
     body: JSON.stringify({ case_id: c.id })
   }).then(r=>r.json()).catch(()=>({results:[]})) : {results:[]};
 
@@ -4681,7 +4681,7 @@ async function openCase(caseId){
       .eq('case_id', caseId).eq('status','live').order('created_at',{ascending:false}).limit(30),
     fetch(`${SUPABASE_URL}/functions/v1/api?action=similar`, {
       method:'POST',
-      headers:{ 'content-type':'application/json', 'authorization':`Bearer ${ANON_KEY}`, 'apikey': ANON_KEY },
+      headers:{ 'content-type':'application/json', 'authorization':`Bearer ${PUBLISHABLE_KEY}`, 'apikey': PUBLISHABLE_KEY },
       body: JSON.stringify({ case_id: caseId })
     }).then(r=>r.json()).catch(()=>({results:[]})),
   ]);
@@ -4884,7 +4884,7 @@ $('#submitCorrection').onclick = async () => {
         headers: {
           'content-type': 'application/json',
           'authorization': `Bearer ${session.access_token}`,
-          'apikey': ANON_KEY
+          'apikey': PUBLISHABLE_KEY
         },
         body: JSON.stringify({
           case_id: SUBMIT_CASE_ID,
