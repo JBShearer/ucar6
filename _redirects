@@ -1,0 +1,5 @@
+# SPA fallback. Cloudflare Pages serves index.html for any path that is not a
+# real file, with a 200 rather than a redirect, so the router sees the real URL.
+# This replaces the 404.html copy trick GitHub Pages required — the one that
+# silently broke every deep link when its asset hash went stale.
+/*    /index.html   200

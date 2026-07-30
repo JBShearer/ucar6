@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "include": ["/case/*"],
+  "exclude": ["/assets/*", "/favicon.ico", "/og-image.png", "/CNAME"]
+}
