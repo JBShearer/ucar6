@@ -30,7 +30,7 @@ async function sb(path) {
 }
 
 export async function onRequest(context) {
-  const { params, next } = context;
+  const { params, next, request } = context;
   const page = await next();               // the static index.html Pages would serve
 
   try {
@@ -42,11 +42,24 @@ export async function onRequest(context) {
     );
     if (!kase) return page;
 
-    // Newest filing supplies the human sentence and the social image.
-    const [filing] = await sb(
-      `filings?case_id=eq.${id}&status=eq.live&select=headline_render,headline,summary,image_url` +
-      `&order=published_at.desc.nullslast&limit=1`,
-    );
+    // WHICH ARTICLE IS THIS LINK ABOUT?
+    //
+    // A shared link carries ?f=<filing> — the article the sender was actually
+    // reading. Without it this fell back to whichever filing was NEWEST in the
+    // case, so sharing a 2023 story unfurled with a 2026 headline and a
+    // stranger's photograph. The card has to describe what the sender saw.
+    const want = new URL(request.url).searchParams.get("f");
+    const cols = "headline_render,headline,summary,image_url";
+    let filing = null;
+    if (want && UUID.test(want)) {
+      [filing] = await sb(`filings?id=eq.${want}&case_id=eq.${id}&status=eq.live&select=${cols}&limit=1`);
+    }
+    if (!filing) {
+      [filing] = await sb(
+        `filings?case_id=eq.${id}&status=eq.live&select=${cols}` +
+        `&order=published_at.desc.nullslast&limit=1`,
+      );
+    }
 
     const no = `CASE #${String(kase.case_number ?? 0).padStart(4, "0")}`;
     const title = `${no} · ${kase.title_render}`;
@@ -60,7 +73,7 @@ export async function onRequest(context) {
       `${n} filing${n === 1 ? "" : "s"} on the public docket.`
     ).slice(0, 300);
     const image = filing?.image_url || `${SITE}/og-image.png`;
-    const url = `${SITE}/case/${id}`;
+    const url = want && UUID.test(want) ? `${SITE}/case/${id}?f=${want}` : `${SITE}/case/${id}`;
 
     const tags = `
     <title>${esc(title)} · Use Case Arms Race</title>
