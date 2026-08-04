@@ -49,7 +49,8 @@ export async function onRequest(context) {
     // case, so sharing a 2023 story unfurled with a 2026 headline and a
     // stranger's photograph. The card has to describe what the sender saw.
     const want = new URL(request.url).searchParams.get("f");
-    const cols = "headline_render,headline,summary,image_url";
+    // `id` is in the select because the card's image is served from /og/<id>.
+    const cols = "id,headline_render,headline,summary,image_url";
     let filing = null;
     if (want && UUID.test(want)) {
       [filing] = await sb(`filings?id=eq.${want}&case_id=eq.${id}&status=eq.live&select=${cols}&limit=1`);
@@ -72,7 +73,13 @@ export async function onRequest(context) {
       filing?.headline_render || filing?.headline || filing?.summary ||
       `${n} filing${n === 1 ? "" : "s"} on the public docket.`
     ).slice(0, 300);
-    const image = filing?.image_url || `${SITE}/og-image.png`;
+    // THROUGH OUR OWN DOMAIN, ALWAYS.
+    //
+    // Pointing at the publisher's CDN meant LinkedIn had to fetch a picture
+    // from a host that blocks unknown crawlers, and it silently rendered a
+    // card with no image. /og/<filing> re-serves the same photograph from
+    // here, and falls back to the docket's own card if the source is gone.
+    const image = filing?.id ? `${SITE}/og/${filing.id}` : `${SITE}/og-image.png`;
     const url = want && UUID.test(want) ? `${SITE}/case/${id}?f=${want}` : `${SITE}/case/${id}`;
 
     const tags = `
@@ -85,6 +92,8 @@ export async function onRequest(context) {
     <meta property="og:title" content="${esc(title)}" />
     <meta property="og:description" content="${esc(desc)}" />
     <meta property="og:image" content="${esc(image)}" />
+    <meta property="og:image:secure_url" content="${esc(image)}" />
+    <meta property="og:image:alt" content="${esc(title)}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${esc(title)}" />
     <meta name="twitter:description" content="${esc(desc)}" />
