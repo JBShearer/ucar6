@@ -1,9 +1,19 @@
 #!/bin/sh
-# Refuse any commit carrying a Supabase JWT or a GitHub token.
-# This repo published a service_role key to a public repo for weeks; the whole
-# history had to be rewritten. The cost of this check is nothing.
-if git diff --cached -U0 | grep -qE 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.|github_pat_|sb_secret_|service_role'; then
-  echo "BLOCKED: a credential-looking string is in this commit."
-  echo "Use an environment variable. If this is a false positive: git commit --no-verify"
+# Refuse any commit carrying a real credential.
+#
+# This repo published a service_role key to a public GitHub repo; the whole
+# history had to be rewritten with git-filter-repo and the Supabase project
+# deleted. The cost of this check is nothing.
+#
+# Each pattern requires the PREFIX PLUS ACTUAL KEY CHARACTERS. The first version
+# matched bare prefixes and blocked the very next deploy on supabase-js's own
+# `t.startsWith("sb_secret_")` format check — and a hook that cries wolf is a
+# hook everybody runs with --no-verify, which is worse than no hook.
+HITS=$(git diff --cached -U0 | grep -oE \
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]{20,}|github_pat_[A-Za-z0-9_]{20,}|sb_secret_[A-Za-z0-9_-]{10,}|SUPABASE_SERVICE[A-Z_]*\s*=\s*["'\''][A-Za-z0-9._-]{20,}')
+if [ -n "$HITS" ]; then
+  echo "BLOCKED: this commit contains something shaped like a live credential."
+  echo "$HITS" | sed -E 's/(.{12}).*/\1…/' | sort -u
+  echo "Use an environment variable. Genuine false positive: git commit --no-verify"
   exit 1
 fi
