@@ -1,12 +1,16 @@
 // Backfill actor/target for existing filings
 // Run with: node scripts/backfill_actors.mjs
 
+
+if (!process.env.SUPABASE_SERVICE_KEY) {
+  throw new Error('SUPABASE_SERVICE_KEY is not set. Export it; never hard-code it. This file leaked a service_role key to a public repo once already.');
+}
 const HYPERSPACE_URL = 'http://localhost:6655/anthropic/v1/messages';
-const HYPERSPACE_TOKEN = '__PURGED_TOKEN__';
+const HYPERSPACE_TOKEN = process.env.HYPERSPACE_TOKEN;
 const MODEL = 'claude-sonnet-4-20250514'; // Fast model for extraction
 
 const SUPABASE_URL = 'https://znhsnishdqrmumxbgobq.supabase.co';
-const SERVICE_KEY = '__PURGED_SUPABASE_KEY__';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 const PROMPT = `Extract WHO and WHOM from this AI use case.
 

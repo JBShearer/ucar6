@@ -1,3 +1,7 @@
+
+if (!process.env.SUPABASE_SERVICE_KEY) {
+  throw new Error('SUPABASE_SERVICE_KEY is not set. Export it; never hard-code it. This file leaked a service_role key to a public repo once already.');
+}
 #!/usr/bin/env node
 // Jetson Browser Crawler for UCAR
 // Uses Puppeteer to scrape JS-rendered pages and bypass basic anti-bot
@@ -7,7 +11,7 @@
 //   # Chromium should already be installed on Jetson
 
 const SUPABASE_URL = 'https://znhsnishdqrmumxbgobq.supabase.co';
-const SERVICE_KEY = '__PURGED_SUPABASE_KEY__';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 // Jetson Chromium path - adjust if needed
 const CHROMIUM_PATH = process.env.CHROMIUM_PATH || '/usr/bin/chromium-browser';

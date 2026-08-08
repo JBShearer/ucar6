@@ -1,13 +1,17 @@
+
+if (!process.env.SUPABASE_SERVICE_KEY) {
+  throw new Error('SUPABASE_SERVICE_KEY is not set. Export it; never hard-code it. This file leaked a service_role key to a public repo once already.');
+}
 #!/usr/bin/env node
 // Jetson UCAR Pipeline - Crawl + Extract via Hyperspace
 // Run this on the Jetson where Hyperspace is running
 
 const SUPABASE_URL = 'https://znhsnishdqrmumxbgobq.supabase.co';
 const ADMIN_KEY = '4654bd1c847c4d0a1b199e8e7f6de27f6198af8d0f442290d6ed9407ef55cd87';
-const SERVICE_KEY = '__PURGED_SUPABASE_KEY__';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 const HYPERSPACE_URL = 'http://localhost:6655/anthropic/v1/messages';
-const HYPERSPACE_TOKEN = '__PURGED_TOKEN__';
+const HYPERSPACE_TOKEN = process.env.HYPERSPACE_TOKEN;
 const MODEL = 'anthropic--claude-4.8-opus';
 
 const PROMPT = `Extract for UCAR docket. The output will become a case title: "[VERB] [OBJECT] · WITH [INSTRUMENT]"

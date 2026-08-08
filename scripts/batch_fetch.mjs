@@ -1,9 +1,13 @@
+
+if (!process.env.SUPABASE_SERVICE_KEY) {
+  throw new Error('SUPABASE_SERVICE_KEY is not set. Export it; never hard-code it. This file leaked a service_role key to a public repo once already.');
+}
 #!/usr/bin/env node
 // Batch fetch prospects - runs locally, no browser needed for most URLs
 // Uses fetch + cheerio-style parsing for speed
 
 const SUPABASE_URL = 'https://znhsnishdqrmumxbgobq.supabase.co';
-const SERVICE_KEY = '__PURGED_SUPABASE_KEY__';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 const CONCURRENCY = 20;
 const BATCH_SIZE = 100;

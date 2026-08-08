@@ -1,12 +1,16 @@
 // Rescrape existing filings to extract published_at dates
 // Run with: node scripts/rescrape_dates.mjs
 
+
+if (!process.env.SUPABASE_SERVICE_KEY) {
+  throw new Error('SUPABASE_SERVICE_KEY is not set. Export it; never hard-code it. This file leaked a service_role key to a public repo once already.');
+}
 const HYPERSPACE_URL = 'http://localhost:6655/anthropic/v1/messages';
-const HYPERSPACE_TOKEN = '__PURGED_TOKEN__';
+const HYPERSPACE_TOKEN = process.env.HYPERSPACE_TOKEN;
 const MODEL = 'claude-sonnet-4-20250514'; // Fast model for date extraction
 
 const SUPABASE_URL = 'https://znhsnishdqrmumxbgobq.supabase.co';
-const SERVICE_KEY = '__PURGED_SUPABASE_KEY__';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 const DATE_PROMPT = `Extract the publication date from this article. Look for:
 - Byline dates ("Published:", "Posted:", date near author name)

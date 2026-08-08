@@ -1,3 +1,7 @@
+
+if (!process.env.SUPABASE_SERVICE_KEY) {
+  throw new Error('SUPABASE_SERVICE_KEY is not set. Export it; never hard-code it. This file leaked a service_role key to a public repo once already.');
+}
 #!/usr/bin/env node
 // Jetson Fast Browser Crawler for UCAR
 // Continuously scrapes articles using headless Chromium
@@ -6,7 +10,7 @@
 import puppeteer from 'puppeteer-core';
 
 const SUPABASE_URL = 'https://znhsnishdqrmumxbgobq.supabase.co';
-const SERVICE_KEY = '__PURGED_SUPABASE_KEY__';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ADMIN_KEY = '4654bd1c847c4d0a1b199e8e7f6de27f6198af8d0f442290d6ed9407ef55cd87';
 
 const CHROMIUM_PATH = process.env.CHROMIUM_PATH || '/usr/bin/chromium-browser';

@@ -1,14 +1,18 @@
 // Local extraction via Hyperspace with Opus
 // Uses the same vocab resolution as the edge function
 
+
+if (!process.env.SUPABASE_SERVICE_KEY) {
+  throw new Error('SUPABASE_SERVICE_KEY is not set. Export it; never hard-code it. This file leaked a service_role key to a public repo once already.');
+}
 const HYPERSPACE_URL = 'http://localhost:6655/anthropic/v1/messages';
 const HYPERSPACE_EMBED_URL = 'http://localhost:6655/openai/v1/embeddings';
-const HYPERSPACE_TOKEN = '__PURGED_TOKEN__';
+const HYPERSPACE_TOKEN = process.env.HYPERSPACE_TOKEN;
 const MODEL = 'anthropic--claude-4.8-opus';
 const EMBED_MODEL = 'text-embedding-3-small';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://znhsnishdqrmumxbgobq.supabase.co';
-const SERVICE_KEY = '__PURGED_SUPABASE_KEY__';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 // Stub URL patterns - these are placeholders, not real articles
 const STUB_URL_PATTERNS = [

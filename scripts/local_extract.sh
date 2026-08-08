@@ -6,9 +6,9 @@ cd "/Users/I530341/Documents/Evil Brain Production/ucar6_1"
 source .env
 
 HYPERSPACE_URL="http://localhost:6655/anthropic/v1/messages"
-HYPERSPACE_TOKEN="__PURGED_TOKEN__"
+HYPERSPACE_TOKEN=""
 MODEL="anthropic--claude-4.8-opus"
-SERVICE_KEY="__PURGED_SUPABASE_KEY__"
+SERVICE_KEY=""
 
 read -r -d '' EXTRACTION_PROMPT << 'PROMPT'
 You extract structured filings for UCAR, a public docket tracking AI capabilities AND harms.

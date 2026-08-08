@@ -1,0 +1,9 @@
+#!/bin/sh
+# Refuse any commit carrying a Supabase JWT or a GitHub token.
+# This repo published a service_role key to a public repo for weeks; the whole
+# history had to be rewritten. The cost of this check is nothing.
+if git diff --cached -U0 | grep -qE 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.|github_pat_|sb_secret_|service_role'; then
+  echo "BLOCKED: a credential-looking string is in this commit."
+  echo "Use an environment variable. If this is a false positive: git commit --no-verify"
+  exit 1
+fi

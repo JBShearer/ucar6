@@ -1,3 +1,7 @@
+
+if (!process.env.SUPABASE_SERVICE_KEY) {
+  throw new Error('SUPABASE_SERVICE_KEY is not set. Export it; never hard-code it. This file leaked a service_role key to a public repo once already.');
+}
 #!/usr/bin/env node
 // Seed prospects directly from news site RSS feeds (no Google News)
 
@@ -6,7 +10,7 @@ import ws from 'ws';
 
 const sb = createClient(
   'https://znhsnishdqrmumxbgobq.supabase.co',
-  '__PURGED_SUPABASE_KEY__',
+  process.env.SUPABASE_SERVICE_KEY,
   { realtime: { transport: ws } }
 );
 
