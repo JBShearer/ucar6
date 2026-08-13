@@ -118,7 +118,7 @@ export async function onRequest(context) {
       headers: {
         "content-type": "text/html; charset=utf-8",
         // Short edge cache: votes and filings change, previews should not be stale for long.
-        "cache-control": "public, max-age=60, s-maxage=300",
+        "cache-control": "public, max-age=60, s-maxage=60",
       },
     });
   } catch {

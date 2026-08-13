@@ -83,7 +83,7 @@ export async function onRequest(context) {
     return new Response(html, {
       headers: {
         "content-type": "text/html; charset=utf-8",
-        "cache-control": "public, max-age=60, s-maxage=300",
+        "cache-control": "public, max-age=60, s-maxage=60",
       },
     });
   } catch {
