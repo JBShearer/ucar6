@@ -63,15 +63,22 @@ export async function onRequest(context) {
     }
 
     const no = `CASE #${String(kase.case_number ?? 0).padStart(4, "0")}`;
-    const title = `${no} · ${kase.title_render}`;
     const n = kase.filing_count ?? 0;
     const verdict =
       (kase.evil_votes ?? 0) > (kase.good_votes ?? 0) ? "Currently voted EVIL"
       : (kase.good_votes ?? 0) > (kase.evil_votes ?? 0) ? "Currently voted GOOD"
       : "No verdict yet";
-    const desc = (
-      filing?.headline_render || filing?.headline || filing?.summary ||
-      `${n} filing${n === 1 ? "" : "s"} on the public docket.`
+    // ?f= NAMES THE STORY, SO THE STORY LEADS. A shared article unfurled with
+    // the case grammar as its headline ("SURVEIL SURVEILLANCE DATA · WITH
+    // SURVEILLANCE INTEGRATION SYSTEMS…") and the actual story demoted to the
+    // description. Sender saw a headline; the card must show that headline.
+    const sharedStory = want && UUID.test(want) && filing
+      ? (filing.headline_render || filing.headline) : null;
+    const title = sharedStory ? sharedStory.slice(0, 300) : `${no} · ${kase.title_render}`;
+    const desc = (sharedStory
+      ? `${no} · ${kase.title_render} · ${verdict}`
+      : (filing?.headline_render || filing?.headline || filing?.summary ||
+         `${n} filing${n === 1 ? "" : "s"} on the public docket.`)
     ).slice(0, 300);
     // THROUGH OUR OWN DOMAIN, ALWAYS.
     //
