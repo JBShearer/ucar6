@@ -1942,8 +1942,10 @@ document.getElementById('cards-next')?.addEventListener('click', () => {
 
 // Load cards after Supabase initializes
 setTimeout(() => {
-  if (supabaseClient) loadUnclaimedCards();
-}, 1000);
+  // 2026 retrofit: the deck loads with or without the old backend —
+  // fetchLiveDeck() mints it from the public docket.
+  loadUnclaimedCards();
+}, 800);
 
 function fileToRegistry(f){
   if (!f.id) f.id = ++caseSeq;
