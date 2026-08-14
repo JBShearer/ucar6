@@ -1093,6 +1093,15 @@ $('#spinbtn').onclick = () => {
     r.spinTo(targets[r.kind], 2 + i, 900 + i*350, () => { buzz(10); if(--pending === 0) landed(); });
   });
   if(pending === 0){ landed(); }
+  // WATCHDOG: rAF throttles in occluded windows and the spin callback never
+  // fires — the button stayed dead. If the reels haven't landed in 5s, snap
+  // them and land anyway. The Machine does not wait on browser politics.
+  setTimeout(() => {
+    if(S.busy){
+      reels.forEach(r => { cancelAnimationFrame(r.raf); r.pos = Math.round(r.pos); r.render(); });
+      landed();
+    }
+  }, 5000);
 };
 
 function landed(quiet=false){
