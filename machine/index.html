@@ -1739,9 +1739,33 @@ function calcClaimCost(seatCount) {
   return Math.floor(CLAIM_BASE * Math.pow(CLAIM_GROWTH, seatCount));
 }
 
+
+// 2026 RETROFIT: mint the deck from the LIVE public docket (ucar7).
+async function fetchLiveDeck(){
+  const KEY="sb_publishable_aSbFo4SJa2p5ojVqh2ozyQ_JzyNK1SY";
+  const r=await fetch("https://srokszgtbdmmdxgozqvg.supabase.co/rest/v1/cases?select=id,case_number,title_render,domain,filing_count,good_votes,evil_votes&status=eq.live&order=last_filed_at.desc.nullslast&limit=60",
+    {headers:{apikey:KEY,authorization:"Bearer "+KEY}});
+  if(!r.ok) throw new Error("docket "+r.status);
+  const rows=await r.json();
+  return rows.map(c=>{
+    const votes=(c.good_votes||0)+(c.evil_votes||0);
+    const faction=(c.evil_votes||0)>(c.good_votes||0)?"hell":((c.good_votes||0)>(c.evil_votes||0)?"heaven":"unaligned");
+    const rarity=c.filing_count>=20?"legendary":c.filing_count>=8?"rare":c.filing_count>=3?"uncommon":"common";
+    return { id:"live-"+c.id, case_id:c.id,
+      name:String(c.title_render).split(" \u00b7 ")[0],
+      category:(c.domain||"UNFILED").toUpperCase(),
+      impact:Math.max(1,Math.min(10,Math.round(Math.sqrt(c.filing_count+votes)))),
+      power:Math.max(1,c.filing_count), rarity, faction,
+      alignment_ratio:votes?(c.good_votes||0)/votes:0.5,
+      art_url:null, art_seed:c.case_number,
+      source_url:"https://usecasearmsrace.com/case/"+c.id,
+      minted_at:new Date().toISOString() };
+  });
+}
+
 // Load minted cards that haven't been claimed (no products row)
 async function loadUnclaimedCards() {
-  if (!supabaseClient || cardBrowserState.loading) return;
+  if (cardBrowserState.loading) return;
   cardBrowserState.loading = true;
 
   const grid = document.getElementById('card-browser-grid');
@@ -1757,29 +1781,21 @@ async function loadUnclaimedCards() {
       cardBrowserState.seatCount = count || 0;
     }
 
-    // Query cards that have been minted but not claimed
-    // LEFT JOIN: cards without a matching products row
-    const { data: cards, error } = await supabaseClient
-      .from('cards')
-      .select(`
-        id, case_id, name, category, impact, power, rarity, faction,
-        alignment_ratio, art_url, art_seed, source_url, minted_at
-      `)
-      .order('minted_at', { ascending: false })
-      .limit(50);
-
-    if (error) {
-      console.error('Error loading cards:', error);
-      grid.innerHTML = '<div id="card-browser-empty">Error loading cards. Check Supabase connection.</div>';
-      return;
+    // THE DECK IS THE DOCKET NOW. Old 'cards' table retired; every card is a
+    // live case. Claims are kept in this browser (localStorage) — the lab
+    // runs on local power.
+    let cards = [];
+    if (supabaseClient) {
+      const res = await supabaseClient.from('cards')
+        .select(`id, case_id, name, category, impact, power, rarity, faction,
+          alignment_ratio, art_url, art_seed, source_url, minted_at`)
+        .order('minted_at', { ascending: false }).limit(50);
+      cards = res.data || [];
+    } else {
+      cards = await fetchLiveDeck();
     }
-
-    // Filter out claimed cards (those with a products row)
-    const { data: claimedCaseIds } = await supabaseClient
-      .from('products')
-      .select('case_id');
-    const claimedSet = new Set((claimedCaseIds || []).map(p => p.case_id));
-
+    let claimedSet = new Set();
+    try { claimedSet = new Set(JSON.parse(localStorage.getItem('ebl-claims') || '[]')); } catch(_){}
     const unclaimed = (cards || []).filter(c => !claimedSet.has(c.case_id));
 
     if (unclaimed.length === 0) {
