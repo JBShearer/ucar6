@@ -114,7 +114,7 @@ class GameEngine {
 
     async loadNarrative() {
         try {
-            const response = await fetch('data/narrative.json?v=12');
+            const response = await fetch('data/narrative.json?v=13');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
