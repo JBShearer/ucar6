@@ -320,7 +320,12 @@ class GameEngine {
 
         // Update narrative text
         const narrativeText = document.getElementById('narrative-text');
-        narrativeText.innerHTML = `<p>${node.text}</p>`;
+        // 2026 restoration: the narrative data double-escapes newlines, so
+        // the prose rendered with literal "\\n" in it. Unescape, then break
+        // into paragraphs. Text is escaped before injection.
+        const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const paras = String(node.text).replace(/\\n/g, '\n').split(/\n+/).filter(Boolean);
+        narrativeText.innerHTML = paras.map(p => `<p>${esc(p)}</p>`).join('');
 
         // Render choices
         this.renderChoices(node.choices || []);
