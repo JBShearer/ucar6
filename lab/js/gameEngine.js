@@ -98,9 +98,10 @@ class GameEngine {
         // Load autosave if exists
         const autosave = saveManager.loadFromSlot('autosave');
         if (autosave) {
-            if (confirm('Continue from autosave?')) {
-                this.loadGameState(autosave);
-            }
+            // 2026 restoration: a native confirm() blocked the page on every
+            // return visit. Your shift resumes where you left it; RESTART in
+            // the menu starts a fresh employment.
+            this.loadGameState(autosave);
         }
 
         // Initialize company message board (after UI is ready)
