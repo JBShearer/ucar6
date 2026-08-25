@@ -1,5 +1,16 @@
 {
   "version": 1,
-  "include": ["/case/*", "/og/*", "/f/*"],
-  "exclude": ["/assets/*", "/favicon.ico", "/og-image.png", "/CNAME"]
+  "include": [
+    "/case/*",
+    "/og/*",
+    "/f/*",
+    "/sitemap.xml"
+  ],
+  "exclude": [
+    "/assets/*",
+    "/favicon.ico",
+    "/og-image.png",
+    "/CNAME",
+    "/robots.txt"
+  ]
 }

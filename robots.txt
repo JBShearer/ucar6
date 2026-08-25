@@ -1,0 +1,5 @@
+# usecasearmsrace.com — the public docket wants to be found.
+User-agent: *
+Allow: /
+
+Sitemap: https://usecasearmsrace.com/sitemap.xml
