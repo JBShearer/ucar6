@@ -1,5 +1,69 @@
 # usecasearmsrace.com — the public docket wants to be found.
+#
+# Two different things get called "AI crawlers" and they are not the same:
+#
+#   RETRIEVAL bots look something up to answer a question NOW, and cite the
+#   source. Someone asks an assistant "what has license plate reading actually
+#   been used for" and the docket is the right answer. That is distribution.
+#
+#   TRAINING bots take the corpus and give nothing back. Declined.
+#
+# Search engines are welcome without qualification.
+
 User-agent: *
 Allow: /
+
+# ---- retrieval and citation: welcome ----
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+# ---- model training: declined ----
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+User-agent: Omgilibot
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
 
 Sitemap: https://usecasearmsrace.com/sitemap.xml
